@@ -21,6 +21,8 @@ AI 读完后会按照模板中定义的工作流（数据质量门禁 → 选股
 | 你想做什么 | 直接这样说 |
 |-----------|-----------|
 | 全自动选股 | `帮我选股` 或 `看看今天哪些值得买` |
+| **深度学习选股** | `用ML模型预测一下Top30` |
+| **训练ML模型** | `训练一下深度学习模型，50轮` |
 | 给某只股票打分 | `帮我给600519打个分，成本价1680，100股，5月10号买的` |
 | 跑全市场排名 | `跑一次全市场排名，取Top50` |
 | 分析股票池 | `分析一下我的股票池` 或 `看看持仓哪些该动` |
@@ -46,8 +48,10 @@ AI 读完后会按照模板中定义的工作流（数据质量门禁 → 选股
 ## 1. 安装
 
 ```bash
-pip install pandas requests numpy akshare
+pip install pandas requests numpy akshare torch scikit-learn pyarrow
 ```
+
+> 含深度学习所需依赖（PyTorch）。
 
 > 仅4个依赖，无需数据库或聚宽平台。
 
@@ -152,6 +156,31 @@ python core/money_flow.py --top 50 --days 5
 
 ---
 
+### 2.6 深度学习预测（ML Pipeline）🆕
+
+用神经网络预测股票未来5日超额收益概率，按概率排序选股：
+
+```bash
+# 首次使用：构建特征矩阵（约15-30分钟，只需跑一次）
+python ml/build_features.py
+
+# 训练模型（GPU推荐，CPU也可）
+python ml/train.py --epochs 50
+
+# 预测选股（使用最新模型）
+python ml/predict.py --top 30
+
+# 回测验证（模拟历史逐日选股效果）
+python ml/predict.py --backtest --start 2025-04-01
+```
+
+**模型架构**：1D Conv (序列压缩) + MLP (分类头)  
+**输入**：每只股票过去180天 × 34个技术指标  
+**输出**：P(未来5日超额收益 > 0)  
+**评估**：测试集AUC + 分层收益验证
+
+---
+
 ## 3. 项目结构
 
 ```
@@ -181,6 +210,11 @@ investment/
 │
 ├── experiments/             ← 参考策略（聚宽平台代码，供借鉴）
 ├── dashboard/               ← HTML可视化看板
+├── ml/                      ← 深度学习训练+预测 🆕
+│   ├── build_features.py        特征矩阵构建
+│   ├── dataset.py               动态序列切片 Dataset
+│   ├── train.py                 MLP 训练+评估
+│   └── predict.py               预测+选股
 └── docs/                    ← Prompt模板
 ```
 

@@ -16,3 +16,4 @@ data/all_stocks_score_intermediate.csv
 # OS
 .DS_Store
 Thumbs.db
+.venv
