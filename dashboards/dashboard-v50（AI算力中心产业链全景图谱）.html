@@ -1,0 +1,4912 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI算力中心产业链全景 v5.1</title>
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #0a0e14;
+    color: #e4e6eb;
+    overflow: hidden;
+  }
+  body { display: flex; flex-direction: column; }
+
+  /* 顶部标题 */
+  .header {
+    padding: 10px 20px;
+    background: #0f141c;
+    border-bottom: 1px solid #1e2530;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+  .header h1 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #fff;
+  }
+  .header .meta {
+    color: #6b7480;
+    font-size: 11px;
+  }
+  .header .legend {
+    display: flex;
+    gap: 12px;
+    margin-left: auto;
+    font-size: 11px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: #9ba3ad;
+  }
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  /* 工具栏 */
+  .toolbar {
+    padding: 8px 20px;
+    background: #0d1218;
+    border-bottom: 1px solid #1e2530;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+  .toolbar input {
+    background: #1a1f26;
+    border: 1px solid #2a3340;
+    color: #e4e6eb;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    flex: 1;
+    min-width: 200px;
+    max-width: 280px;
+  }
+  .btn {
+    background: #1a1f26;
+    border: 1px solid #2a3340;
+    color: #e4e6eb;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .btn:hover { background: #2a3340; border-color: #4287d4; }
+  .btn.active { background: #d44; border-color: #d44; color: #fff; }
+  .btn.active.l2 { background: #e69b3f; border-color: #e69b3f; }
+  .btn.active.l3 { background: #4caf50; border-color: #4caf50; }
+  .btn.active.l4 { background: #4287d4; border-color: #4287d4; }
+
+  /* 桑基条 */
+  .sankey-bar {
+    height: 120px;
+    padding: 12px 20px;
+    background: linear-gradient(180deg,#0f141c,#0a0e14);
+    border-bottom: 1px solid #1e2530;
+    flex-shrink: 0;
+    display: flex;
+    align-items: stretch;
+    gap: 6px;
+  }
+  .sankey-stage {
+    flex: 1;
+    background: linear-gradient(180deg, var(--sg-from), var(--sg-to));
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 8px 10px;
+    color: #fff;
+    transition: all 0.2s;
+    border: 2px solid transparent;
+    position: relative;
+  }
+  .sankey-stage:hover { transform: translateY(-2px); border-color: #fff; }
+  .sankey-stage.active { border-color: #fff; box-shadow: 0 0 16px rgba(255,255,255,0.3); }
+  .sankey-arrow {
+    align-self: center;
+    color: #4a5260;
+    font-size: 16px;
+  }
+  .sg-name { font-size: 13px; font-weight: 600; }
+  .sg-meta { font-size: 10px; opacity: 0.85; margin-top: 2px; }
+  .sg-count { font-size: 11px; font-weight: 600; margin-top: 4px; opacity: 0.95; }
+  .sg-heat {
+    font-size: 11px;
+    margin-top: 3px;
+    opacity: 0.95;
+    color: var(--heat-color, #9ba3ad);
+    white-space: nowrap;
+  }
+  .sg-heat.dim { opacity: 0.5; }
+  .sg-heat .heat-stars { font-weight: 700; letter-spacing: 1px; }
+  .sg-heat.hot .heat-stars { text-shadow: 0 0 6px var(--heat-color); }
+  .sg-heat .heat-stars-empty { color: #3a4350; letter-spacing: 1px; }
+  .sg-heat .heat-price { font-weight: 600; }
+  .sg-heat .heat-cov { color: #4a5260; font-size: 9px; margin-left: 4px; font-weight: 400; }
+
+  /* Top 10 排行榜 */
+  .topboards {
+    position: relative;
+    padding: 8px 20px;
+    background: #0d1218;
+    border-bottom: 1px solid #1e2530;
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    max-height: 260px;
+  }
+  .topboards.collapsed { max-height: 36px; }
+  .topboards-toggle {
+    position: absolute;
+    top: 6px;
+    right: 16px;
+    background: #1a1f26;
+    border: 1px solid #2a3340;
+    color: #d8dde5;
+    width: 28px;
+    height: 22px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    line-height: 1;
+    z-index: 2;
+  }
+  .topboards-toggle:hover { background: #2a3340; border-color: #4287d4; }
+  .topboard {
+    flex: 1;
+    background: #0f141c;
+    border: 1px solid #1e2530;
+    border-radius: 6px;
+    padding: 6px 10px 8px;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .topboard-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #d8dde5;
+    margin-bottom: 4px;
+    letter-spacing: 0.3px;
+  }
+  .topboard-list { list-style: none; padding: 0; margin: 0; }
+  .topboard-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 1px 4px;
+    font-size: 11px;
+    cursor: pointer;
+    border-radius: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .topboard-row:hover { background: #1a2332; }
+  .topboard-badge {
+    background: #e69b3f;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    flex-shrink: 0;
+    cursor: help;
+    white-space: nowrap;
+  }
+  .topboard-legend {
+    font-size: 9px;
+    color: #6b7480;
+    font-weight: 400;
+    margin-left: 8px;
+    letter-spacing: 0;
+  }
+  .topboard-rank {
+    color: #6b7480;
+    width: 24px;
+    font-family: 'SF Mono', monospace;
+    flex-shrink: 0;
+    font-size: 10px;
+  }
+  .topboard-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .topboard-name-wrap {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 55%;
+    overflow: hidden;
+  }
+  .topboard-name {
+    color: #e4e6eb;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+  .topboard-row:hover .topboard-name { color: #fff; }
+  .topboard-stage {
+    color: #6b7480;
+    font-size: 9px;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+  .topboard-metric {
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-left: 6px;
+    padding-left: 6px;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+  }
+  #custom-tooltip {
+    position: fixed;
+    display: none;
+    background: #1a2332;
+    color: #fff;
+    padding: 8px 12px;
+    font-size: 11px;
+    line-height: 1.5;
+    white-space: pre-line;
+    border-radius: 4px;
+    border: 1px solid #2a3340;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+    pointer-events: none;
+    z-index: 10000;
+    max-width: 280px;
+  }
+  .topboard-metric.stars { color: #ffc107; }
+  .topboard-metric.price { color: #ff5252; }
+  .sg-heat.low-sample { color: #ffc107; cursor: help; }
+  .sg-heat.low-sample .heat-stars-empty { color: #5a4a20; }
+  .sg-heat.low-sample .heat-cov { color: #ffc107; font-weight: 600; }
+  .sg-heat.low-sample .heat-price { color: #ffc107 !important; }
+
+  /* 主区(树状图) */
+  .main {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    background: #0a0e14;
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(66,135,212,0.04) 0%, transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(212,68,68,0.04) 0%, transparent 50%);
+  }
+  #tree-svg {
+    width: 100%;
+    height: 100%;
+    cursor: grab;
+  }
+  #tree-svg:active { cursor: grabbing; }
+
+  /* 节点样式 */
+  .node circle {
+    stroke-width: 2;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .node:hover circle { stroke: #fff; }
+  .node text {
+    font-size: 12px;
+    fill: #e4e6eb;
+    cursor: pointer;
+    pointer-events: all;
+    user-select: none;
+  }
+  .node.dimmed { opacity: 0.15; }
+  .node.highlight circle { stroke: #ffeb3b; stroke-width: 3; }
+  .node.highlight text { fill: #ffeb3b; font-weight: 600; }
+
+  .link {
+    fill: none;
+    stroke: #2a3340;
+    stroke-width: 1.5;
+    transition: opacity 0.2s;
+  }
+  .link.dimmed { opacity: 0.1; }
+
+  /* 等级颜色 */
+  .lvl-1 { fill: #d44; }       /* 卡脖子 */
+  .lvl-2 { fill: #e69b3f; }    /* 攻坚 */
+  .lvl-3 { fill: #4caf50; }    /* 主导 */
+  .lvl-4 { fill: #4287d4; }    /* 全球协作 */
+  .lvl-cat { fill: #6b7480; }  /* 分类节点 */
+
+  /* 右侧详情抽屉 */
+  .drawer {
+    position: fixed;
+    top: 0;
+    right: -480px;
+    width: 480px;
+    height: 100vh;
+    background: #0f141c;
+    border-left: 1px solid #2a3340;
+    overflow-y: auto;
+    transition: right 0.3s ease;
+    z-index: 100;
+    box-shadow: -8px 0 32px rgba(0,0,0,0.4);
+  }
+  .drawer.open { right: 0; }
+  .drawer-header {
+    padding: 18px 24px;
+    border-bottom: 1px solid #1e2530;
+    position: sticky;
+    top: 0;
+    background: #0f141c;
+    z-index: 1;
+  }
+  .drawer-close {
+    position: absolute;
+    right: 16px;
+    top: 16px;
+    background: none;
+    border: none;
+    color: #9ba3ad;
+    font-size: 22px;
+    cursor: pointer;
+  }
+  .drawer-close:hover { color: #fff; }
+  .drawer-tag {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 8px;
+  }
+  .drawer h2 {
+    font-size: 18px;
+    color: #fff;
+    margin-bottom: 6px;
+  }
+  .drawer-path {
+    color: #6b7480;
+    font-size: 11px;
+  }
+  .drawer-section {
+    padding: 16px 24px;
+    border-bottom: 1px solid #1e2530;
+  }
+  .drawer-label {
+    color: #6b7480;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+  .drawer-value {
+    color: #d8dde5;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .stocks-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .stock-chip {
+    background: #1a2533;
+    border: 1px solid #2a4055;
+    color: #6ea3ff;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-family: 'SF Mono', monospace;
+  }
+  .note-box {
+    background: #1a1810;
+    border-left: 3px solid #e69b3f;
+    padding: 8px 12px;
+    margin-top: 8px;
+    color: #d4a87a;
+    font-size: 12px;
+    border-radius: 0 4px 4px 0;
+    line-height: 1.5;
+  }
+
+  /* 缩放控件 */
+  .zoom-ctrl {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    background: #1a1f26;
+    border: 1px solid #2a3340;
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .zoom-ctrl button {
+    width: 36px;
+    height: 36px;
+    background: none;
+    border: none;
+    color: #d8dde5;
+    cursor: pointer;
+    font-size: 16px;
+    border-bottom: 1px solid #2a3340;
+  }
+  .zoom-ctrl button:hover { background: #2a3340; }
+  .zoom-ctrl button:last-child { border-bottom: none; }
+
+  /* 提示 */
+  .hint {
+    position: absolute;
+    bottom: 16px;
+    left: 16px;
+    background: rgba(15,20,28,0.9);
+    border: 1px solid #2a3340;
+    padding: 8px 14px;
+    border-radius: 6px;
+    color: #9ba3ad;
+    font-size: 11px;
+    pointer-events: none;
+  }
+
+  /* 滚动条 */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: #0a0e14; }
+  ::-webkit-scrollbar-thumb { background: #2a3340; border-radius: 4px; }
+  
+
+  /* 弹窗样式 */
+  .stock-modal {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6); z-index: 200;
+    display: none; align-items: center; justify-content: center;
+  }
+  .stock-modal.show { display: flex; }
+  .stock-modal-box {
+    background: #0f141c; border: 1px solid #2a3340; border-radius: 12px;
+    padding: 24px; width: 460px; max-width: 90vw;
+    max-height: 85vh; overflow-y: auto;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.5); position: relative;
+  }
+  .stock-modal-close {
+    position: absolute; right: 12px; top: 12px; background: none; border: none;
+    color: #9ba3ad; font-size: 20px; cursor: pointer;
+    width: 32px; height: 32px; border-radius: 6px;
+  }
+  .stock-modal-close:hover { background: #2a3340; color: #fff; }
+
+  /* 匹配节点高亮 */
+  .node.match circle { stroke: #fff; stroke-width: 3; filter: drop-shadow(0 0 8px rgba(255,255,255,0.6)); }
+  .node.match text { fill: #fff; font-weight: 700; }
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <h1>🏭 AI算力中心产业链全景图谱</h1>
+  <span class="meta">v5.1 · 141工艺节点 · 130家估值 · 65家多维数据 · 情报+类比+紧缺度</span>
+  <div class="legend">
+    <span class="legend-item"><span class="legend-dot" style="background:#d44"></span>卡脖子</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#e69b3f"></span>国产替代攻坚</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#4caf50"></span>国产已主导</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#4287d4"></span>全球协作</span>
+  </div>
+</div>
+
+<div class="toolbar">
+  <input type="text" id="search" placeholder="🔍 搜索节点/公司/标的代码(例: HBM、沪电、300308)">
+  <button class="btn" id="filter-1" data-level="1">🔴 卡脖子</button>
+  <button class="btn l2" id="filter-2" data-level="2">🟠 国产替代</button>
+  <button class="btn l3" id="filter-3" data-level="3">🟢 国产主导</button>
+  <button class="btn l4" id="filter-4" data-level="4">🔵 全球协作</button>
+  <button class="btn" id="filter-clear">清除</button>
+  <span style="color:#6b7480;font-size:10px;margin-left:4px;">多选=找交集</span>
+  <button class="btn" id="expand-all">展开全部</button>
+  <button class="btn" id="collapse-all">收起到一级</button>
+</div>
+
+<div class="sankey-bar" id="sankey"></div>
+
+<div class="topboards" id="topboards">
+  <button class="topboards-toggle" id="topboards-toggle" title="折叠/展开">▾</button>
+  <div class="topboard">
+    <div class="topboard-title">🔥 Top 10 卡脖子<span class="topboard-legend">⚡ = 同时入涨价榜</span></div>
+    <ol class="topboard-list" id="list-scarcity"></ol>
+  </div>
+  <div class="topboard">
+    <div class="topboard-title">💸 Top 10 涨价<span class="topboard-legend">⚡ = 同时入卡脖子榜</span></div>
+    <ol class="topboard-list" id="list-price"></ol>
+  </div>
+</div>
+
+<div class="main">
+  <svg id="tree-svg"></svg>
+  <div class="zoom-ctrl">
+    <button id="zoom-in" title="放大">+</button>
+    <button id="zoom-fit" title="居中">⊡</button>
+    <button id="zoom-out" title="缩小">−</button>
+  </div>
+  <div class="hint">💡 ⊕展开/⊖折叠 · 拖拽平移 · 滚轮缩放 · 点叶子节点看详情(类比+紧缺度+估值)</div>
+</div>
+
+<div class="drawer" id="drawer">
+  <div class="drawer-header">
+    <button class="drawer-close" id="drawer-close">✕</button>
+    <div id="drawer-tag" class="drawer-tag">分类</div>
+    <h2 id="drawer-name">—</h2>
+    <div class="drawer-path" id="drawer-path">—</div>
+  </div>
+  <div id="drawer-body"></div>
+</div>
+
+
+<script>
+const industry = {
+  name: "AI算力中心",
+  desc: "全球AI算力基础设施产业链",
+  children: [
+
+    // ============================================================
+    // 一、上游 · 关键材料
+    // ============================================================
+    {
+      name: "上游·关键材料",
+      desc: "支撑芯片/模块/PCB/封装/光通信的基础材料,中国在大宗+部分细分有突破,半导体专用材料仍依赖日美",
+      children: [
+
+        // ---------- 1.1 半导体专用材料 ----------
+        {
+          name: "半导体专用材料",
+          children: [
+            {
+              name: "硅片(300mm)",
+              role: "所有逻辑/存储芯片的基底,12英寸是先进制程主流",
+              global: "信越35%+SUMCO25%+环球晶15%+Siltronic10%",
+              cn: "沪硅产业(上海新昇)~5%全球份额,中环领先成熟制程",
+              level: 2,
+              stocks: ["688126","002129"],
+              note: "AI需求拉动,2025-26扩产高峰期"
+            },
+            {
+              name: "SOI晶圆(硅光关键)",
+              role: "硅光引擎专用,Smart-cut键合工艺",
+              global: "Soitec(法)垄断70%+",
+              cn: "几乎空白,沪硅有研发",
+              level: 1,
+              note: "硅光起来后是新瓶颈"
+            },
+            {
+              name: "光刻胶 EUV/ArF",
+              role: "EUV/ArF浸没式专用,先进制程必备",
+              global: "JSR+TOK+信越+富士占95%+",
+              cn: "南大光电ArF中试,北京科华KrF小批量",
+              level: 1,
+              stocks: ["300346"],
+              note: "国产化<5%,最难赛道之一"
+            },
+            {
+              name: "光刻胶 KrF/i-line",
+              role: "成熟制程光刻胶",
+              global: "TOK+JSR+信越主导",
+              cn: "北京科华+苏州瑞红+晶瑞已量产",
+              level: 2,
+              stocks: ["300655"],
+              note: "成熟制程国产化加速"
+            },
+            {
+              name: "电子特气 NF3/WF6",
+              role: "刻蚀+CVD反应气体",
+              global: "Linde+AirLiquide+SK Materials",
+              cn: "中船718所+华特+雅克+金宏",
+              level: 3,
+              stocks: ["688268","002409","688106"],
+              note: "国产化50%+,雅克并购科美特"
+            },
+            {
+              name: "电子特气 硅烷/磷烷/砷烷",
+              role: "外延+离子注入",
+              global: "Linde+SK Materials",
+              cn: "硅烷科技+南大光电",
+              level: 2,
+              stocks: ["838402","300346"]
+            },
+            {
+              name: "湿电子化学品",
+              role: "电子级双氧水/硫酸/氢氟酸/异丙醇,清洗+蚀刻",
+              global: "巴斯夫+森田+三菱化学",
+              cn: "江化微+晶瑞+多氟多+巨化",
+              level: 3,
+              stocks: ["603078","300655","002407","600160"],
+              note: "国产化已超50%,先进制程仍有缺口"
+            },
+            {
+              name: "CMP抛光液",
+              role: "化学机械抛光,每片晶圆多次使用",
+              global: "卡博特+Versum+Fujimi 70%",
+              cn: "安集科技多个工艺节点突破",
+              level: 3,
+              stocks: ["688019"]
+            },
+            {
+              name: "CMP抛光垫",
+              role: "CMP工艺核心耗材",
+              global: "Dow垄断80%",
+              cn: "鼎龙股份~10%份额,持续突破",
+              level: 2,
+              stocks: ["300054"]
+            },
+            {
+              name: "溅射靶材(Cu/Co/Ta/Ru等)",
+              role: "PVD金属沉积",
+              global: "霍尼韦尔+JX金属+东曹",
+              cn: "江丰电子+有研新材打入TSMC供应链",
+              level: 3,
+              stocks: ["300666","600206"]
+            },
+            {
+              name: "光掩模版(Mask)",
+              role: "光刻图形载体",
+              global: "Photronics+DNP+Toppan",
+              cn: "清溢光电(中低端)",
+              level: 2,
+              stocks: ["688138"]
+            },
+            {
+              name: "前驱体(High-K等)",
+              role: "ALD/CVD反应原料",
+              global: "默克+ADEKA+Versum",
+              cn: "雅克科技(收购UPChem)+南大光电",
+              level: 2,
+              stocks: ["002409","300346"]
+            }
+          ]
+        },
+
+        // ---------- 1.2 PCB/CCL 专用材料 ----------
+        {
+          name: "PCB/CCL专用材料",
+          children: [
+            {
+              name: "高速覆铜板 CCL(M6/M7/M8/M9)",
+              role: "高速PCB基板,M9级超低损耗对应1.6T",
+              global: "建滔+台光+联茂+台燿",
+              cn: "生益科技+南亚新材+华正新材",
+              level: 4,
+              stocks: ["600183","688519","603186"],
+              note: "2026涨价30%+,生益高速CCL市占已27%"
+            },
+            {
+              name: "HVLP铜箔(高端)",
+              role: "AI高速PCB专用低粗糙度铜箔",
+              global: "三井金属+古河+长春集团",
+              cn: "德福科技+铜冠铜箔切入",
+              level: 2,
+              stocks: ["301511","301217"],
+              note: "M9级强制使用,弹性大"
+            },
+            {
+              name: "电子级铜箔(标准)",
+              role: "PCB基础铜箔",
+              global: "古河+三井",
+              cn: "嘉元+诺德+德福主导",
+              level: 3,
+              stocks: ["688388","600110","301511"]
+            },
+            {
+              name: "玻纤布 Low-Dk/石英布",
+              role: "高速CCL增强材料,224G需求",
+              global: "日东纺+旭化成主导Low-Dk",
+              cn: "宏和科技+中材科技国产替代",
+              level: 2,
+              stocks: ["603256","002080"],
+              note: "玻纤布2025年9月以来涨14%+"
+            },
+            {
+              name: "PCB树脂(碳氢/PPO/PTFE)",
+              role: "高速CCL基体树脂",
+              global: "三菱瓦斯+松下+SABIC",
+              cn: "东材科技+圣泉集团",
+              level: 2,
+              stocks: ["601208","605589"]
+            },
+            {
+              name: "ABF载板(IC基板)",
+              role: "CPU/GPU/HBM底部承载,价值量极高",
+              global: "Ibiden+欣兴+三菱瓦斯+南亚",
+              cn: "深南电路+兴森科技+珠海越亚",
+              level: 2,
+              stocks: ["002916","002436"],
+              note: "FC-BGA是国产最大缺口"
+            }
+          ]
+        },
+
+        // ---------- 1.3 封装/键合材料 ----------
+        {
+          name: "封装/键合材料",
+          children: [
+            {
+              name: "EMC环氧塑封料",
+              role: "芯片封装外壳",
+              global: "住友+长濑+京瓷",
+              cn: "华海诚科+德邦科技",
+              level: 2,
+              stocks: ["688535","688035"]
+            },
+            {
+              name: "底填胶 Underfill",
+              role: "倒装芯片底部填充",
+              global: "Namics+汉高+昭和电工",
+              cn: "德邦科技国产替代",
+              level: 2,
+              stocks: ["688035"]
+            },
+            {
+              name: "TIM导热界面材料",
+              role: "芯片散热,液冷必备",
+              global: "Honeywell+信越+Henkel",
+              cn: "中石科技+傲基股份",
+              level: 2,
+              stocks: ["300684"]
+            },
+            {
+              name: "键合金线/银浆",
+              role: "传统封装连接",
+              global: "田中贵金属+贺利氏",
+              cn: "兴业合金+博威合金",
+              level: 3,
+              stocks: ["002802"]
+            }
+          ]
+        },
+
+        // ---------- 1.4 光通信关键材料 ----------
+        {
+          name: "光通信关键材料",
+          children: [
+            {
+              name: "InP磷化铟衬底",
+              role: "EML激光器/PD探测器衬底,800G+1.6T刚需",
+              global: "住友电工垄断80%+,AXT(美)~15%",
+              cn: "云南锗业+中科晶电研发中,无量产",
+              level: 1,
+              note: "全球最紧缺环节,排单到2027"
+            },
+            {
+              name: "薄膜铌酸锂 TFLN",
+              role: "1.6T调制器关键材料,Smart-cut工艺",
+              global: "HyperLight(美)+住友",
+              cn: "元芯光电+铌奥光电小批量",
+              level: 1,
+              note: "无国产,但1.6T必经环节"
+            },
+            {
+              name: "TGG铽镓石榴石(光隔离器)",
+              role: "光模块光隔离器晶体",
+              global: "Granopt(日)80%",
+              cn: "福晶科技~15%",
+              level: 2,
+              stocks: ["002222"],
+              note: "稀土铽国产是优势"
+            },
+            {
+              name: "光纤预制棒/光纤",
+              role: "光通信传输介质",
+              global: "Corning+古河+长飞",
+              cn: "长飞+亨通+烽火主导,国产化85%+",
+              level: 3,
+              stocks: ["601869","600487","600498"]
+            },
+            {
+              name: "石英玻璃(光通信级)",
+              role: "光纤+半导体石英件",
+              global: "Heraeus+Tosoh+菲利华",
+              cn: "石英股份+菲利华+欧晶科技",
+              level: 3,
+              stocks: ["603688","300395","001269"]
+            }
+          ]
+        },
+
+        // ---------- 1.5 大宗化工 ----------
+        {
+          name: "大宗化工配套",
+          children: [
+            {
+              name: "高纯多晶硅(电子级)",
+              role: "硅片原料,9N+",
+              global: "Wacker+OCI+德山",
+              cn: "亚洲硅业+鑫华+大全(主要光伏级)",
+              level: 2,
+              stocks: ["688303"],
+              note: "电子级国产化率仍低"
+            },
+            {
+              name: "氟化工原料",
+              role: "氟化液+电子特气前体",
+              global: "大金+苏威+霍尼韦尔",
+              cn: "巨化+三美+永和",
+              level: 3,
+              stocks: ["600160","603379","605020"],
+              note: "3M退出PFAS留下缺口"
+            },
+            {
+              name: "稀土永磁/稀土",
+              role: "服务器电机/光隔离器",
+              global: "中国主导60%+",
+              cn: "北方稀土+盛和资源+广晟有色",
+              level: 3,
+              stocks: ["600111","600392","600259"]
+            }
+          ]
+        }
+      ]
+    },
+
+    // ============================================================
+    // 二、半导体设备
+    // ============================================================
+    {
+      name: "上游·半导体设备",
+      desc: "Fab必备,中国成熟制程国产化50-60%,先进制程<15%",
+      children: [
+        {
+          name: "光刻机",
+          children: [
+            {
+              name: "EUV光刻机(7nm以下)",
+              role: "先进制程必备,单台2-3亿美元",
+              global: "ASML 100%独家",
+              cn: "完全空白,出口管制下不可购买",
+              level: 1,
+              note: "中国跳过EUV走多重曝光路径"
+            },
+            {
+              name: "DUV浸没式光刻机(28-7nm)",
+              role: "成熟+部分先进制程主力",
+              global: "ASML 100%",
+              cn: "上海微电子28nm在研,90nm量产",
+              level: 1,
+              note: "出口管制中,2024起部分受限"
+            },
+            {
+              name: "DUV干式光刻机(>65nm)",
+              role: "成熟制程光刻",
+              global: "ASML+尼康+佳能",
+              cn: "上海微电子已量产90nm",
+              level: 2
+            }
+          ]
+        },
+        {
+          name: "刻蚀设备",
+          children: [
+            {
+              name: "CCP电容耦合刻蚀",
+              role: "介质层/3D NAND刻蚀",
+              global: "Lam+TEL占80%+",
+              cn: "中微公司全球第二,北方华创跟进",
+              level: 3,
+              stocks: ["688012","002371"],
+              note: "中微5nm已应用"
+            },
+            {
+              name: "ICP电感耦合刻蚀",
+              role: "金属层/硅刻蚀",
+              global: "Lam+TEL+AMAT",
+              cn: "北方华创主导+中微",
+              level: 3,
+              stocks: ["002371","688012"]
+            },
+            {
+              name: "ALE原子层刻蚀",
+              role: "先进制程原子级精度",
+              global: "Lam主导",
+              cn: "中微研发中",
+              level: 2,
+              stocks: ["688012"]
+            }
+          ]
+        },
+        {
+          name: "薄膜沉积设备",
+          children: [
+            {
+              name: "CVD化学气相沉积",
+              role: "介质层/金属层沉积",
+              global: "AMAT+TEL+ASM",
+              cn: "拓荆科技+北方华创",
+              level: 3,
+              stocks: ["688072","002371"]
+            },
+            {
+              name: "PVD物理气相沉积",
+              role: "金属互连层",
+              global: "AMAT垄断70%+",
+              cn: "北方华创+拓荆",
+              level: 3,
+              stocks: ["002371","688072"]
+            },
+            {
+              name: "ALD原子层沉积",
+              role: "高K栅极/HBM混合键合",
+              global: "ASM+TEL+AMAT",
+              cn: "拓荆+微导纳米",
+              level: 2,
+              stocks: ["688072","688147"],
+              note: "HBM混合键合是新增量"
+            },
+            {
+              name: "外延 MOCVD(III-V)",
+              role: "光芯片+功率半导体外延",
+              global: "AIXTRON 70%+Veeco 25%",
+              cn: "中微~5%份额,中晟光电",
+              level: 2,
+              stocks: ["688012"]
+            }
+          ]
+        },
+        {
+          name: "其他关键工艺设备",
+          children: [
+            {
+              name: "CMP抛光设备",
+              role: "晶圆平坦化",
+              global: "AMAT+Ebara",
+              cn: "华海清科国产唯一规模量产",
+              level: 3,
+              stocks: ["688120"]
+            },
+            {
+              name: "湿法清洗设备",
+              role: "晶圆清洗,每道工序后必备",
+              global: "SCREEN+TEL",
+              cn: "盛美上海(SAPS技术独家)+至纯",
+              level: 3,
+              stocks: ["688082","603690"]
+            },
+            {
+              name: "离子注入机",
+              role: "掺杂工艺",
+              global: "AMAT+Axcelis",
+              cn: "万业企业(凯世通)中低能量已量产",
+              level: 2,
+              stocks: ["600641"]
+            },
+            {
+              name: "涂胶显影机(Track)",
+              role: "光刻配套",
+              global: "TEL垄断90%+",
+              cn: "芯源微切入",
+              level: 2,
+              stocks: ["688037"]
+            },
+            {
+              name: "热处理/炉管设备",
+              role: "氧化/扩散",
+              global: "TEL+AMAT",
+              cn: "北方华创+盛美",
+              level: 3,
+              stocks: ["002371","688082"]
+            }
+          ]
+        },
+        {
+          name: "量测/检测设备",
+          children: [
+            {
+              name: "电子束量测(eBeam)",
+              role: "缺陷检测,先进制程刚需",
+              global: "KLA+AMAT垄断",
+              cn: "几乎空白",
+              level: 1
+            },
+            {
+              name: "光学量测(OCD/椭偏仪)",
+              role: "线宽+薄膜厚度量测",
+              global: "KLA+Nanometrics",
+              cn: "精测电子+睿励",
+              level: 2,
+              stocks: ["300567"]
+            },
+            {
+              name: "晶圆缺陷检测",
+              role: "良率管控",
+              global: "KLA垄断",
+              cn: "中科飞测+精测",
+              level: 2,
+              stocks: ["688361","300567"]
+            }
+          ]
+        },
+        {
+          name: "测试设备(后端)",
+          children: [
+            {
+              name: "ATE测试机(SoC/存储)",
+              role: "芯片功能+性能测试",
+              global: "泰瑞达+爱德万 80%+",
+              cn: "长川科技+华峰测控切入",
+              level: 2,
+              stocks: ["300604","688200"],
+              note: "HBM测试是新增量"
+            },
+            {
+              name: "探针台",
+              role: "晶圆级测试",
+              global: "东京精密+TEL",
+              cn: "长川+矽电",
+              level: 2,
+              stocks: ["300604"]
+            },
+            {
+              name: "老化设备(Burn-in)",
+              role: "可靠性筛选",
+              global: "Aehr+Advantest",
+              cn: "华峰测控研发",
+              level: 2,
+              stocks: ["688200"]
+            }
+          ]
+        },
+        {
+          name: "设备核心零部件",
+          children: [
+            {
+              name: "射频电源(RF Power)",
+              role: "刻蚀/CVD等离子体源",
+              global: "MKS+AE",
+              cn: "英杰电气+富创精密",
+              level: 2,
+              stocks: ["300820","688409"]
+            },
+            {
+              name: "静电卡盘 ESC",
+              role: "晶圆固定",
+              global: "新光电气+京瓷",
+              cn: "富创精密+华亚智能",
+              level: 2,
+              stocks: ["688409"]
+            },
+            {
+              name: "气体质量流量计 MFC",
+              role: "工艺气体精确控制",
+              global: "MKS+Horiba+Fujikin",
+              cn: "七星电子(北方华创)+万达智能",
+              level: 2,
+              stocks: ["002371"]
+            },
+            {
+              name: "真空阀门/真空泵",
+              role: "真空环境维持",
+              global: "VAT+爱德华+Pfeiffer",
+              cn: "中船重工+汉钟精机",
+              level: 2,
+              stocks: ["002158"]
+            },
+            {
+              name: "石英件/陶瓷件",
+              role: "腔体内构件",
+              global: "Heraeus+Tosoh+京瓷",
+              cn: "石英股份+菲利华+三超新材",
+              level: 3,
+              stocks: ["603688","300395"]
+            }
+          ]
+        }
+      ]
+    },
+
+    // ============================================================
+    // 三、EDA / IP / 芯片设计
+    // ============================================================
+    {
+      name: "中游·EDA与IP",
+      desc: "芯片设计软件+IP核,三巨头垄断95%,中国国产化<5%",
+      children: [
+        {
+          name: "EDA软件",
+          children: [
+            {
+              name: "全流程EDA",
+              role: "从RTL到GDS的完整设计流程",
+              global: "Synopsys+Cadence+Siemens占95%",
+              cn: "华大九天+概伦电子+广立微(部分模块)",
+              level: 1,
+              stocks: ["301269","688206","301095"]
+            },
+            {
+              name: "模拟/射频EDA",
+              role: "Cadence Virtuoso主导",
+              global: "Cadence主导",
+              cn: "华大九天模拟全流程",
+              level: 2,
+              stocks: ["301269"]
+            }
+          ]
+        },
+        {
+          name: "半导体IP核",
+          children: [
+            {
+              name: "CPU IP(ARM/RISC-V)",
+              role: "CPU架构授权",
+              global: "ARM 95%+RISC-V开源",
+              cn: "平头哥+芯原+中科蓝讯(RISC-V)",
+              level: 2,
+              stocks: ["688521"]
+            },
+            {
+              name: "GPU IP",
+              role: "GPU架构",
+              global: "NVIDIA自有+ARM Mali+Imagination",
+              cn: "芯原+摩尔线程",
+              level: 1
+            },
+            {
+              name: "高速接口IP(SerDes/DDR/PCIe)",
+              role: "AI芯片关键互联",
+              global: "Synopsys+Cadence",
+              cn: "芯原+澜起(自研SerDes)",
+              level: 2,
+              stocks: ["688521","688008"]
+            }
+          ]
+        }
+      ]
+    },
+
+    // ============================================================
+    // 四、芯片设计与制造
+    // ============================================================
+    {
+      name: "中游·芯片设计与制造",
+      desc: "AI算力的心脏,GPU/ASIC/HBM/光芯片/互连芯片五大类",
+      children: [
+
+        // ---------- 4.1 AI计算芯片 ----------
+        {
+          name: "AI计算芯片",
+          children: [
+            {
+              name: "NVIDIA GPU(H100/B200/B300/Rubin)",
+              role: "AI训练/推理绝对主流",
+              global: "NVIDIA独家",
+              cn: "受美国出口管制",
+              level: 1,
+              note: "CUDA生态+25年积累,无替代"
+            },
+            {
+              name: "Broadcom ASIC(Google TPU/Meta MTIA)",
+              role: "云厂商定制ASIC",
+              global: "Broadcom主导Google/Meta",
+              cn: "—",
+              level: 1
+            },
+            {
+              name: "国产AI芯片-华为昇腾",
+              role: "国产替代主力,中芯N+1代工",
+              global: "—",
+              cn: "华为海思,绑定字节15万卡",
+              level: 2,
+              note: "CANN生态待完善"
+            },
+            {
+              name: "国产AI芯片-寒武纪/海光/壁仞",
+              role: "国产替代第二梯队",
+              global: "—",
+              cn: "寒武纪(思元)+海光(类CUDA)+壁仞+摩尔线程",
+              level: 2,
+              stocks: ["688256","688041"]
+            }
+          ]
+        },
+
+        // ---------- 4.2 互连/网络芯片 ----------
+        {
+          name: "互连/网络芯片",
+          children: [
+            {
+              name: "交换芯片(Tomahawk/Jericho)",
+              role: "数据中心交换核心,51.2T是当前主流",
+              global: "Broadcom垄断",
+              cn: "盛科通信切入,差距3-5年",
+              level: 1,
+              stocks: ["688702"]
+            },
+            {
+              name: "DPU智能网卡",
+              role: "AI集群网络卸载",
+              global: "NVIDIA Bluefield+Marvell+Intel",
+              cn: "中科驭数+云豹智能",
+              level: 2
+            },
+            {
+              name: "DDR5内存接口芯片",
+              role: "服务器内存模组核心",
+              global: "澜起37%+瑞萨+Rambus = 93%",
+              cn: "澜起科技全球第一",
+              level: 4,
+              stocks: ["688008"],
+              note: "中国为数不多的全球第一"
+            },
+            {
+              name: "PCIe Retimer",
+              role: "AI服务器GPU-CPU互联,每台8-16颗",
+              global: "Astera Labs 86%+澜起 11%+谱瑞 3%",
+              cn: "澜起PCIe 5.0全球第二家量产",
+              level: 4,
+              stocks: ["688008"]
+            },
+            {
+              name: "CXL/MXC芯片",
+              role: "内存池化下一代标准",
+              global: "Astera+Microchip+澜起",
+              cn: "澜起MXC已送样",
+              level: 4,
+              stocks: ["688008"]
+            }
+          ]
+        },
+
+        // ---------- 4.3 光芯片 ----------
+        {
+          name: "光芯片",
+          children: [
+            {
+              name: "EML激光器(800G/1.6T核心)",
+              role: "高速光模块光源,200G/lane用于1.6T",
+              global: "Coherent+Lumentum+II-VI(美系3家垄断)",
+              cn: "源杰DFB量产,EML研发中;海信宽带跟进",
+              level: 1,
+              stocks: ["688498"],
+              note: "全球最紧缺,排单到2027,InP衬底也卡在住友"
+            },
+            {
+              name: "DFB激光器",
+              role: "100G/200G光模块光源",
+              global: "Coherent+Lumentum",
+              cn: "源杰+光迅+海信宽带量产",
+              level: 3,
+              stocks: ["688498","002281"]
+            },
+            {
+              name: "VCSEL垂直腔激光器",
+              role: "短距+激光雷达",
+              global: "Lumentum+II-VI",
+              cn: "长光华芯+纵慧芯光",
+              level: 3,
+              stocks: ["688048"]
+            },
+            {
+              name: "硅光引擎(SiPh)",
+              role: "下一代低功耗光收发,CPO刚需",
+              global: "Intel+Broadcom+Marvell",
+              cn: "中际旭创+光迅自研中",
+              level: 2,
+              stocks: ["300308","002281"]
+            },
+            {
+              name: "薄膜铌酸锂调制器",
+              role: "1.6T+CPO关键调制器",
+              global: "HyperLight主导",
+              cn: "元芯光电+铌奥光电小批量",
+              level: 2
+            },
+            {
+              name: "DSP数字信号处理芯片",
+              role: "光模块PAM4信号处理",
+              global: "Marvell(收购Inphi)+Broadcom",
+              cn: "华为海思自用",
+              level: 1
+            },
+            {
+              name: "TIA/Driver模拟芯片",
+              role: "光模块跨阻放大器+驱动",
+              global: "Broadcom+Semtech+MACOM",
+              cn: "仕佳光子+源杰研发",
+              level: 2,
+              stocks: ["688313","688498"]
+            },
+            {
+              name: "PIN/APD探测器",
+              role: "光信号接收",
+              global: "Lumentum+II-VI",
+              cn: "光迅+源杰",
+              level: 3,
+              stocks: ["002281","688498"]
+            }
+          ]
+        },
+
+        // ---------- 4.4 存储芯片 ----------
+        {
+          name: "存储芯片",
+          children: [
+            {
+              name: "HBM高带宽存储",
+              role: "AI GPU绝对必备,价值占GPU 30%+",
+              global: "SK海力士50%+三星40%+美光10%",
+              cn: "长鑫存储HBM2研发中",
+              level: 1,
+              note: "HBM3E独供NV,HBM4 2026推出,全球最紧缺存储"
+            },
+            {
+              name: "DRAM(DDR5)",
+              role: "服务器/PC主内存",
+              global: "三星+海力士+美光三巨头90%+",
+              cn: "长鑫存储DDR5量产",
+              level: 2
+            },
+            {
+              name: "NAND Flash(企业级SSD)",
+              role: "AI推理数据存储",
+              global: "三星+海力士+西数+铠侠+美光",
+              cn: "长江存储232层量产",
+              level: 2
+            }
+          ]
+        },
+
+        // ---------- 4.5 晶圆代工 ----------
+        {
+          name: "晶圆代工",
+          children: [
+            {
+              name: "3nm/5nm先进制程",
+              role: "AI GPU/HBM逻辑die制造",
+              global: "TSMC独家3nm,三星跟进GAA",
+              cn: "中芯N+2~7nm,无EUV",
+              level: 1,
+              note: "中国买不到先进设备"
+            },
+            {
+              name: "12-14nm制程",
+              role: "中端芯片",
+              global: "TSMC+三星",
+              cn: "中芯14nm量产+华虹",
+              level: 2,
+              stocks: ["688981","688347"]
+            },
+            {
+              name: "28nm及以上(成熟制程)",
+              role: "大量芯片基础需求",
+              global: "TSMC+UMC+格芯",
+              cn: "中芯+华虹+晶合主导,2025-27扩产高峰",
+              level: 3,
+              stocks: ["688981","688347","688249"],
+              note: "AI拉动成熟制程供不应求"
+            }
+          ]
+        },
+
+        // ---------- 4.6 先进封装 ----------
+        {
+          name: "先进封装",
+          children: [
+            {
+              name: "CoWoS 2.5D封装",
+              role: "GPU+HBM一体化封装,AI GPU瓶颈",
+              global: "TSMC独家,Amkor+ASE跟进",
+              cn: "长电+通富研发中",
+              level: 1,
+              stocks: ["600584","002156"],
+              note: "CoWoS产能售罄至2026"
+            },
+            {
+              name: "硅中介层(TSV/RDL)",
+              role: "CoWoS核心层",
+              global: "TSMC+Amkor",
+              cn: "长电+通富",
+              level: 2,
+              stocks: ["600584","002156"]
+            },
+            {
+              name: "微凸块(μBump)电镀",
+              role: "die间互连",
+              global: "TSMC+Amkor",
+              cn: "通富+长电",
+              level: 2,
+              stocks: ["002156","600584"]
+            },
+            {
+              name: "混合键合(Hybrid Bonding)",
+              role: "HBM4+下一代3D集成",
+              global: "TSMC+SK海力士+Xperi(专利)",
+              cn: "长电研发,华海清科CMP配套",
+              level: 1,
+              stocks: ["600584","688120"]
+            },
+            {
+              name: "FOWLP扇出型晶圆级封装",
+              role: "AI芯片新型封装",
+              global: "TSMC InFO+ASE+Amkor",
+              cn: "通富+晶方+华天",
+              level: 2,
+              stocks: ["002156","603005","002185"]
+            },
+            {
+              name: "国产OSAT封测",
+              role: "国产封测三强",
+              global: "—",
+              cn: "长电(全球第三)+通富+华天",
+              level: 3,
+              stocks: ["600584","002156","002185"]
+            }
+          ]
+        }
+      ]
+    },
+
+    // ============================================================
+    // 五、光模块与互连
+    // ============================================================
+    {
+      name: "中游·光模块与互连",
+      desc: "中国在光模块端是全球第一,800G+1.6T占70%+,但上游EML+DSP仍依赖美系",
+      children: [
+        {
+          name: "光模块整机",
+          children: [
+            {
+              name: "800G光模块",
+              role: "2024-2025数据中心主流",
+              global: "中际23%+Coherent17%+新易盛14%",
+              cn: "中际旭创全球第一,中国厂商占70%+",
+              level: 3,
+              stocks: ["300308","300502","002281"]
+            },
+            {
+              name: "1.6T光模块",
+              role: "2025下半年起量,2026主力",
+              global: "中际旭创50-70%市占",
+              cn: "中际+新易盛领先,绑定NV/谷歌",
+              level: 3,
+              stocks: ["300308","300502"],
+              note: "EML 200G/lane是瓶颈"
+            },
+            {
+              name: "3.2T光模块(下一代)",
+              role: "2028商用",
+              global: "Coherent+华工科技+光迅已发布",
+              cn: "中际+华工+光迅研发中",
+              level: 3,
+              stocks: ["300308","000988","002281"]
+            },
+            {
+              name: "AOC有源光缆",
+              role: "短距互联",
+              global: "Finisar+中际",
+              cn: "中际+光迅+剑桥科技",
+              level: 3,
+              stocks: ["300308","002281","603083"]
+            }
+          ]
+        },
+        {
+          name: "光模块上游器件",
+          children: [
+            {
+              name: "光引擎(TOSA/ROSA)",
+              role: "光模块发射/接收核心组件",
+              global: "Fabrinet代工+天孚+II-VI",
+              cn: "天孚通信全球30%+,中际自研",
+              level: 4,
+              stocks: ["300394","300308"]
+            },
+            {
+              name: "光纤阵列FAU",
+              role: "光纤与芯片耦合,CPO关键",
+              global: "USConec+TE+太辰光",
+              cn: "太辰光+天孚",
+              level: 3,
+              stocks: ["300570","300394"]
+            },
+            {
+              name: "MPO/MTP连接器",
+              role: "高密度光纤连接",
+              global: "USConec+SENKO+Corning",
+              cn: "天孚+太辰光+长飞",
+              level: 3,
+              stocks: ["300394","300570","601869"]
+            },
+            {
+              name: "AWG阵列波导光栅",
+              role: "波分复用",
+              global: "NeoPhotonics+仕佳光子",
+              cn: "仕佳光子华为供应商",
+              level: 3,
+              stocks: ["688313"]
+            },
+            {
+              name: "光开关(OXC)",
+              role: "光路切换,AI集群关键",
+              global: "Lumentum+Lightmatter",
+              cn: "光迅+天孚",
+              level: 2,
+              stocks: ["002281","300394"]
+            },
+            {
+              name: "陶瓷套管/光器件壳体",
+              role: "无源光器件外壳",
+              global: "京瓷+NTT-AT",
+              cn: "天孚+太辰光",
+              level: 3,
+              stocks: ["300394","300570"]
+            }
+          ]
+        },
+        {
+          name: "光模块制造与测试",
+          children: [
+            {
+              name: "光模块自动耦合设备",
+              role: "1.6T耦合精度<0.5μm",
+              global: "ficonTEC(德,被罗博特科收购)+Fabrinet",
+              cn: "罗博特科(ficonTEC母公司)",
+              level: 3,
+              stocks: ["300757"],
+              note: "1.6T良率提升的关键瓶颈设备"
+            },
+            {
+              name: "光模块老化测试设备",
+              role: "可靠性验证",
+              global: "Keysight+EXFO",
+              cn: "—",
+              level: 2
+            },
+            {
+              name: "PCBA组装",
+              role: "光模块电路板装配",
+              global: "Fabrinet+中际自有",
+              cn: "中际+新易盛+天孚自有产线",
+              level: 3,
+              stocks: ["300308","300502","300394"]
+            }
+          ]
+        },
+        {
+          name: "高速电互联",
+          children: [
+            {
+              name: "DAC高速铜缆(112G/224G)",
+              role: "GB200机柜内互联,低成本",
+              global: "Amphenol 35%+TE+立讯",
+              cn: "立讯精密+沃尔核材+神宇+兆龙",
+              level: 3,
+              stocks: ["002475","002130","300563","603004"]
+            },
+            {
+              name: "高速背板连接器",
+              role: "服务器内部高速信号",
+              global: "Amphenol+TE+Molex",
+              cn: "中航光电+华丰+意华",
+              level: 3,
+              stocks: ["002179","688535","002897"]
+            },
+            {
+              name: "高速线缆+线材",
+              role: "DAC内部高速差分对",
+              global: "万达通+古河",
+              cn: "沃尔核材+神宇股份",
+              level: 3,
+              stocks: ["002130","300563"]
+            },
+            {
+              name: "射频/电源连接器",
+              role: "服务器电源+射频",
+              global: "Amphenol+TE",
+              cn: "中航+金信诺+创益通",
+              level: 3,
+              stocks: ["002179","300252"]
+            }
+          ]
+        },
+        {
+          name: "网络架构(Scale-up/out)",
+          children: [
+            {
+              name: "InfiniBand交换机",
+              role: "AI训练集群Scale-out网络",
+              global: "NVIDIA/Mellanox独家",
+              cn: "—",
+              level: 1
+            },
+            {
+              name: "高速以太网交换机",
+              role: "Scale-out替代IB,UEC联盟主推",
+              global: "Arista+Cisco+Broadcom芯片",
+              cn: "新华三+锐捷",
+              level: 2,
+              stocks: ["301165"]
+            },
+            {
+              name: "NVLink Scale-up互联",
+              role: "GPU机柜内互联,GB200 NVL72关键",
+              global: "NVIDIA独家",
+              cn: "华为UB-Mesh对标",
+              level: 1
+            },
+            {
+              name: "CPO共封装光学",
+              role: "下一代低功耗光互连,2025商用元年",
+              global: "Broadcom+Intel+NVIDIA",
+              cn: "中际+天孚+太辰光配套",
+              level: 2,
+              stocks: ["300308","300394","300570"]
+            }
+          ]
+        }
+      ]
+    },
+
+    // ============================================================
+    // 六、服务器系统与液冷
+    // ============================================================
+    {
+      name: "中游·服务器系统",
+      desc: "中国在AI服务器代工是全球主力,但毛利率薄;液冷+电源是新增量",
+      children: [
+        {
+          name: "AI服务器整机",
+          children: [
+            {
+              name: "AI服务器代工(NV机柜)",
+              role: "GB200/GB300机柜级整机交付",
+              global: "工业富联+Quanta+Wistron+Supermicro",
+              cn: "工业富联全球最大NV机柜代工,浪潮+联想",
+              level: 3,
+              stocks: ["601138","000977"],
+              note: "毛利4-8%但量大,Q4单季净利128亿"
+            },
+            {
+              name: "服务器主板/PCBA",
+              role: "服务器核心电路板",
+              global: "—",
+              cn: "工业富联+广达+华勤+沪电PCB",
+              level: 3,
+              stocks: ["601138","002463","603296"]
+            },
+            {
+              name: "服务器机柜/结构件",
+              role: "Rack钣金/机柜",
+              global: "Vertiv+伊顿+富士康",
+              cn: "工业富联+立讯+英维克",
+              level: 3,
+              stocks: ["601138","002475","002837"]
+            }
+          ]
+        },
+        {
+          name: "液冷系统",
+          children: [
+            {
+              name: "冷板式液冷整体方案",
+              role: "GB200/300主流方案,机柜级集成",
+              global: "Vertiv+CoolIT+英维克",
+              cn: "英维克进NV NVL72 RVL名单",
+              level: 3,
+              stocks: ["002837"],
+              note: "2026液冷大年"
+            },
+            {
+              name: "CDU冷却分配单元",
+              role: "液冷核心控制单元",
+              global: "Vertiv+CoolIT+Boyd",
+              cn: "英维克+高澜+曙光数创",
+              level: 3,
+              stocks: ["002837","300499","872808"]
+            },
+            {
+              name: "冷板(Cold Plate)",
+              role: "贴芯片散热板",
+              global: "CoolIT+Aavid",
+              cn: "英维克+高澜+飞荣达",
+              level: 3,
+              stocks: ["002837","300499","300602"]
+            },
+            {
+              name: "Manifold分歧管",
+              role: "冷却液分配",
+              global: "CoolIT+Boyd",
+              cn: "英维克+申菱",
+              level: 3,
+              stocks: ["002837","301018"]
+            },
+            {
+              name: "QDC快接头",
+              role: "免漏插拔接头",
+              global: "Staubli(瑞)+CPC(美)垄断",
+              cn: "英维克自研+研发突破中",
+              level: 2,
+              stocks: ["002837"],
+              note: "GB300单机柜数百对,弹性大"
+            },
+            {
+              name: "冷却液(单相/水基)",
+              role: "冷板式介质",
+              global: "3M+Dow",
+              cn: "英维克+巨化",
+              level: 3,
+              stocks: ["002837","600160"]
+            },
+            {
+              name: "氟化液(浸没式)",
+              role: "浸没式液冷介质",
+              global: "3M Novec/FC垄断,2025退出PFAS",
+              cn: "巨化+新宙邦小批量,3M退出后机会",
+              level: 2,
+              stocks: ["600160","300037"]
+            },
+            {
+              name: "浸没式液冷整机",
+              role: "高密度机柜终极方案",
+              global: "GRC+Submer+曙光",
+              cn: "曙光数创+英维克+申菱",
+              level: 3,
+              stocks: ["872808","002837","301018"]
+            },
+            {
+              name: "数据中心精密空调(配套)",
+              role: "传统风冷+液冷混合",
+              global: "Vertiv+施耐德",
+              cn: "英维克+佳力图+申菱+高澜",
+              level: 3,
+              stocks: ["002837","603912","301018"]
+            },
+            {
+              name: "泄漏检测/RDHx",
+              role: "液冷安全监控+后门散热",
+              global: "Vertiv+nVent",
+              cn: "英维克+高澜配套",
+              level: 3,
+              stocks: ["002837"]
+            }
+          ]
+        }
+      ]
+    },
+
+    // ============================================================
+    // 七、数据中心电力
+    // ============================================================
+    {
+      name: "中游·数据中心电力",
+      desc: "AI单机柜140-600kW,电力链是2024-26北美涨幅最猛的方向,A股低估",
+      children: [
+        {
+          name: "服务器电源",
+          children: [
+            {
+              name: "AI服务器PSU(高功率)",
+              role: "GB200/300机柜级电源,单机柜33kW+",
+              global: "台达+光宝+伟创力+麦格米特",
+              cn: "麦格米特进NV指定供应商,欧陆通+长城跟进",
+              level: 3,
+              stocks: ["002851","300870"],
+              note: "全球AI电源市场45% CAGR"
+            },
+            {
+              name: "BBU备用电池",
+              role: "GB300超容+锂电模组",
+              global: "台达+光宝+麦格米特集成",
+              cn: "宁德+亿纬+欣旺达供电芯",
+              level: 3,
+              stocks: ["002851","300014","300207"]
+            },
+            {
+              name: "超级电容(LIC锂离子电容)",
+              role: "瞬时高功率削峰填谷",
+              global: "武藏精密(日)垄断",
+              cn: "江海股份深度配合",
+              level: 2,
+              stocks: ["002484"]
+            }
+          ]
+        },
+        {
+          name: "数据中心配电",
+          children: [
+            {
+              name: "HVDC高压直流",
+              role: "800V直流架构,NV推动方向",
+              global: "施耐德+维谛+台达",
+              cn: "中恒电气+科华+科士达",
+              level: 3,
+              stocks: ["002364","002335","002518"]
+            },
+            {
+              name: "UPS不间断电源",
+              role: "传统数据中心备电",
+              global: "施耐德+维谛+伊顿",
+              cn: "科华+科士达+易事特",
+              level: 3,
+              stocks: ["002335","002518","300376"]
+            },
+            {
+              name: "母线槽/低压配电",
+              role: "数据中心内部配电",
+              global: "施耐德+ABB+伊顿",
+              cn: "正泰+众业达+合纵科技",
+              level: 3,
+              stocks: ["601877","002441"]
+            }
+          ]
+        },
+        {
+          name: "数据中心专用变压器",
+          children: [
+            {
+              name: "干式变压器(数据中心专用)",
+              role: "园区级配电核心",
+              global: "ABB+伊顿+施耐德",
+              cn: "金盘科技北美出口暴增,望变",
+              level: 3,
+              stocks: ["688676","603191"],
+              note: "北美交期2-3年,被低估弹性"
+            },
+            {
+              name: "中压开关柜",
+              role: "数据中心高压侧",
+              global: "ABB+施耐德",
+              cn: "思源+许继+宏盛华源",
+              level: 3,
+              stocks: ["002028","000400","601096"]
+            }
+          ]
+        },
+        {
+          name: "上游能源",
+          children: [
+            {
+              name: "燃气轮机",
+              role: "数据中心专用发电,北美热点",
+              global: "GE Vernova+西门子能源+三菱",
+              cn: "上海电气+东方电气有产品",
+              level: 2,
+              stocks: ["601727","600875"],
+              note: "北美数据中心绕过电网建自备电站"
+            },
+            {
+              name: "核电(SMR小堆)",
+              role: "下一代数据中心稳定电源",
+              global: "NuScale+Westinghouse+Holtec",
+              cn: "中核+中广核",
+              level: 2,
+              stocks: ["601985","003816"]
+            },
+            {
+              name: "电池储能(BESS)",
+              role: "GW级数据中心配套储能",
+              global: "Tesla+宁德+比亚迪",
+              cn: "宁德+亿纬+阳光+比亚迪",
+              level: 3,
+              stocks: ["300750","300014","300274"]
+            },
+            {
+              name: "柴油发电机组",
+              role: "应急备电",
+              global: "Caterpillar+康明斯",
+              cn: "潍柴+玉柴",
+              level: 3,
+              stocks: ["000338"]
+            }
+          ]
+        }
+      ]
+    },
+
+    // ============================================================
+    // 八、下游 · 算力服务与应用
+    // ============================================================
+    {
+      name: "下游·算力服务",
+      desc: "云厂商+IDC运营+智算服务,A股标的较少",
+      children: [
+        {
+          name: "超大规模云",
+          children: [
+            {
+              name: "海外Hyperscaler",
+              role: "全球AI算力主要采购方",
+              global: "AWS+Azure+GCP+Meta+Oracle",
+              cn: "—",
+              level: 1,
+              note: "2026 CapEx合计4700亿USD+"
+            },
+            {
+              name: "中国互联网云",
+              role: "中国AI算力主要部署方",
+              global: "—",
+              cn: "阿里云+腾讯云+百度云+字节火山+华为云",
+              level: 4,
+              stocks: ["00700","09988"],
+              note: "字节15万卡昇腾"
+            }
+          ]
+        },
+        {
+          name: "第三方IDC",
+          children: [
+            {
+              name: "智算IDC运营商",
+              role: "智算中心+机柜租赁",
+              global: "Equinix+Digital Realty",
+              cn: "润泽+万国+世纪互联+科华",
+              level: 3,
+              stocks: ["300442","002335"]
+            },
+            {
+              name: "Neocloud(GPU租赁)",
+              role: "纯GPU算力租赁",
+              global: "CoreWeave+Lambda+Crusoe",
+              cn: "优刻得+商汤大装置",
+              level: 3,
+              stocks: ["688158"]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+};
+</script>
+
+<script>
+// ==================== 估值数据库 ====================
+const valuationDB = {
+  "300308": {
+    "name": "中际旭创",
+    "pe2025": 38,
+    "pe2026": 34,
+    "pe2027": 16,
+    "growth": 168,
+    "peg": 0.2,
+    "note": "1.6T全球龙头"
+  },
+  "300502": {
+    "name": "新易盛",
+    "pe2025": 35,
+    "pe2026": 30,
+    "pe2027": 15,
+    "growth": 93,
+    "peg": 0.32,
+    "note": "硅光突破"
+  },
+  "300394": {
+    "name": "天孚通信",
+    "pe2025": 130,
+    "pe2026": 80,
+    "pe2027": 42,
+    "growth": 62,
+    "peg": 1.29,
+    "note": "光引擎壁垒高"
+  },
+  "002281": {
+    "name": "光迅科技",
+    "pe2025": 45,
+    "pe2026": 35,
+    "pe2027": 25,
+    "growth": 50,
+    "peg": 0.7,
+    "note": "全产业链"
+  },
+  "603083": {
+    "name": "剑桥科技",
+    "pe2025": 60,
+    "pe2026": 45,
+    "pe2027": 30,
+    "growth": 40,
+    "peg": 1.13,
+    "note": "小批量弹性"
+  },
+  "002463": {
+    "name": "沪电股份",
+    "pe2025": 51,
+    "pe2026": 26,
+    "pe2027": 17,
+    "growth": 49,
+    "peg": 0.53,
+    "note": "AI PCB龙头"
+  },
+  "002916": {
+    "name": "深南电路",
+    "pe2025": 40,
+    "pe2026": 30,
+    "pe2027": 22,
+    "growth": 45,
+    "peg": 0.67,
+    "note": "IC载板突破"
+  },
+  "600183": {
+    "name": "生益科技",
+    "pe2025": 35,
+    "pe2026": 25,
+    "pe2027": 18,
+    "growth": 35,
+    "peg": 0.71,
+    "note": "高速CCL"
+  },
+  "002371": {
+    "name": "北方华创",
+    "pe2025": 70,
+    "pe2026": 58,
+    "pe2027": 43,
+    "growth": 48,
+    "peg": 1.21,
+    "note": "平台化龙头"
+  },
+  "688012": {
+    "name": "中微公司",
+    "pe2025": 120,
+    "pe2026": 76,
+    "pe2027": 57,
+    "growth": 48,
+    "peg": 1.58,
+    "note": "刻蚀全球第二"
+  },
+  "688082": {
+    "name": "盛美上海",
+    "pe2025": 55,
+    "pe2026": 40,
+    "pe2027": 30,
+    "growth": 40,
+    "peg": 1.0,
+    "note": "清洗设备"
+  },
+  "688072": {
+    "name": "拓荆科技",
+    "pe2025": 65,
+    "pe2026": 45,
+    "pe2027": 30,
+    "growth": 55,
+    "peg": 0.82,
+    "note": "薄膜沉积"
+  },
+  "688037": {
+    "name": "芯源微",
+    "pe2025": 80,
+    "pe2026": 55,
+    "pe2027": 35,
+    "growth": 50,
+    "peg": 1.1,
+    "note": "涂胶显影"
+  },
+  "688120": {
+    "name": "华海清科",
+    "pe2025": 50,
+    "pe2026": 38,
+    "pe2027": 28,
+    "growth": 45,
+    "peg": 0.84,
+    "note": "CMP国产唯一"
+  },
+  "300820": {
+    "name": "英杰电气",
+    "pe2025": 35,
+    "pe2026": 25,
+    "pe2027": 18,
+    "growth": 40,
+    "peg": 0.63,
+    "note": "射频电源"
+  },
+  "688409": {
+    "name": "富创精密",
+    "pe2025": 80,
+    "pe2026": 50,
+    "pe2027": 35,
+    "growth": 60,
+    "peg": 0.83,
+    "note": "零部件平台"
+  },
+  "301269": {
+    "name": "华大九天",
+    "pe2025": 200,
+    "pe2026": 120,
+    "pe2027": 80,
+    "growth": 50,
+    "peg": 2.4,
+    "note": "EDA国产化"
+  },
+  "688521": {
+    "name": "芯原股份",
+    "pe2025": -200,
+    "pe2026": -100,
+    "pe2027": 300,
+    "growth": 50,
+    "peg": null,
+    "note": "IP授权+芯片定制"
+  },
+  "688008": {
+    "name": "澜起科技",
+    "pe2025": 60,
+    "pe2026": 35,
+    "pe2027": 25,
+    "growth": 60,
+    "peg": 0.58,
+    "note": "DDR5+PCIe全球第一"
+  },
+  "688256": {
+    "name": "寒武纪",
+    "pe2025": -100,
+    "pe2026": -80,
+    "pe2027": -50,
+    "growth": 80,
+    "peg": null,
+    "note": "思元590放量"
+  },
+  "688041": {
+    "name": "海光信息",
+    "pe2025": 120,
+    "pe2026": 70,
+    "pe2027": 45,
+    "growth": 60,
+    "peg": 1.17,
+    "note": "DCU+CPU"
+  },
+  "688702": {
+    "name": "盛科通信",
+    "pe2025": -200,
+    "pe2026": -150,
+    "pe2027": -100,
+    "growth": 50,
+    "peg": null,
+    "note": "交换芯片"
+  },
+  "688498": {
+    "name": "源杰科技",
+    "pe2025": 200,
+    "pe2026": 80,
+    "pe2027": 40,
+    "growth": 100,
+    "peg": 0.8,
+    "note": "DFB量产/EML在研"
+  },
+  "688048": {
+    "name": "长光华芯",
+    "pe2025": -80,
+    "pe2026": -60,
+    "pe2027": 200,
+    "growth": 80,
+    "peg": null,
+    "note": "VCSEL+光纤激光"
+  },
+  "688313": {
+    "name": "仕佳光子",
+    "pe2025": 100,
+    "pe2026": 55,
+    "pe2027": 35,
+    "growth": 65,
+    "peg": 0.85,
+    "note": "AWG+DFB"
+  },
+  "600584": {
+    "name": "长电科技",
+    "pe2025": 49,
+    "pe2026": 36,
+    "pe2027": 28,
+    "growth": 36,
+    "peg": 1.0,
+    "note": "先进封装"
+  },
+  "002156": {
+    "name": "通富微电",
+    "pe2025": 65,
+    "pe2026": 40,
+    "pe2027": 25,
+    "growth": 50,
+    "peg": 0.8,
+    "note": "AMD封装"
+  },
+  "002185": {
+    "name": "华天科技",
+    "pe2025": 50,
+    "pe2026": 35,
+    "pe2027": 25,
+    "growth": 45,
+    "peg": 0.78,
+    "note": "车规封测"
+  },
+  "601138": {
+    "name": "工业富联",
+    "pe2025": 28,
+    "pe2026": 17.5,
+    "pe2027": 12.4,
+    "growth": 63,
+    "peg": 0.28,
+    "note": "NV机柜代工"
+  },
+  "000977": {
+    "name": "浪潮信息",
+    "pe2025": 50,
+    "pe2026": 30,
+    "pe2027": 20,
+    "growth": 60,
+    "peg": 0.5,
+    "note": "AI服务器"
+  },
+  "002475": {
+    "name": "立讯精密",
+    "pe2025": 25,
+    "pe2026": 18,
+    "pe2027": 14,
+    "growth": 40,
+    "peg": 0.45,
+    "note": "DAC+连接器"
+  },
+  "002837": {
+    "name": "英维克",
+    "pe2025": 60,
+    "pe2026": 35,
+    "pe2027": 22,
+    "growth": 55,
+    "peg": 0.64,
+    "note": "液冷进NV名单"
+  },
+  "300499": {
+    "name": "高澜股份",
+    "pe2025": 50,
+    "pe2026": 35,
+    "pe2027": 22,
+    "growth": 50,
+    "peg": 0.7,
+    "note": "CDU冷板"
+  },
+  "300602": {
+    "name": "飞荣达",
+    "pe2025": 40,
+    "pe2026": 25,
+    "pe2027": 18,
+    "growth": 60,
+    "peg": 0.42,
+    "note": "导热材料"
+  },
+  "301018": {
+    "name": "申菱环境",
+    "pe2025": 40,
+    "pe2026": 25,
+    "pe2027": 18,
+    "growth": 50,
+    "peg": 0.5,
+    "note": "液冷代工"
+  },
+  "002851": {
+    "name": "麦格米特",
+    "pe2025": 80,
+    "pe2026": 50,
+    "pe2027": 30,
+    "growth": 65,
+    "peg": 0.77,
+    "note": "NV指定电源"
+  },
+  "300870": {
+    "name": "欧陆通",
+    "pe2025": 45,
+    "pe2026": 25,
+    "pe2027": 16,
+    "growth": 80,
+    "peg": 0.31,
+    "note": "AI电源"
+  },
+  "002484": {
+    "name": "江海股份",
+    "pe2025": 35,
+    "pe2026": 25,
+    "pe2027": 18,
+    "growth": 45,
+    "peg": 0.56,
+    "note": "超级电容"
+  },
+  "002364": {
+    "name": "中恒电气",
+    "pe2025": 50,
+    "pe2026": 25,
+    "pe2027": 15,
+    "growth": 80,
+    "peg": 0.31,
+    "note": "HVDC"
+  },
+  "002335": {
+    "name": "科华数据",
+    "pe2025": 40,
+    "pe2026": 22,
+    "pe2027": 15,
+    "growth": 60,
+    "peg": 0.37,
+    "note": "UPS+IDC"
+  },
+  "002518": {
+    "name": "科士达",
+    "pe2025": 25,
+    "pe2026": 18,
+    "pe2027": 14,
+    "growth": 40,
+    "peg": 0.45,
+    "note": "UPS"
+  },
+  "688676": {
+    "name": "金盘科技",
+    "pe2025": 35,
+    "pe2026": 20,
+    "pe2027": 14,
+    "growth": 65,
+    "peg": 0.31,
+    "note": "北美变压器"
+  },
+  "603191": {
+    "name": "望变电气",
+    "pe2025": 30,
+    "pe2026": 18,
+    "pe2027": 13,
+    "growth": 60,
+    "peg": 0.3,
+    "note": "变压器出海"
+  },
+  "688126": {
+    "name": "沪硅产业",
+    "pe2025": -200,
+    "pe2026": -150,
+    "pe2027": -100,
+    "growth": 30,
+    "peg": null,
+    "note": "300mm硅片"
+  },
+  "688019": {
+    "name": "安集科技",
+    "pe2025": 55,
+    "pe2026": 38,
+    "pe2027": 28,
+    "growth": 50,
+    "peg": 0.76,
+    "note": "CMP抛光液"
+  },
+  "300054": {
+    "name": "鼎龙股份",
+    "pe2025": 65,
+    "pe2026": 40,
+    "pe2027": 28,
+    "growth": 50,
+    "peg": 0.8,
+    "note": "CMP抛光垫"
+  },
+  "300666": {
+    "name": "江丰电子",
+    "pe2025": 55,
+    "pe2026": 35,
+    "pe2027": 25,
+    "growth": 55,
+    "peg": 0.64,
+    "note": "靶材"
+  },
+  "688268": {
+    "name": "华特气体",
+    "pe2025": 40,
+    "pe2026": 25,
+    "pe2027": 18,
+    "growth": 50,
+    "peg": 0.5,
+    "note": "电子特气"
+  },
+  "002409": {
+    "name": "雅克科技",
+    "pe2025": 40,
+    "pe2026": 25,
+    "pe2027": 18,
+    "growth": 55,
+    "peg": 0.45,
+    "note": "前驱体"
+  },
+  "300346": {
+    "name": "南大光电",
+    "pe2025": 80,
+    "pe2026": 45,
+    "pe2027": 30,
+    "growth": 60,
+    "peg": 0.75,
+    "note": "ArF光刻胶"
+  },
+  "300655": {
+    "name": "晶瑞电材",
+    "pe2025": 60,
+    "pe2026": 35,
+    "pe2027": 22,
+    "growth": 70,
+    "peg": 0.5,
+    "note": "KrF光刻胶"
+  },
+  "688138": {
+    "name": "清溢光电",
+    "pe2025": 55,
+    "pe2026": 35,
+    "pe2027": 22,
+    "growth": 60,
+    "peg": 0.58,
+    "note": "光掩模版"
+  },
+  "002222": {
+    "name": "福晶科技",
+    "pe2025": 50,
+    "pe2026": 30,
+    "pe2027": 20,
+    "growth": 65,
+    "peg": 0.46,
+    "note": "TGG晶体"
+  },
+  "601869": {
+    "name": "长飞光纤",
+    "pe2025": 25,
+    "pe2026": 18,
+    "pe2027": 14,
+    "growth": 40,
+    "peg": 0.45,
+    "note": "光纤预制棒"
+  },
+  "603688": {
+    "name": "石英股份",
+    "pe2025": 20,
+    "pe2026": 15,
+    "pe2027": 12,
+    "growth": 35,
+    "peg": 0.43,
+    "note": "高纯石英砂"
+  },
+  "600111": {
+    "name": "北方稀土",
+    "pe2025": 35,
+    "pe2026": 22,
+    "pe2027": 16,
+    "growth": 60,
+    "peg": 0.37,
+    "note": "轻稀土"
+  },
+  "300684": {
+    "name": "中石科技",
+    "pe2025": 45,
+    "pe2026": 25,
+    "pe2027": 17,
+    "growth": 80,
+    "peg": 0.31,
+    "note": "TIM导热"
+  },
+  "002130": {
+    "name": "沃尔核材",
+    "pe2025": 40,
+    "pe2026": 22,
+    "pe2027": 14,
+    "growth": 85,
+    "peg": 0.26,
+    "note": "224G铜缆"
+  },
+  "300563": {
+    "name": "神宇股份",
+    "pe2025": 60,
+    "pe2026": 30,
+    "pe2027": 18,
+    "growth": 100,
+    "peg": 0.3,
+    "note": "DAC线缆"
+  },
+  "002179": {
+    "name": "中航光电",
+    "pe2025": 30,
+    "pe2026": 22,
+    "pe2027": 16,
+    "growth": 40,
+    "peg": 0.55,
+    "note": "军工连接器"
+  },
+  "300570": {
+    "name": "太辰光",
+    "pe2025": 60,
+    "pe2026": 30,
+    "pe2027": 18,
+    "growth": 90,
+    "peg": 0.33,
+    "note": "光纤阵列FAU"
+  },
+  "000988": {
+    "name": "华工科技",
+    "pe2025": 35,
+    "pe2026": 20,
+    "pe2027": 15,
+    "growth": 75,
+    "peg": 0.27,
+    "note": "3.2T光模块"
+  },
+  "300252": {
+    "name": "金信诺",
+    "pe2025": -50,
+    "pe2026": 40,
+    "pe2027": 20,
+    "growth": 200,
+    "peg": 0.2,
+    "note": "高速连接器"
+  },
+  "002158": {
+    "name": "汉钟精机",
+    "pe2025": 20,
+    "pe2026": 15,
+    "pe2027": 12,
+    "growth": 30,
+    "peg": 0.5,
+    "note": "真空泵"
+  },
+  "603690": {
+    "name": "至纯科技",
+    "pe2025": 35,
+    "pe2026": 20,
+    "pe2027": 14,
+    "growth": 75,
+    "peg": 0.27,
+    "note": "湿法设备"
+  },
+  "688535": {
+    "name": "华海诚科",
+    "pe2025": 120,
+    "pe2026": 65,
+    "pe2027": 35,
+    "growth": 70,
+    "peg": 0.93,
+    "note": "EMC塑封料"
+  },
+  "688035": {
+    "name": "德邦科技",
+    "pe2025": 55,
+    "pe2026": 30,
+    "pe2027": 18,
+    "growth": 80,
+    "peg": 0.38,
+    "note": "底填胶+TIM"
+  },
+  "603005": {
+    "name": "晶方科技",
+    "pe2025": 60,
+    "pe2026": 35,
+    "pe2027": 20,
+    "growth": 75,
+    "peg": 0.47,
+    "note": "晶圆级封装"
+  },
+  "002028": {
+    "name": "思源电气",
+    "pe2025": 30,
+    "pe2026": 22,
+    "pe2027": 16,
+    "growth": 35,
+    "peg": 0.63,
+    "note": "中压开关"
+  },
+  "300750": {
+    "name": "宁德时代",
+    "pe2025": 25,
+    "pe2026": 18,
+    "pe2027": 14,
+    "growth": 35,
+    "peg": 0.51,
+    "note": "全球电池龙头"
+  },
+  "300014": {
+    "name": "亿纬锂能",
+    "pe2025": 25,
+    "pe2026": 18,
+    "pe2027": 14,
+    "growth": 40,
+    "peg": 0.45,
+    "note": "BBU电芯"
+  },
+  "300604": {
+    "name": "长川科技",
+    "pe2025": 80,
+    "pe2026": 45,
+    "pe2027": 28,
+    "growth": 55,
+    "peg": 0.82,
+    "note": "ATE测试机"
+  },
+  "688200": {
+    "name": "华峰测控",
+    "pe2025": 60,
+    "pe2026": 35,
+    "pe2027": 22,
+    "growth": 50,
+    "peg": 0.7,
+    "note": "模拟测试机"
+  },
+  "300567": {
+    "name": "精测电子",
+    "pe2025": 70,
+    "pe2026": 35,
+    "pe2027": 20,
+    "growth": 100,
+    "peg": 0.35,
+    "note": "检测设备"
+  },
+  "688361": {
+    "name": "中科飞测",
+    "pe2025": 200,
+    "pe2026": 100,
+    "pe2027": 50,
+    "growth": 80,
+    "peg": 1.25,
+    "note": "缺陷检测"
+  },
+  "300442": {
+    "name": "润泽科技",
+    "pe2025": 45,
+    "pe2026": 25,
+    "pe2027": 18,
+    "growth": 80,
+    "peg": 0.31,
+    "note": "智算IDC"
+  },
+  "688158": {
+    "name": "优刻得",
+    "pe2025": -30,
+    "pe2026": -20,
+    "pe2027": -15,
+    "growth": 30,
+    "peg": null,
+    "note": "GPU租赁"
+  },
+  "002897": {
+    "name": "意华股份",
+    "pe2025": 35,
+    "pe2026": 20,
+    "pe2027": 14,
+    "growth": 75,
+    "peg": 0.27,
+    "note": "高速连接器"
+  },
+  "300757": {
+    "name": "罗博特科",
+    "pe2025": 200,
+    "pe2026": 60,
+    "pe2027": 30,
+    "growth": 200,
+    "peg": 0.3,
+    "note": "ficonTEC光耦合"
+  },
+  "603004": {
+    "name": "兆龙互连",
+    "pe2025": 70,
+    "pe2026": 30,
+    "pe2027": 17,
+    "growth": 130,
+    "peg": 0.23,
+    "note": "高速线缆"
+  },
+  "688147": {
+    "name": "微导纳米",
+    "pe2025": 70,
+    "pe2026": 35,
+    "pe2027": 20,
+    "growth": 100,
+    "peg": 0.35,
+    "note": "ALD设备"
+  },
+  "688249": {
+    "name": "晶合集成",
+    "pe2025": 80,
+    "pe2026": 45,
+    "pe2027": 25,
+    "growth": 120,
+    "peg": 0.38,
+    "note": "晶圆代工"
+  },
+  "688347": {
+    "name": "华虹公司",
+    "pe2025": 50,
+    "pe2026": 35,
+    "pe2027": 25,
+    "growth": 45,
+    "peg": 0.78,
+    "note": "成熟制程代工"
+  },
+  "688981": {
+    "name": "中芯国际",
+    "pe2025": 120,
+    "pe2026": 80,
+    "pe2027": 50,
+    "growth": 30,
+    "peg": 2.67,
+    "note": "国产代工龙头"
+  },
+  "002436": {
+    "name": "兴森科技",
+    "pe2025": 60,
+    "pe2026": 35,
+    "pe2027": 22,
+    "growth": 70,
+    "peg": 0.5,
+    "note": "IC载板"
+  },
+  "301165": {
+    "name": "锐捷网络",
+    "pe2025": 50,
+    "pe2026": 30,
+    "pe2027": 20,
+    "growth": 65,
+    "peg": 0.46,
+    "note": "以太网交换机"
+  },
+  "002802": {
+    "name": "博威合金",
+    "pe2025": 18,
+    "pe2026": 14,
+    "pe2027": 11,
+    "growth": 30,
+    "peg": 0.47,
+    "note": "键合丝"
+  },
+  "002129": {
+    "name": "TCL中环",
+    "pe2025": -20,
+    "pe2026": -15,
+    "pe2027": 25,
+    "growth": 50,
+    "peg": null,
+    "note": "硅片"
+  },
+  "301511": {
+    "name": "德福科技",
+    "pe2025": 80,
+    "pe2026": 35,
+    "pe2027": 18,
+    "growth": 130,
+    "peg": 0.27,
+    "note": "HVLP铜箔"
+  },
+  "301217": {
+    "name": "铜冠铜箔",
+    "pe2025": -100,
+    "pe2026": 60,
+    "pe2027": 25,
+    "growth": 200,
+    "peg": 0.3,
+    "note": "高端铜箔"
+  },
+  "603078": {
+    "name": "江化微",
+    "pe2025": 55,
+    "pe2026": 30,
+    "pe2027": 18,
+    "growth": 80,
+    "peg": 0.38,
+    "note": "湿电子化学品"
+  },
+  "002407": {
+    "name": "多氟多",
+    "pe2025": 35,
+    "pe2026": 20,
+    "pe2027": 14,
+    "growth": 75,
+    "peg": 0.27,
+    "note": "电子级氢氟酸"
+  },
+  "600160": {
+    "name": "巨化股份",
+    "pe2025": 35,
+    "pe2026": 22,
+    "pe2027": 16,
+    "growth": 55,
+    "peg": 0.4,
+    "note": "氟化工龙头"
+  },
+  "300037": {
+    "name": "新宙邦",
+    "pe2025": 28,
+    "pe2026": 20,
+    "pe2027": 15,
+    "growth": 40,
+    "peg": 0.5,
+    "note": "氟化液"
+  },
+  "002080": {
+    "name": "中材科技",
+    "pe2025": 20,
+    "pe2026": 15,
+    "pe2027": 12,
+    "growth": 35,
+    "peg": 0.43,
+    "note": "玻纤"
+  },
+  "603256": {
+    "name": "宏和科技",
+    "pe2025": 200,
+    "pe2026": 60,
+    "pe2027": 30,
+    "growth": 200,
+    "peg": 0.3,
+    "note": "Low-Dk玻纤布"
+  },
+  "601208": {
+    "name": "东材科技",
+    "pe2025": 40,
+    "pe2026": 22,
+    "pe2027": 15,
+    "growth": 80,
+    "peg": 0.28,
+    "note": "高速树脂"
+  },
+  "605589": {
+    "name": "圣泉集团",
+    "pe2025": 25,
+    "pe2026": 18,
+    "pe2027": 14,
+    "growth": 40,
+    "peg": 0.45,
+    "note": "PPO树脂"
+  },
+  "688519": {
+    "name": "南亚新材",
+    "pe2025": 55,
+    "pe2026": 22,
+    "pe2027": 14,
+    "growth": 150,
+    "peg": 0.15,
+    "note": "高速CCL弹性"
+  },
+  "603186": {
+    "name": "华正新材",
+    "pe2025": 50,
+    "pe2026": 18,
+    "pe2027": 12,
+    "growth": 180,
+    "peg": 0.1,
+    "note": "覆铜板反转"
+  },
+  "600206": {
+    "name": "有研新材",
+    "pe2025": 60,
+    "pe2026": 30,
+    "pe2027": 18,
+    "growth": 100,
+    "peg": 0.3,
+    "note": "靶材+稀土磁粉"
+  },
+  "688106": {
+    "name": "金宏气体",
+    "pe2025": 35,
+    "pe2026": 22,
+    "pe2027": 16,
+    "growth": 50,
+    "peg": 0.44,
+    "note": "电子大宗气"
+  },
+  "872808": {
+    "name": "曙光数创",
+    "pe2025": 80,
+    "pe2026": 35,
+    "pe2027": 18,
+    "growth": 130,
+    "peg": 0.27,
+    "note": "浸没式液冷"
+  },
+  "603912": {
+    "name": "佳力图",
+    "pe2025": 80,
+    "pe2026": 30,
+    "pe2027": 15,
+    "growth": 150,
+    "peg": 0.2,
+    "note": "精密空调"
+  },
+  "300376": {
+    "name": "易事特",
+    "pe2025": 35,
+    "pe2026": 18,
+    "pe2027": 12,
+    "growth": 95,
+    "peg": 0.19,
+    "note": "UPS电源"
+  },
+  "601877": {
+    "name": "正泰电器",
+    "pe2025": 15,
+    "pe2026": 12,
+    "pe2027": 10,
+    "growth": 25,
+    "peg": 0.48,
+    "note": "低压电器"
+  },
+  "002441": {
+    "name": "众业达",
+    "pe2025": 25,
+    "pe2026": 15,
+    "pe2027": 12,
+    "growth": 65,
+    "peg": 0.23,
+    "note": "配电"
+  },
+  "000400": {
+    "name": "许继电气",
+    "pe2025": 30,
+    "pe2026": 20,
+    "pe2027": 15,
+    "growth": 50,
+    "peg": 0.4,
+    "note": "中压开关"
+  },
+  "601096": {
+    "name": "宏盛华源",
+    "pe2025": 45,
+    "pe2026": 20,
+    "pe2027": 12,
+    "growth": 125,
+    "peg": 0.16,
+    "note": "输电铁塔"
+  },
+  "601727": {
+    "name": "上海电气",
+    "pe2025": 45,
+    "pe2026": 25,
+    "pe2027": 15,
+    "growth": 80,
+    "peg": 0.31,
+    "note": "燃气轮机"
+  },
+  "600875": {
+    "name": "东方电气",
+    "pe2025": 18,
+    "pe2026": 14,
+    "pe2027": 12,
+    "growth": 30,
+    "peg": 0.47,
+    "note": "发电设备"
+  },
+  "601985": {
+    "name": "中国核电",
+    "pe2025": 20,
+    "pe2026": 16,
+    "pe2027": 13,
+    "growth": 25,
+    "peg": 0.64,
+    "note": "核电运营"
+  },
+  "003816": {
+    "name": "中国广核",
+    "pe2025": 18,
+    "pe2026": 15,
+    "pe2027": 13,
+    "growth": 20,
+    "peg": 0.75,
+    "note": "核电运营"
+  },
+  "300274": {
+    "name": "阳光电源",
+    "pe2025": 20,
+    "pe2026": 15,
+    "pe2027": 12,
+    "growth": 35,
+    "peg": 0.43,
+    "note": "储能逆变器"
+  },
+  "000338": {
+    "name": "潍柴动力",
+    "pe2025": 15,
+    "pe2026": 12,
+    "pe2027": 10,
+    "growth": 25,
+    "peg": 0.48,
+    "note": "柴油发电"
+  },
+  "001269": {
+    "name": "欧晶科技",
+    "pe2025": -15,
+    "pe2026": -12,
+    "pe2027": 25,
+    "growth": 50,
+    "peg": null,
+    "note": "光伏坩埚亏损收窄"
+  },
+  "300207": {
+    "name": "欣旺达",
+    "pe2025": 35,
+    "pe2026": 22,
+    "pe2027": 15,
+    "growth": 50,
+    "peg": 0.44,
+    "note": "动力电池+消费电芯"
+  },
+  "300395": {
+    "name": "菲利华",
+    "pe2025": 112,
+    "pe2026": 38,
+    "pe2027": 20,
+    "growth": 105,
+    "peg": 0.36,
+    "note": "石英电子布/Rubin催化"
+  },
+  "301095": {
+    "name": "广立微",
+    "pe2025": 132,
+    "pe2026": 88,
+    "pe2027": 57,
+    "growth": 60,
+    "peg": 1.47,
+    "note": "EDA测试设备"
+  },
+  "600259": {
+    "name": "广晟有色",
+    "pe2025": 50,
+    "pe2026": 30,
+    "pe2027": 20,
+    "growth": 60,
+    "peg": 0.5,
+    "note": "中重稀土"
+  },
+  "600392": {
+    "name": "盛和资源",
+    "pe2025": 50,
+    "pe2026": 25,
+    "pe2027": 15,
+    "growth": 120,
+    "peg": 0.21,
+    "note": "稀土全产业链"
+  },
+  "600487": {
+    "name": "亨通光电",
+    "pe2025": 50,
+    "pe2026": 21,
+    "pe2027": 18,
+    "growth": 46,
+    "peg": 0.46,
+    "note": "空芯光纤+海缆"
+  },
+  "600498": {
+    "name": "烽火通信",
+    "pe2025": 60,
+    "pe2026": 35,
+    "pe2027": 25,
+    "growth": 40,
+    "peg": 0.88,
+    "note": "算力底座/光网络"
+  },
+  "600641": {
+    "name": "万业企业",
+    "pe2025": 152,
+    "pe2026": 74,
+    "pe2027": 39,
+    "growth": 100,
+    "peg": 0.74,
+    "note": "离子注入机/铋材料"
+  },
+  "603296": {
+    "name": "华勤技术",
+    "pe2025": 25,
+    "pe2026": 15,
+    "pe2027": 12,
+    "growth": 55,
+    "peg": 0.27,
+    "note": "AI服务器ODM"
+  },
+  "603379": {
+    "name": "三美股份",
+    "pe2025": 18,
+    "pe2026": 15,
+    "pe2027": 12,
+    "growth": 28,
+    "peg": 0.54,
+    "note": "三代制冷剂龙头"
+  },
+  "605020": {
+    "name": "永和股份",
+    "pe2025": 18,
+    "pe2026": 13,
+    "pe2027": 10,
+    "growth": 55,
+    "peg": 0.24,
+    "note": "氟化工全产业链"
+  },
+  "688206": {
+    "name": "概伦电子",
+    "pe2025": 320,
+    "pe2026": 134,
+    "pe2027": 69,
+    "growth": 130,
+    "peg": 1.03,
+    "note": "EDA点工具"
+  },
+  "688303": {
+    "name": "大全能源",
+    "pe2025": -50,
+    "pe2026": -40,
+    "pe2027": 24,
+    "growth": 200,
+    "peg": null,
+    "note": "N型硅料/亏损收窄"
+  },
+  "838402": {
+    "name": "硅烷科技",
+    "pe2025": 35,
+    "pe2026": 20,
+    "pe2027": 14,
+    "growth": 65,
+    "peg": 0.31,
+    "note": "电子级硅烷气"
+  }
+};
+
+// ==================== 公司情报数据库 ====================
+const intelDB = {
+  "300308": {
+    "tech": "1.6T光模块全球首发（比新易盛早15个月），CPO已获英伟达订单，3.2T预研中",
+    "expansion": "预付款从1.3亿飙升至15亿（防御性备货），存货156亿创新高，递表港交所拟赴港二次上市",
+    "supply": "境外收入超90%，前五大客户占比75.98%（谷歌占24%+），高端光/电芯片国产化率不足20%",
+    "orders": "2026Q1获英伟达1.6T CPO订单单笔超300亿，单月需求30万只；占据英伟达1.6T采购量约80%",
+    "catalyst": "2026年1.6T预计10倍增长，3.2T有望2028年量产，港股上市",
+    "risk": "客户集中度过高、存货高企减值风险、汇率波动（2025汇兑损失3.18亿）"
+  },
+  "300502": {
+    "tech": "800G LPO模块功耗降低50%，硅光技术突破，1.6T进入送样阶段",
+    "expansion": "产能持续扩张追赶中际旭创，净利率增速追平旭创",
+    "supply": "绑定Meta和亚马逊，海外收入占比94%+",
+    "orders": "获Meta/亚马逊800G LPO订单，五大云厂全覆盖",
+    "catalyst": "硅光芯片自研进展、1.6T量产",
+    "risk": "与中际旭创技术差距15个月、客户认证周期长"
+  },
+  "002463": {
+    "tech": "AI芯片配套高端PCB（层数/密度升级），泰国基地通过全球头部客户认证",
+    "expansion": "43亿投资高端PCB扩产（2025年6月开工，2026H2试产），泰国基地2025Q2小规模量产",
+    "supply": "全球头部客户AI服务器+交换机双认证通过",
+    "orders": "2026Q1净利12.42亿同比+62.9%",
+    "catalyst": "2026H2新产能释放、泰国基地产值爬坡",
+    "risk": "资本开支高企（前三季21亿购建支出）、竞争加剧"
+  },
+  "002371": {
+    "tech": "刻蚀机营收破100亿（国内前二），薄膜沉积存储破百亿，PVD第1000台交付，离子注入新品落地",
+    "expansion": "芯源微并购整合（补齐涂胶显影），四期扩产投入22亿（进度63%），新增人员4747人",
+    "supply": "国内唯一覆盖前道全流程设备商，零部件自主化率持续提升",
+    "orders": "2025营收393.53亿+30.85%，IC设备营收+50%+",
+    "catalyst": "四期产能释放、芯源微并表、HBM设备放量",
+    "risk": "增收不增利（研发+47%），毛利率降至40.10%"
+  },
+  "688041": {
+    "tech": "DCU+CPU双轮驱动，深算三号对标MI300，7nm工艺量产",
+    "expansion": "产能持续爬坡，2026年预计出货量大幅增长",
+    "supply": "中科曙光系，x86自主可控龙头",
+    "orders": "运营商/政务云/超算核心供应商",
+    "catalyst": "深算三号量产、AI算力政府采购",
+    "risk": "x86架构授权不确定性"
+  },
+  "688256": {
+    "tech": "思元590对标A100（性能80-90%），7nm工艺，2025出货近10万颗",
+    "expansion": "中芯国际代工稳定，2026年预计出货30万颗",
+    "supply": "国产AI芯片稀缺标的，Morgan Stanley看好产能释放",
+    "orders": "DeepSeek V4与昇腾并列验证，字节/百度/阿里采购",
+    "catalyst": "2026年出货30万颗、盈利拐点",
+    "risk": "性能仅达A100的80-90%（落后H100一代）"
+  },
+  "601138": {
+    "tech": "CPO全光交换机样机已出货，液冷服务器产能占比60%，GB300供应商资格",
+    "expansion": "全面转型AI公司（消费电子利润<30%），CPO 2026年出货目标10万台",
+    "supply": "英伟达GB300核心代工厂，2026年市占率有望55-60%",
+    "orders": "2026Q1净利105.95亿+102.55%；GB300全年6-8万柜",
+    "catalyst": "GB300大规模量产、CPO商用放量",
+    "risk": "对英伟达依赖度过高"
+  },
+  "000977": {
+    "tech": "AI服务器全栈自研，液冷技术领先，JDM模式快速交付",
+    "expansion": "服务器产能持续扩张，液冷产线投入加大",
+    "supply": "国内AI服务器市占率第一（约40%），深度绑定百度/字节/阿里",
+    "orders": "2026年AI服务器订单预计翻倍",
+    "catalyst": "互联网大厂资本开支回暖",
+    "risk": "毛利率承压（JDM利润薄）"
+  },
+  "002837": {
+    "tech": "液冷技术进入英伟达供应商名单（NVIDIA认证），CDU/冷板全栈自研",
+    "expansion": "液冷产线扩产中，2026年产能翻倍",
+    "supply": "国内液冷龙头，英伟达供应链稀缺标的",
+    "orders": "2026年液冷订单预计+200%",
+    "catalyst": "英伟达GB300液冷标配",
+    "risk": "竞争加剧（高澜/曙光数创追赶）"
+  },
+  "300395": {
+    "tech": "石英电子布（AI服务器Low-Dk材料），已送样英伟达Rubin，气熔石英通过AMAT/TEL/Lam认证",
+    "expansion": "定增6.24亿投建石英电子纱1000吨，Rubin量产有望带动需求",
+    "supply": "石英电子布处于小批量测试/认证阶段，收入占比5%",
+    "orders": "2026Q1净利1.44亿+36.77%",
+    "catalyst": "英伟达Rubin量产带动需求、定增产能释放",
+    "risk": "石英电子布认证不确定性、收入占比低"
+  },
+  "600487": {
+    "tech": "空芯光纤全球独家商用，±500kV直流海缆国内唯一，6G量子保密通信专利国内第一",
+    "expansion": "AI先进光纤材料中心扩产（2026.2设备安装），光棒产能3100吨/年（国内24%）",
+    "supply": "全球仅四家跨洋海缆全链条交付企业，空芯光纤独家商用",
+    "orders": "2026E净利43-52亿，AI数据中心特种光纤需求旺盛",
+    "catalyst": "空芯光纤商用放量、海缆订单",
+    "risk": "应收账款183亿（占净利6倍+），PE TTM 60x历史高位"
+  },
+  "002130": {
+    "tech": "224G铜缆技术领先（GB300配套），DAC高速线缆",
+    "expansion": "铜缆产线扩产中，2026年产能翻倍",
+    "supply": "英伟达GB300铜缆核心供应商",
+    "orders": "GB300铜缆订单饱满，2026年预计+200%",
+    "catalyst": "GB300量产、224G渗透加速",
+    "risk": "光模块替代风险（铜缆vs光纤）"
+  },
+  "688498": {
+    "tech": "DFB激光器已量产（200G/400G配套），EML在研（关键卡脖子突破）",
+    "expansion": "EML产线建设中，预计2026H2试产",
+    "supply": "国内光芯片稀缺标的，高端光芯片国产化核心",
+    "orders": "DFB订单放量，EML客户送样中",
+    "catalyst": "EML量产突破（国产化里程碑）",
+    "risk": "EML良率爬坡慢、与国际厂商差距"
+  },
+  "688012": {
+    "tech": "刻蚀机全球第二（5nm验证中），CCP/ICP双平台，LPCVD新品突破",
+    "expansion": "上海/南昌双基地扩产",
+    "supply": "刻蚀设备国内前二，存储/逻辑全覆盖",
+    "orders": "头部存储厂/逻辑厂批量采购",
+    "catalyst": "5nm刻蚀机验证通过",
+    "risk": "PE 120x偏高、研发投入高"
+  },
+  "600584": {
+    "tech": "XDFOI先进封装技术（国产第一梯队），HBM封装技术储备",
+    "expansion": "上海/江阴/宿迁多地扩产",
+    "supply": "国内封测龙头全球第三，苹果/华为/高通核心供应商",
+    "orders": "HBM封装订单在谈",
+    "catalyst": "HBM封装量产",
+    "risk": "毛利率承压"
+  },
+  "688008": {
+    "tech": "DDR5接口芯片全球第一（50%+份额），PCIe Retimer国产第一，CXL芯片发布",
+    "expansion": "DDR5渗透率提升驱动增长",
+    "supply": "内存接口芯片全球垄断地位",
+    "orders": "DDR5订单随渗透率放量",
+    "catalyst": "DDR5渗透率超50%",
+    "risk": "存储周期波动"
+  },
+  "002851": {
+    "tech": "NV指定电源供应商，电源管理系统全栈方案",
+    "expansion": "泰国/越南海外产能建设中",
+    "supply": "英伟达指定电源供应商",
+    "orders": "GB300电源订单饱满，2026年预计+150%",
+    "catalyst": "GB300量产拉动",
+    "risk": "估值偏高（PE 80x）"
+  },
+  "300394": {
+    "tech": "光引擎壁垒极高（精密光学耦合），CPO配套光引擎独供能力强",
+    "expansion": "光引擎产能持续扩产",
+    "supply": "中际旭创/新易盛核心供应商，光引擎稀缺性高",
+    "orders": "绑定头部光模块厂",
+    "catalyst": "CPO量产带动光引擎需求爆发",
+    "risk": "PE 130x估值争议大"
+  },
+  "002916": {
+    "tech": "FC-BGA载板突破（国产替代关键），AI服务器PCB高多层技术",
+    "expansion": "广州/无锡基地产能爬坡",
+    "supply": "华为/中兴核心供应商",
+    "orders": "载板订单逐步放量",
+    "catalyst": "FC-BGA载板良率提升",
+    "risk": "载板良率爬坡慢"
+  },
+  "300870": {
+    "tech": "高功率AI电源（GB300配套），液冷电源方案",
+    "expansion": "AI电源产线扩产",
+    "supply": "国内AI电源新锐",
+    "orders": "2026年AI电源订单+150%",
+    "catalyst": "GB300电源需求爆发",
+    "risk": "规模小、客户集中"
+  }
+};
+
+// ==================== 多维产业数据DB ====================
+const multiDimDB = {
+  "1.6T光模块": {
+    "scarcity": 4,
+    "priceUp": true,
+    "pricePct": 30,
+    "supplyGap": true,
+    "localization": 3,
+    "analogy": "AI数据中心的光纤高速公路，1.6T=每秒传160部电影",
+    "techRisk": "CPO可能长期替代可插拔模块",
+    "catalyst": "2026年需求10倍增长"
+  },
+  "3.2T光模块(下一代)": {
+    "scarcity": 5,
+    "priceUp": true,
+    "pricePct": 50,
+    "supplyGap": true,
+    "localization": 2,
+    "analogy": "下一代超高速翻译官，还在实验室阶段",
+    "techRisk": "CPO/硅光技术路线不确定",
+    "catalyst": "2028年有望量产"
+  },
+  "800G光模块": {
+    "scarcity": 3,
+    "priceUp": true,
+    "pricePct": 20,
+    "supplyGap": false,
+    "localization": 4,
+    "analogy": "当前主流高速翻译官，批量交付中",
+    "techRisk": "向1.6T升级，800G将逐渐饱和",
+    "catalyst": "2026年800G仍是主力"
+  },
+  "光芯片": {
+    "scarcity": 5,
+    "priceUp": true,
+    "pricePct": 30,
+    "supplyGap": true,
+    "localization": 1,
+    "analogy": "光通信的心脏，把电信号转成光信号",
+    "techRisk": "EML国产化率<5%，硅光替代不确定",
+    "catalyst": "源杰科技EML 2026H2试产"
+  },
+  "EML激光器(800G/1.6T核心)": {
+    "scarcity": 5,
+    "priceUp": true,
+    "pricePct": 40,
+    "supplyGap": true,
+    "localization": 1,
+    "analogy": "高端光芯片的皇冠，800G/1.6T必备",
+    "techRisk": "国产化极低，依赖Lumentum/Coherent",
+    "catalyst": "源杰科技EML量产突破"
+  },
+  "DFB激光器": {
+    "scarcity": 3,
+    "priceUp": true,
+    "pricePct": 15,
+    "supplyGap": false,
+    "localization": 3,
+    "analogy": "中低端光芯片，200G/400G主力",
+    "techRisk": "向EML升级趋势",
+    "catalyst": "国产DFB已量产"
+  },
+  "VCSEL垂直腔激光器": {
+    "scarcity": 3,
+    "priceUp": false,
+    "pricePct": 0,
+    "supplyGap": false,
+    "localization": 3,
+    "analogy": "短距离光通信的LED灯泡",
+    "techRisk": "硅光替代风险",
+    "catalyst": "数据中心内部连接需求"
+  },
+  "PIN/APD探测器": {
+    "scarcity": 3,
+    "priceUp": false,
+    "pricePct": 0,
+    "supplyGap": false,
+    "localization": 3,
+    "analogy": "光信号接收器，把光转回电信号",
+    "techRisk": "技术成熟，替代风险低",
+    "catalyst": "随光模块需求增长"
+  },
+  "硅光引擎(SiPh)": {
+    "scarcity": 4,
+    "priceUp": true,
+    "pricePct": 25,
+    "supplyGap": true,
+    "localization": 2,
+    "analogy": "用硅工艺做光芯片，成本低但性能待验证",
+    "techRisk": "良率爬坡慢，性能vs InP有差距",
+    "catalyst": "CPO方案推动硅光渗透"
+  },
+  "CPO共封装光学": {
+    "scarcity": 4,
+    "priceUp": true,
+    "pricePct": 35,
+    "supplyGap": true,
+    "localization": 2,
+    "analogy": "把光模块和交换芯片封装在一起，终极方案",
+    "techRisk": "技术验证期，散热/可靠性挑战",
+    "catalyst": "英伟达CPO订单2026年放量"
+  },
+  "薄膜铌酸锂 TFLN": {
+    "scarcity": 5,
+    "priceUp": true,
+    "pricePct": 50,
+    "supplyGap": true,
+    "localization": 1,
+    "analogy": "超高性能调制材料，1.6T+必备",
+    "techRisk": "工艺极难，良率极低",
+    "catalyst": "光库科技/济南晶正突破"
+  },
+  "InP磷化铟衬底": {
+    "scarcity": 5,
+    "priceUp": true,
+    "pricePct": 30,
+    "supplyGap": true,
+    "localization": 1,
+    "analogy": "光芯片的硅片，日本住友垄断",
+    "techRisk": "日本出口管制风险",
+    "catalyst": "国产化替代"
+  },
+  "SOI晶圆(硅光关键)": {
+    "scarcity": 4,
+    "priceUp": true,
+    "pricePct": 20,
+    "supplyGap": true,
+    "localization": 2,
+    "analogy": "硅光芯片的特殊硅片，带氧化绝缘层",
+    "techRisk": "依赖Soitec/信越",
+    "catalyst": "沪硅产业扩产"
+  },
+  "服务器PCB(高多层板)": {
+    "scarcity": 4,
+    "priceUp": true,
+    "pricePct": 30,
+    "supplyGap": true,
+    "localization": 3,
+    "analogy": "AI服务器的骨架，层数从22层升级到36+层",
+    "techRisk": "层数升级带来良率挑战",
+    "catalyst": "AI服务器层数持续升级"
+  },
+  "ABF载板(IC基板)": {
+    "scarcity": 5,
+    "priceUp": true,
+    "pricePct": 35,
+    "supplyGap": true,
+    "localization": 2,
+    "analogy": "高端芯片的底座，线路密度极高",
+    "techRisk": "ABF极度紧张，台湾三雄锁单到2027",
+    "catalyst": "兴森科技/深南电路突破"
+  },
+  "高速覆铜板 CCL(M6/M7/M8/M9)": {
+    "scarcity": 4,
+    "priceUp": true,
+    "pricePct": 30,
+    "supplyGap": true,
+    "localization": 3,
+    "analogy": "高端PCB的基板材料，M8/M9是AI服务器标配",
+    "techRisk": "日本材料 dependency",
+    "catalyst": "生益科技/南亚新材扩产"
+  },
+  "玻纤布 Low-Dk/石英布": {
+    "scarcity": 4,
+    "priceUp": true,
+    "pricePct": 25,
+    "supplyGap": true,
+    "localization": 3,
+    "analogy": "做高端PCB的布，层数越多对布越挑",
+    "techRisk": "日东纺几乎垄断高端",
+    "catalyst": "宏和科技/中国巨石突破"
+  },
+  "T-玻璃(低膨胀)": {
+    "scarcity": 5,
+    "priceUp": true,
+    "pricePct": 40,
+    "supplyGap": true,
+    "localization": 1,
+    "analogy": "最高端PCB材料的钻石，日东纺垄断",
+    "techRisk": "日东纺产能扩张慢，短缺30-40%",
+    "catalyst": "2026年T-Glass短缺持续"
+  },
+  "HBM高带宽存储": {
+    "scarcity": 5,
+    "priceUp": true,
+    "pricePct": 60,
+    "supplyGap": true,
+    "localization": 1,
+    "analogy": "GPU专用的3D堆叠内存，AI训练必备",
+    "techRisk": "SK海力士/三星/美光三巨头垄断",
+    "catalyst": "HBM4 2026年量产"
+  },
+  "DRAM(DDR5)": {
+    "scarcity": 4,
+    "priceUp": true,
+    "pricePct": 50,
+    "supplyGap": true,
+    "localization": 2,
+    "analogy": "服务器主内存，DDR5渗透率快速提升",
+    "techRisk": "原厂控产保价",
+    "catalyst": "累计涨幅250-280%"
+  },
+  "NAND Flash(企业级SSD)": {
+    "scarcity": 3,
+    "priceUp": true,
+    "pricePct": 40,
+    "supplyGap": false,
+    "localization": 2,
+    "analogy": "数据存储的硬盘，AI推理需要大量存储",
+    "techRisk": "原厂控产但需求弱于DRAM",
+    "catalyst": "累计涨幅200-250%"
+  },
+  "存储模组": {
+    "scarcity": 3,
+    "priceUp": true,
+    "pricePct": 30,
+    "supplyGap": false,
+    "localization": 3,
+    "analogy": "把存储芯片做成产品卖，利润暴涨但现金流差",
+    "techRisk": "高波动，适合交易不适合长期持有",
+    "catalyst": "江波龙/德明利利润暴涨"
+  },
+  "刻蚀设备": {
+    "scarcity": 4,
+    "priceUp": true,
+    "pricePct": 15,
+    "supplyGap": true,
+    "localization": 3,
+    "analogy": "芯片雕刻刀，把不需要的材料刻掉",
+    "techRisk": "5nm以下仍需突破",
+    "catalyst": "北方华创营收破100亿"
+  },
+  "DUV浸没式光刻机(28-7nm)": {
+    "scarcity": 5,
+    "priceUp": true,
+    "pricePct": 50,
+    "supplyGap": true,
+    "localization": 1,
+    "analogy": "芯片制造的最核心设备，ASML垄断",
+    "techRisk": "荷兰出口管制，国产替代极难",
+    "catalyst": "上海微电子28nm验证中"
+  },
+  "EUV光刻机(7nm以下)": {
+    "scarcity": 5,
+    "priceUp": false,
+    "pricePct": 0,
+    "supplyGap": true,
+    "localization": 1,
+    "analogy": "7nm以下芯片的唯一工具，完全卡死",
+    "techRisk": "完全卡脖子，5-10年内无替代",
+    "catalyst": "国产EUV光源研发中"
+  },
+  "薄膜沉积设备": {
+    "scarcity": 4,
+    "priceUp": true,
+    "pricePct": 15,
+    "supplyGap": true,
+    "localization": 2,
+    "analogy": "在芯片上铺材料的设备，CVD/ALD/PVD多种",
+    "techRisk": "LPCVD/ALD仍需突破",
+    "catalyst": "拓荆科技/北方华创突破"
+  },
+  "量测/检测设备": {
+    "scarcity": 5,
+    "priceUp": true,
+    "pricePct": 30,
+    "supplyGap": true,
+    "localization": 1,
+    "analogy": "芯片质检员，确保每道工序合格",
+    "techRisk": "KLA垄断，国产替代刚开始",
+    "catalyst": "精测电子/中科飞测放量"
+  },
+  "CMP抛光设备": {
+    "scarcity": 3,
+    "priceUp": true,
+    "pricePct": 10,
+    "supplyGap": false,
+    "localization": 3,
+    "analogy": "把芯片表面抛光的设备，像打磨玉石",
+    "techRisk": "技术成熟，国产已突破",
+    "catalyst": "华海清科国产唯一"
+  },
+  "湿法清洗设备": {
+    "scarcity": 3,
+    "priceUp": false,
+    "pricePct": 0,
+    "supplyGap": false,
+    "localization": 4,
+    "analogy": "清洗芯片的设备，像洗碗机",
+    "techRisk": "技术成熟，竞争激烈",
+    "catalyst": "盛美上海/至纯科技"
+  },
+  "NVIDIA GPU(H100/B200/B300/Rubin)": {
+    "scarcity": 4,
+    "priceUp": true,
+    "pricePct": 25,
+    "supplyGap": true,
+    "localization": 2,
+    "analogy": "AI计算的发动机，英伟达垄断90%市场",
+    "techRisk": "美国出口管制，国产替代紧迫",
+    "catalyst": "GB300/Blackwell架构升级"
+  },
+  "国产AI芯片-华为昇腾": {
+    "scarcity": 4,
+    "priceUp": false,
+    "pricePct": 0,
+    "supplyGap": true,
+    "localization": 3,
+    "analogy": "国产AI芯片的扛把子，910C对标A100",
+    "techRisk": "代工受限，产能瓶颈",
+    "catalyst": "2026年出货量大增"
+  },
+  "国产AI芯片-寒武纪/海光/壁仞": {
+    "scarcity": 4,
+    "priceUp": false,
+    "pricePct": 0,
+    "supplyGap": true,
+    "localization": 2,
+    "analogy": "国产AI芯片第二梯队，各有特色",
+    "techRisk": "寒武纪思元590性能达A100 80-90%",
+    "catalyst": "DeepSeek验证国产芯片可用"
+  },
+  "NVLink Scale-up互联": {
+    "scarcity": 4,
+    "priceUp": true,
+    "pricePct": 30,
+    "supplyGap": true,
+    "localization": 1,
+    "analogy": "英伟达GPU之间的专用高速通道",
+    "techRisk": "英伟达独占，国产替代刚开始",
+    "catalyst": "GB300 NVLink升级"
+  },
+  "高速以太网交换机": {
+    "scarcity": 3,
+    "priceUp": true,
+    "pricePct": 15,
+    "supplyGap": false,
+    "localization": 3,
+    "analogy": "数据中心内部的交通调度中心",
+    "techRisk": "博通/思科主导，国产追赶",
+    "catalyst": "400G/800G交换机渗透"
+  },
+  "光开关(OXC)": {
+    "scarcity": 4,
+    "priceUp": true,
+    "pricePct": 40,
+    "supplyGap": true,
+    "localization": 2,
+    "analogy": "全光交换机，不用电信号转换",
+    "techRisk": "谷歌主导，生态不成熟",
+    "catalyst": "谷歌数据中心大规模部署"
+  },
+  "224G/112G SerDes": {
+    "scarcity": 4,
+    "priceUp": true,
+    "pricePct": 25,
+    "supplyGap": true,
+    "localization": 2,
+    "analogy": "芯片间的高速串行通信接口",
+    "techRisk": "224G信号完整性挑战",
+    "catalyst": "博通/美满突破224G"
+  },
+  "先进封装(Chiplet)": {
+    "scarcity": 4,
+    "priceUp": true,
+    "pricePct": 20,
+    "supplyGap": true,
+    "localization": 2,
+    "analogy": "把多个小芯片拼在一起，绕过光刻限制",
+    "techRisk": "台积电CoWoS垄断，国产替代紧迫",
+    "catalyst": "长电科技/通富微电突破"
+  },
+  "混合键合(Hybrid Bonding)": {
+    "scarcity": 5,
+    "priceUp": true,
+    "pricePct": 40,
+    "supplyGap": true,
+    "localization": 1,
+    "analogy": "芯片之间直接铜对铜连接，HBM核心工艺",
+    "techRisk": "设备/材料/工艺全链条卡脖子",
+    "catalyst": "HBM4要求混合键合"
+  },
+  "C2C(芯粒间互联)": {
+    "scarcity": 4,
+    "priceUp": true,
+    "pricePct": 30,
+    "supplyGap": true,
+    "localization": 2,
+    "analogy": "芯粒之间的通信标准，像USB但用于芯片内部",
+    "techRisk": "UCIe标准仍在完善",
+    "catalyst": "Intel/AMD大规模采用Chiplet"
+  },
+  "液冷系统": {
+    "scarcity": 4,
+    "priceUp": true,
+    "pricePct": 20,
+    "supplyGap": true,
+    "localization": 3,
+    "analogy": "AI服务器的空调，功率太大必须液冷",
+    "techRisk": "漏液风险，运维复杂",
+    "catalyst": "GB300液冷成为标配"
+  },
+  "CDU冷却分配单元": {
+    "scarcity": 4,
+    "priceUp": true,
+    "pricePct": 25,
+    "supplyGap": true,
+    "localization": 3,
+    "analogy": "液冷系统的分水泵，控制冷却液流量",
+    "techRisk": "英维克/高澜竞争加剧",
+    "catalyst": "2026年液冷订单+200%"
+  },
+  "AI服务器PSU(高功率)": {
+    "scarcity": 3,
+    "priceUp": true,
+    "pricePct": 15,
+    "supplyGap": false,
+    "localization": 4,
+    "analogy": "AI服务器的电源适配器，功率3000W+",
+    "techRisk": "技术成熟，竞争激烈",
+    "catalyst": "GB300电源需求爆发"
+  },
+  "BBU备用电池": {
+    "scarcity": 4,
+    "priceUp": true,
+    "pricePct": 30,
+    "supplyGap": true,
+    "localization": 3,
+    "analogy": "数据中心的UPS，断电保护",
+    "techRisk": "宁德时代/亿纬锂能主导",
+    "catalyst": "AI数据中心安全要求提升"
+  },
+  "EDA软件": {
+    "scarcity": 5,
+    "priceUp": true,
+    "pricePct": 20,
+    "supplyGap": true,
+    "localization": 1,
+    "analogy": "芯片设计的CAD软件，Synopsys/Cadence/Mentor三巨头",
+    "techRisk": "美国制裁风险，国产化极难",
+    "catalyst": "华大九天/概伦电子突破"
+  },
+  "半导体IP核": {
+    "scarcity": 4,
+    "priceUp": true,
+    "pricePct": 15,
+    "supplyGap": true,
+    "localization": 2,
+    "analogy": "芯片设计的积木块，ARM/Imagination主导",
+    "techRisk": "RISC-V生态挑战ARM",
+    "catalyst": "芯原股份/平头哥RISC-V"
+  },
+  "GPU IP": {
+    "scarcity": 5,
+    "priceUp": true,
+    "pricePct": 30,
+    "supplyGap": true,
+    "localization": 1,
+    "analogy": "设计GPU的图纸，Imagination/Arm主导",
+    "techRisk": "完全卡脖子，国产几乎为零",
+    "catalyst": "芯原股份/Moore Threads自研"
+  },
+  "光刻胶 EUV/ArF": {
+    "scarcity": 5,
+    "priceUp": true,
+    "pricePct": 40,
+    "supplyGap": true,
+    "localization": 1,
+    "analogy": "光刻机的墨水，EUV级别最难",
+    "techRisk": "日本垄断，国产ArF刚突破",
+    "catalyst": "南大光电/晶瑞电材ArF量产"
+  },
+  "光掩模版(Mask)": {
+    "scarcity": 4,
+    "priceUp": true,
+    "pricePct": 25,
+    "supplyGap": true,
+    "localization": 2,
+    "analogy": "光刻的模板，越高端越难做",
+    "techRisk": "日本/美国垄断",
+    "catalyst": "清溢光电/菲利华突破"
+  },
+  "高纯多晶硅(电子级)": {
+    "scarcity": 4,
+    "priceUp": true,
+    "pricePct": 20,
+    "supplyGap": true,
+    "localization": 2,
+    "analogy": "半导体硅片的原料，纯度要求99.9999999%",
+    "techRisk": "德国Wacker/日本Tokuyama主导",
+    "catalyst": "大全能源/特变电工扩产"
+  },
+  "硅片(300mm)": {
+    "scarcity": 4,
+    "priceUp": true,
+    "pricePct": 15,
+    "supplyGap": true,
+    "localization": 2,
+    "analogy": "芯片的基板，越大越难做",
+    "techRisk": "信越/SUMCO主导，国产追赶",
+    "catalyst": "沪硅产业300mm扩产"
+  },
+  "电子特气": {
+    "scarcity": 3,
+    "priceUp": true,
+    "pricePct": 15,
+    "supplyGap": false,
+    "localization": 3,
+    "analogy": "芯片制造过程中的各种气体，像氧气/氮气但更纯",
+    "techRisk": "部分品种仍依赖进口",
+    "catalyst": "华特气体/金宏气体国产替代"
+  },
+  "CMP抛光液": {
+    "scarcity": 3,
+    "priceUp": false,
+    "pricePct": 0,
+    "supplyGap": false,
+    "localization": 4,
+    "analogy": "抛光芯片表面的液体，像牙膏",
+    "techRisk": "安集科技已国产主导",
+    "catalyst": "安集科技全球份额提升"
+  },
+  "CMP抛光垫": {
+    "scarcity": 3,
+    "priceUp": false,
+    "pricePct": 0,
+    "supplyGap": false,
+    "localization": 3,
+    "analogy": "抛光芯片表面的垫子，像砂纸",
+    "techRisk": "鼎龙股份突破",
+    "catalyst": "国产替代加速"
+  },
+  "溅射靶材(Cu/Co/Ta/Ru等)": {
+    "scarcity": 3,
+    "priceUp": false,
+    "pricePct": 0,
+    "supplyGap": false,
+    "localization": 4,
+    "analogy": "薄膜沉积的子弹，各种金属材料",
+    "techRisk": "江丰电子已国产主导",
+    "catalyst": "江丰电子全球份额提升"
+  },
+  "湿电子化学品": {
+    "scarcity": 3,
+    "priceUp": false,
+    "pricePct": 0,
+    "supplyGap": false,
+    "localization": 3,
+    "analogy": "清洗芯片的化学药水，像洗洁精但更纯",
+    "techRisk": "部分高端品种依赖进口",
+    "catalyst": "江化微/晶瑞电材扩产"
+  },
+  "晶圆代工": {
+    "scarcity": 4,
+    "priceUp": true,
+    "pricePct": 20,
+    "supplyGap": true,
+    "localization": 2,
+    "analogy": "芯片的印刷厂，把设计图印到硅片上",
+    "techRisk": "台积电垄断先进制程，中芯国际被制裁",
+    "catalyst": "中芯国际扩产/国产设备导入"
+  },
+  "3nm/5nm先进制程": {
+    "scarcity": 5,
+    "priceUp": true,
+    "pricePct": 50,
+    "supplyGap": true,
+    "localization": 1,
+    "analogy": "最顶级的芯片印刷工艺，台积电/三星垄断",
+    "techRisk": "完全卡脖子，EUV受限",
+    "catalyst": "中芯国际N+2工艺突破"
+  },
+  "28nm及以上(成熟制程)": {
+    "scarcity": 3,
+    "priceUp": true,
+    "pricePct": 10,
+    "supplyGap": false,
+    "localization": 4,
+    "analogy": "成熟的芯片印刷工艺，国产已主导",
+    "techRisk": "产能过剩风险",
+    "catalyst": "华虹公司/中芯国际扩产"
+  },
+  "国产OSAT封测": {
+    "scarcity": 3,
+    "priceUp": true,
+    "pricePct": 10,
+    "supplyGap": false,
+    "localization": 4,
+    "analogy": "芯片的包装厂，把裸芯片封装成产品",
+    "techRisk": "技术成熟，竞争激烈",
+    "catalyst": "长电科技/通富微电全球份额提升"
+  },
+  "网络架构(Scale-up/out)": {
+    "scarcity": 4,
+    "priceUp": true,
+    "pricePct": 20,
+    "supplyGap": true,
+    "localization": 2,
+    "analogy": "AI集群的网络拓扑设计，万卡互联的关键",
+    "techRisk": "英伟达NVLink主导，国产UAlink追赶",
+    "catalyst": "GB300 NVL72机柜化架构"
+  },
+  "中国互联网云": {
+    "scarcity": 3,
+    "priceUp": false,
+    "pricePct": 0,
+    "supplyGap": false,
+    "localization": 5,
+    "analogy": "国内的云计算厂商，阿里/腾讯/字节/百度",
+    "techRisk": "资本开支周期波动",
+    "catalyst": "2026年大厂资本开支回暖"
+  },
+  "设备核心零部件": {
+    "scarcity": 5,
+    "priceUp": true,
+    "pricePct": 30,
+    "supplyGap": true,
+    "localization": 1,
+    "analogy": "半导体设备的螺丝钉，虽小但缺一不可",
+    "techRisk": "日本/美国垄断，国产替代刚开始",
+    "catalyst": "富创精密/江丰电子突破"
+  },
+  "静电卡盘 ESC": {
+    "scarcity": 5,
+    "priceUp": true,
+    "pricePct": 40,
+    "supplyGap": true,
+    "localization": 1,
+    "analogy": "固定硅片的真空吸盘，刻蚀/沉积必备",
+    "techRisk": "日本TOTO/新光电气垄断",
+    "catalyst": "国产替代突破中"
+  },
+  "气体质量流量计 MFC": {
+    "scarcity": 4,
+    "priceUp": true,
+    "pricePct": 25,
+    "supplyGap": true,
+    "localization": 1,
+    "analogy": "控制气体流量的精密阀门，像水龙头",
+    "techRisk": "美国Brooks/日本Fujikin主导",
+    "catalyst": "国产替代突破中"
+  },
+  "真空阀门/真空泵": {
+    "scarcity": 4,
+    "priceUp": true,
+    "pricePct": 20,
+    "supplyGap": true,
+    "localization": 2,
+    "analogy": "维持芯片制造真空环境的设备",
+    "techRisk": "汉钟精机/中科仪追赶",
+    "catalyst": "国产替代加速"
+  },
+
+  // ========== P2.2 Batch 1 (2026-05-11) ==========
+  "PCBA组装": {
+    "scarcity": 2,
+    "priceUp": false,
+    "pricePct": null,
+    "supplyGap": false,
+    "localization": 5,
+    "analogy": "光模块的焊接装配线,把芯片和光器件焊到电路板上的最后一步",
+    "techRisk": "工艺成熟,真正卡点在上游高速PCB板材(Megtron/Tachyon)依赖松下/罗杰斯",
+    "catalyst": "800G放量+1.6T起量,2026 H2 旭创/新易盛/天孚三厂PCBA线全部满产"
+  },
+  "CoWoS 2.5D封装": {
+    "scarcity": 5,
+    "priceUp": true,
+    "pricePct": 10,
+    "supplyGap": true,
+    "localization": 1,
+    "analogy": "把GPU和HBM内存焊到同一块迷你电路板上,这是当下AI GPU产能的最大瓶颈",
+    "techRisk": "台积电CoWoS-L独家,长电CoWoS-S/通富2.5D追赶2代,先进封装EDA也卡",
+    "catalyst": "台积电2026年底CoWoS月产能扩至8万片,长电张江2026 H2试制2.5D"
+  },
+  "服务器机柜/结构件": {
+    "scarcity": 2,
+    "priceUp": false,
+    "pricePct": null,
+    "supplyGap": false,
+    "localization": 5,
+    "analogy": "GB200 NVL72 的服务器集装箱外壳,标准化钣金+液冷快接头",
+    "techRisk": "液冷化让钣金件变复杂(漏液、形变),普通机柜厂难做高端",
+    "catalyst": "工业富联 NVL72 满产,2026 全年预期出货 2 万柜+(行业预期)"
+  },
+  "服务器主板/PCBA": {
+    "scarcity": 3,
+    "priceUp": true,
+    "pricePct": null,
+    "supplyGap": false,
+    "localization": 4,
+    "analogy": "把CPU/GPU/内存/网卡全插上去的主板大底座,AI服务器最复杂的一块板",
+    "techRisk": "224G信号要求20层以上高速PCB,M7板材松下垄断,沪电只做后端",
+    "catalyst": "沪电 224G PCB 2026 H1 通过 NV 认证,工业富联 GB300 主板满产"
+  },
+  "AI服务器代工(NV机柜)": {
+    "scarcity": 2,
+    "priceUp": false,
+    "pricePct": null,
+    "supplyGap": false,
+    "localization": 5,
+    "analogy": "帮NVIDIA把整柜72张GPU+CPU+网卡+液冷组装好交付的整机代工厂,4-8%毛利但量极大",
+    "techRisk": "NVL72整柜良率难(水冷快接头、Cable Tray、布线),良率1%差异即数亿利润",
+    "catalyst": "工业富联 GB300 良率改善,Q4 单季净利 128 亿验证规模效应"
+  },
+  "CCP电容耦合刻蚀": {
+    "scarcity": 2,
+    "priceUp": false,
+    "pricePct": null,
+    "supplyGap": false,
+    "localization": 4,
+    "analogy": "半导体的精密雕刻刀,CCP专刻氧化硅/氮化硅介质层,是3D NAND深孔的关键",
+    "techRisk": "3D NAND 200层以上深宽比挑战,中微与Lam/AMAT还有一代差距",
+    "catalyst": "中微5nm介质刻蚀已进台积电,长江存储新订单2026 H1落地,国内份额30%+"
+  },
+  "ICP电感耦合刻蚀": {
+    "scarcity": 3,
+    "priceUp": false,
+    "pricePct": null,
+    "supplyGap": false,
+    "localization": 3,
+    "analogy": "半导体的另一把雕刻刀,ICP用电感线圈产生等离子体专刻金属和硅,比CCP更难国产",
+    "techRisk": "7nm 以下金属刻蚀仍由 Lam/AMAT 主导,北方华创成熟制程已起量",
+    "catalyst": "北方华创 ICP 长存/华虹订单稳步增长,2026 国内份额预期超 40%"
+  },
+  "全流程EDA": {
+    "scarcity": 5,
+    "priceUp": false,
+    "pricePct": null,
+    "supplyGap": true,
+    "localization": 1,
+    "analogy": "设计芯片的Photoshop+CAD+审图一体化套件,Cadence/Synopsys/Siemens三家垄断95%",
+    "techRisk": "美国出口管制对14nm以下断供风险长期存在,先进工艺PDK库不全",
+    "catalyst": "华大九天 2026 H2 28nm 全流程数字流片验证,概伦/广立微细分突破"
+  },
+  "光引擎(TOSA/ROSA)": {
+    "scarcity": 2,
+    "priceUp": false,
+    "pricePct": null,
+    "supplyGap": false,
+    "localization": 4,
+    "analogy": "光模块里把电信号变成光、光变回电的翻译芯片,含激光器(TOSA)+探测器(ROSA)",
+    "techRisk": "200G/lane EML激光器内核仍依赖日厂(Lumentum/Sumitomo/三菱)",
+    "catalyst": "天孚 200G EML 自研量产 2026 H2,1.6T 光引擎放量带动 ASP 上行"
+  },
+  "DAC高速铜缆(112G/224G)": {
+    "scarcity": 3,
+    "priceUp": true,
+    "pricePct": null,
+    "supplyGap": true,
+    "localization": 4,
+    "analogy": "GB200一柜72卡机内互联的高速跳线,比光模块便宜但只能跑2-3米",
+    "techRisk": "224G→448G 时铜缆物理极限到顶,必须切到 CPO 光互连",
+    "catalyst": "立讯/沃尔核材 NVL72 224G DAC 2026 全年订单已锁定,神宇/鼎通跟进"
+  },
+
+  // ========== P2.2 Batch 2 (2026-05-11) ==========
+  "光纤预制棒/光纤": {
+    "scarcity": 2,
+    "priceUp": false,
+    "pricePct": null,
+    "supplyGap": false,
+    "localization": 4,
+    "analogy": "光信号传输的玻璃高速公路,头发丝粗细,中国厂主导但高端预制棒(VAD/OVD工艺)仍部分进口",
+    "techRisk": "超低损耗 G.654E 海底光纤+先进预制棒(VAD/OVD)仍依赖康宁/信越",
+    "catalyst": "AI 数据中心间互联拉动 G.654E 需求,长飞 2026 H2 海底光纤出货"
+  },
+  "浸没式液冷整机": {
+    "scarcity": 3,
+    "priceUp": false,
+    "pricePct": null,
+    "supplyGap": false,
+    "localization": 4,
+    "analogy": "把整台AI服务器泡进绝缘油里散热的油炸式机柜,GB300之后才规模化",
+    "techRisk": "氟化液介质(3M退出后切国产巨化/中昊晨光)、维护复杂、漏液风险",
+    "catalyst": "阿里/腾讯/字节 2026 H2 浸没式机房试点,英维克订单逐季放量"
+  },
+  "冷板(Cold Plate)": {
+    "scarcity": 3,
+    "priceUp": true,
+    "pricePct": null,
+    "supplyGap": true,
+    "localization": 5,
+    "analogy": "像贴在GPU背上的水冷暖宝宝,液体在内部蛇形管道带走400W热量",
+    "techRisk": "焊接密封工艺(漏液即整柜报废)、流阻设计、与CDU匹配良率",
+    "catalyst": "英维克 GB300 冷板订单 2026 全年锁定,高澜 CDU+冷板一体化方案放量"
+  },
+  "石英玻璃(光通信级)": {
+    "scarcity": 3,
+    "priceUp": false,
+    "pricePct": null,
+    "supplyGap": false,
+    "localization": 4,
+    "analogy": "半导体设备腔体和光纤预制棒都离不开的超纯水晶玻璃,1500度软化点",
+    "techRisk": "EUV光刻机用的高纯石英环仍依赖德国Heraeus/日本Tosoh",
+    "catalyst": "菲利华半导体腔体件进 AMAT/Lam 认证,石英股份高纯砂供应链稳定"
+  },
+  "数据中心精密空调(配套)": {
+    "scarcity": 2,
+    "priceUp": false,
+    "pricePct": null,
+    "supplyGap": false,
+    "localization": 5,
+    "analogy": "机房的专业大空调,保证机柜进风温度恒定25度,液冷之外的兜底方案",
+    "techRisk": "高密度机柜让纯风冷散热极限到30kW/柜,30kW以上必须切液冷",
+    "catalyst": "英维克液冷+风冷混合方案 2026 H2 进字节/阿里新机房"
+  },
+  "AOC有源光缆": {
+    "scarcity": 2,
+    "priceUp": false,
+    "pricePct": null,
+    "supplyGap": false,
+    "localization": 5,
+    "analogy": "一根带光模块两端插头的光缆跳线,做交换机-服务器10-100米互联",
+    "techRisk": "长期会被 LRO(linear retimer-less)和 CPO 替代,AOC 是过渡形态",
+    "catalyst": "旭创/光迅 400G/800G AOC 海外客户(Meta/Google)持续放量"
+  },
+  "MPO/MTP连接器": {
+    "scarcity": 2,
+    "priceUp": false,
+    "pricePct": null,
+    "supplyGap": false,
+    "localization": 5,
+    "analogy": "一个插头里塞12-48根光纤的多芯并行光接插件,数据中心高密度布线必备",
+    "techRisk": "APC低回损端面打磨工艺、芯距精度纳米级,看似机械件实则精密光学件",
+    "catalyst": "太辰光/天孚 16芯/24芯 MPO 2026 出货放量,1.6T 拉动并行多芯"
+  },
+  "高速接口IP(SerDes/DDR/PCIe)": {
+    "scarcity": 4,
+    "priceUp": false,
+    "pricePct": null,
+    "supplyGap": true,
+    "localization": 1,
+    "analogy": "AI芯片之间、CPU与内存之间高速通信的接口标准件,芯片公司不自己造、买IP核授权",
+    "techRisk": "224G SerDes 由 Synopsys/Cadence 先发,国产芯原最高 56G 量产",
+    "catalyst": "芯原 112G SerDes 2026 H2 流片验证,澜起 DDR5 PHY 进国产 AI 芯片"
+  },
+  "硅中介层(TSV/RDL)": {
+    "scarcity": 5,
+    "priceUp": true,
+    "pricePct": null,
+    "supplyGap": true,
+    "localization": 1,
+    "analogy": "GPU和HBM之间的硅基小转接板,钻几千个微孔让芯片立体堆叠",
+    "techRisk": "TSV 深宽比 10:1 以上、RDL 线宽 <2μm,长电仅 5μm 级",
+    "catalyst": "长电江阴 TSV 量产线扩产,通富 2.5D 测试线 2026 H2 启动"
+  },
+  "微凸块(μBump)电镀": {
+    "scarcity": 5,
+    "priceUp": true,
+    "pricePct": null,
+    "supplyGap": true,
+    "localization": 1,
+    "analogy": "芯片和芯片之间的超微焊点,直径25μm(头发1/4粗),一颗GPU上几十万颗",
+    "techRisk": "节距向 <25μm 演进,电镀均匀性 <5%、bridging 缺陷一颗就导致整片报废",
+    "catalyst": "通富 μBump 产线对接长电 TSV,2026 H2 试制 2.5D 链路打通"
+  },
+
+  // ========== P2.2 Batch 3 (2026-05-11) ==========
+  "TIA/Driver模拟芯片": {
+    "scarcity": 4,
+    "priceUp": false,
+    "pricePct": null,
+    "supplyGap": true,
+    "localization": 2,
+    "analogy": "光模块里给微弱光电流放大+整形的模拟功放芯片,在TOSA/ROSA前端,海外Macom/Semtech/Inphi垄断",
+    "techRisk": "100G/lane 以上 TIA/Driver 国产几乎空白,56G 以下零星突破",
+    "catalyst": "仕佳光子高速 TIA/Driver 2026 H2 推进量产,国产 100G+ TIA 替代窗口打开"
+  },
+  "交换芯片(Tomahawk/Jericho)": {
+    "scarcity": 5,
+    "priceUp": false,
+    "pricePct": null,
+    "supplyGap": true,
+    "localization": 1,
+    "analogy": "数据中心网络的交通管制大脑,决定服务器之间数据怎么走、走多快,51.2T是当前主流",
+    "techRisk": "Broadcom Tomahawk5 独家 51.2T,盛科国产最高仅 2.4T,代差 4-5 代",
+    "catalyst": "盛科 12.8T 2026 H2 流片,102.4T 时代国内仍无对标方案"
+  },
+  "高速线缆+线材": {
+    "scarcity": 3,
+    "priceUp": true,
+    "pricePct": null,
+    "supplyGap": true,
+    "localization": 4,
+    "analogy": "DAC铜缆里负责载着信号跑的双绞铜线芯,224G要做到几米内信号不失真",
+    "techRisk": "224G 要求阻抗 100±2Ω、介电损耗 tan δ<0.0015 的特种发泡聚乙烯,部分仍进口",
+    "catalyst": "沃尔核材 224G 高速线供货立讯/安费诺 2026 全年,神宇股份跟进"
+  },
+  "光纤阵列FAU": {
+    "scarcity": 3,
+    "priceUp": false,
+    "pricePct": null,
+    "supplyGap": false,
+    "localization": 5,
+    "analogy": "把一束光纤精密插到硅光芯片侧面的针线穿珠组件,CPO时代用量暴增",
+    "techRisk": "芯距 125μm 精度 ±1μm,与硅光波导被动对位是工艺难点",
+    "catalyst": "太辰光 1.6T CPO FAU 进 NV/Lightmatter,天孚硅光器件配套放量"
+  },
+  "冷却液(单相/水基)": {
+    "scarcity": 2,
+    "priceUp": false,
+    "pricePct": null,
+    "supplyGap": false,
+    "localization": 5,
+    "analogy": "冷板里循环带走芯片热量的工业血液,纯净度要求高于自来水百倍",
+    "techRisk": "介电常数+导热+腐蚀控制三者平衡,十年长期运行不变质是工艺关键",
+    "catalyst": "巨化股份氟化液切入英维克液冷整机供应链,3M 退出后国产份额翻倍"
+  },
+  "热处理/炉管设备": {
+    "scarcity": 2,
+    "priceUp": false,
+    "pricePct": null,
+    "supplyGap": false,
+    "localization": 4,
+    "analogy": "给硅片高温烘烤做氧化/退火/扩散的工业电烤箱,工艺老但每条线都要用",
+    "techRisk": "14nm 以下高温快速退火(RTP)国产仍弱,28nm 及以上已国产主导",
+    "catalyst": "北方华创氧化炉国内份额超 80%,中芯国际新订单稳步释放"
+  },
+  "石英件/陶瓷件": {
+    "scarcity": 2,
+    "priceUp": false,
+    "pricePct": null,
+    "supplyGap": false,
+    "localization": 4,
+    "analogy": "半导体设备腔体内承受等离子腐蚀的内胆,每3-6个月一换的高纯耗材",
+    "techRisk": "AMAT/Lam 认证周期 2-3 年,海外 Ferrotec 仍占国际大头",
+    "catalyst": "菲利华+石英股份双线获 AMAT/Lam 国内厂认证,耗材替换周期带动稳定增长"
+  },
+  "陶瓷套管/光器件壳体": {
+    "scarcity": 2,
+    "priceUp": false,
+    "pricePct": null,
+    "supplyGap": false,
+    "localization": 5,
+    "analogy": "光纤连接器里那个白色硬质套筒,氧化锆陶瓷材质,精度要求±0.5μm",
+    "techRisk": "高芯数 MPO 套管+硅光器件壳体的新规格升级,材料工艺要跟进",
+    "catalyst": "天孚 1.6T 光模块陶瓷壳体 2026 全年放量,太辰光 MPO 套管配套"
+  },
+  "CVD化学气相沉积": {
+    "scarcity": 3,
+    "priceUp": false,
+    "pricePct": null,
+    "supplyGap": false,
+    "localization": 3,
+    "analogy": "在硅片上长一层薄膜的喷漆设备,用气体反应在表面生成几纳米厚的功能层",
+    "techRisk": "高深宽比 ALD、铜籽晶层 PVD/CVD 仍进口,先进制程薄膜均匀性挑战",
+    "catalyst": "拓荆 PECVD/SACVD 进长存/华虹订单稳,ALD 试制 2026 H2 突破"
+  },
+  "Manifold分歧管": {
+    "scarcity": 2,
+    "priceUp": false,
+    "pricePct": null,
+    "supplyGap": false,
+    "localization": 5,
+    "analogy": "机柜液冷的自来水总管+多个分支,把冷却液均匀送到每个冷板再收回",
+    "techRisk": "快接头(漏液控制)、流量均衡、压差控制是三个工艺关键点",
+    "catalyst": "英维克 NVL72 整柜 Manifold 配套出货,申昊液冷整机方案推进"
+  },
+
+  // ========== P2.2 Batch 4 (2026-05-11, Lv1 漏网) ==========
+  "电子束量测(eBeam)": {
+    "scarcity": 5,
+    "priceUp": false,
+    "pricePct": null,
+    "supplyGap": true,
+    "localization": 1,
+    "analogy": "用电子束扫描晶圆找肉眼看不见的纳米级缺陷,先进制程的电子显微镜QA工具,KLA独家",
+    "techRisk": "KLA+AMAT 全球垄断 70%+,中科飞测/精测电子做光学量测有突破,eBeam 量测国产几乎零",
+    "catalyst": "中科飞测 eBeam 量测设备 2026 研发投入加大,但量产路径仍不明朗"
+  },
+  "Broadcom ASIC(Google TPU/Meta MTIA)": {
+    "scarcity": 5,
+    "priceUp": false,
+    "pricePct": null,
+    "supplyGap": true,
+    "localization": 1,
+    "analogy": "替云厂商把我要的AI芯片长这样翻译成可流片设计的芯片定制服务公司,Google TPU/Meta MTIA/字节Bolt全是它代设计",
+    "techRisk": "Broadcom 独家 60%+ ASIC 设计服务份额,Marvell 跟随;华为海思仅自用,国产对外 ASIC 设计公司空白",
+    "catalyst": "2026 字节/阿里自研 ASIC 加速但仍走台积电+海外IP,国产 ASIC 设计服务对标长期空白"
+  },
+  "DSP数字信号处理芯片": {
+    "scarcity": 5,
+    "priceUp": false,
+    "pricePct": null,
+    "supplyGap": true,
+    "localization": 1,
+    "analogy": "800G/1.6T 光模块里在噪声里听清信号的高速数字芯片,把PAM4模拟波形恢复成清晰0/1,光模块成本占比30%+",
+    "techRisk": "5nm 制程+几百亿晶体管,Marvell(收购Inphi)+Broadcom 独家;华为海思 DSP 仅自用,商用市场零",
+    "catalyst": "国产 LRO(linear retimer-less)/CPO 方案绕开 DSP 是中长期路线,当前 800G/1.6T 光模块 100% 依赖进口 DSP"
+  }
+};
+
+function getValuation(stockCode) { return valuationDB[stockCode] || null; }
+function getIntel(stockCode) { return intelDB[stockCode] || null; }
+function getMultiDim(nodeName) { return multiDimDB[nodeName] || null; }
+function formatPE(pe) { if(pe===null||pe===undefined)return'N/A';if(pe<0)return'亏损';return pe+'x';}
+function getPEColor(pe) { if(pe===null||pe===undefined||pe<0)return'neutral';if(pe<=25)return'positive';if(pe<=50)return'neutral';return'negative';}
+function getPEGLabel(peg) { if(peg===null||peg===undefined)return'N/A';if(peg<0)return'亏损';return peg.toFixed(2);}
+
+/* ========== 数据预处理 ========== */
+let idCounter = 0;
+function annotate(node, path = []) {
+  node._id = idCounter++;
+  node._path = [...path, node.name];
+  node._depth = path.length;
+  if (node.children) node.children.forEach(c => annotate(c, node._path));
+}
+annotate(industry);
+
+function collectLeaves(node, arr=[]) {
+  if (!node.children) { arr.push(node); return arr; }
+  node.children.forEach(c => collectLeaves(c, arr));
+  return arr;
+}
+const allLeaves = collectLeaves(industry);
+
+function collectAll(node, arr=[]) {
+  arr.push(node);
+  if (node.children) node.children.forEach(c => collectAll(c, arr));
+  return arr;
+}
+const allNodes = collectAll(industry);
+
+// 为叶子节点添加估值、情报、多维数据
+allLeaves.forEach(node => {
+  if (node.stocks && node.stocks.length > 0) {
+    node._valuations = [];
+    node.stocks.forEach(code => {
+      const val = getValuation(code);
+      if (val) node._valuations.push(Object.assign({code: code}, val));
+    });
+  }
+  const md = getMultiDim(node.name);
+  if (md) {
+    node._scarcity = md.scarcity;
+    node._priceUp = md.priceUp;
+    node._pricePct = md.pricePct;
+    node._supplyGap = md.supplyGap;
+    node._localization = md.localization;
+    node._analogy = md.analogy;
+    node._techRisk = md.techRisk;
+    node._catalyst = md.catalyst;
+  }
+  // P1.2: 节点重要性权重 = stocks + 2×intelHit + (level=1 ? +3 : 0)
+  const stocks = node.stocks || [];
+  const intelHit = stocks.filter(s => getIntel(s)).length;
+  const lvlBonus = node.level === 1 ? 3 : 0;
+  node._weight = stocks.length + 2 * intelHit + lvlBonus;
+  node._wStocks = stocks.length;
+  node._wIntel = intelHit;
+  node._wLvlBonus = lvlBonus;
+});
+
+/* ========== 节点重要性 → 半径映射 (6 档分桶, 3→12px) ========== */
+function weightToRadius(w) {
+  if (w <= 0) return 3;
+  if (w <= 2) return 5;
+  if (w === 3) return 6.5;
+  if (w === 4) return 7.5;
+  if (w <= 6) return 9.5;
+  return 12;
+}
+
+/* ========== 主题色与配置 ========== */
+const STAGE_COLORS = [
+  {from:'#3a2020',to:'#1a1010'},{from:'#3a2820',to:'#1a1410'},{from:'#2a2a3a',to:'#10101a'},
+  {from:'#1a2a3a',to:'#10141a'},{from:'#1a3a2a',to:'#10201a'},{from:'#3a1a2a',to:'#1a1014'},
+  {from:'#2a1a3a',to:'#14101a'},{from:'#1a2a2a',to:'#101a1a'}
+];
+const LEVEL_COLOR = {1:'#d44',2:'#e69b3f',3:'#4caf50',4:'#4287d4'};
+const LEVEL_NAME  = {1:'🔴 卡脖子',2:'🟠 国产替代中',3:'🟢 国产已主导',4:'🔵 全球协作'};
+
+/* ========== Stage 热度计算 ========== */
+function computeStageHeat(stage) {
+  const leaves = collectLeaves(stage);
+  let sum = 0, n = 0, maxP = 0;
+  leaves.forEach(l => {
+    const md = getMultiDim(l.name);
+    if (!md || typeof md.scarcity !== 'number') return;
+    sum += md.scarcity;
+    n++;
+    if (md.priceUp && md.pricePct > maxP) maxP = md.pricePct;
+  });
+  if (n === 0) return null;
+  const total = leaves.length;
+  return { avg: sum / n, stars: Math.round(sum / n), maxPricePct: maxP, hit: n, total: total, lowSample: n / total < 0.3 };
+}
+function heatColor(stars) {
+  if (stars >= 5) return '#ff5252';
+  if (stars >= 4) return '#e69b3f';
+  if (stars >= 3) return '#ffc107';
+  return '#9ba3ad';
+}
+function priceColor(pct) {
+  if (pct >= 50) return '#ff5252';
+  if (pct >= 30) return '#e69b3f';
+  return '#9ba3ad';
+}
+function renderHeatLine(stage) {
+  const h = computeStageHeat(stage);
+  if (!h) return `<div class="sg-heat dim">紧缺 — · 数据待补</div>`;
+  const color = heatColor(h.stars);
+  const pColor = priceColor(h.maxPricePct);
+  const filled = '★'.repeat(h.stars);
+  const empty = '☆'.repeat(5 - h.stars);
+  const dimCls = h.stars <= 2 ? ' dim' : '';
+  const hotCls = h.stars >= 4 ? ' hot' : '';
+  const lowCls = h.lowSample ? ' low-sample' : '';
+  const titleAttr = h.lowSample ? ' title="样本不足,星级仅供参考"' : '';
+  const covPrefix = h.lowSample ? '⚠ ' : '';
+  const priceHtml = h.maxPricePct > 0
+    ? ` · 最高 <span class="heat-price" style="color:${pColor}">↗${h.maxPricePct}%</span>`
+    : '';
+  return `<div class="sg-heat${dimCls}${hotCls}${lowCls}" style="--heat-color:${color}"${titleAttr}>紧缺 <span class="heat-stars">${filled}</span><span class="heat-stars-empty">${empty}</span>${priceHtml}<span class="heat-cov">${covPrefix}${h.hit}/${h.total}</span></div>`;
+}
+
+/* ========== 桑基条渲染 ========== */
+function renderSankey() {
+  const sankey = document.getElementById('sankey');
+  const stages = industry.children;
+  sankey.innerHTML = stages.map((stage, i) => {
+    const leaves = collectLeaves(stage);
+    const c1=leaves.filter(l=>l.level===1).length,c2=leaves.filter(l=>l.level===2).length;
+    const c3=leaves.filter(l=>l.level===3).length,c4=leaves.filter(l=>l.level===4).length;
+    const c = STAGE_COLORS[i]||STAGE_COLORS[0];
+    return `<div class="sankey-stage" data-stage="${i}" style="--sg-from:${c.from};--sg-to:${c.to};"><div class="sg-name">${stage.name.replace(/^[^·]+·/,'')}</div><div class="sg-meta">${leaves.length}节点</div><div class="sg-count">${c1?`<span style="color:#ff8a8a">🔴${c1}</span> `:''}${c2?`<span style="color:#ffc28a">🟠${c2}</span> `:''}${c3?`<span style="color:#8ae88a">🟢${c3}</span> `:''}${c4?`<span style="color:#8ab8ff">🔵${c4}</span>`:''}</div>${renderHeatLine(stage)}</div>${i<stages.length-1?'<span class="sankey-arrow">→</span>':''}`;
+  }).join('');
+  sankey.querySelectorAll('.sankey-stage').forEach(el=>{
+    el.addEventListener('click', () => {
+      const idx = +el.dataset.stage;
+      collapseAll();
+      industry.children[idx]._collapsed = false;
+      sankey.querySelectorAll('.sankey-stage').forEach(s=>s.classList.remove('active'));
+      el.classList.add('active');
+      update();
+      setTimeout(()=>focusNode(industry.children[idx]),320);
+    });
+  });
+}
+renderSankey();
+
+/* ========== Top10 全局排行视图 (P1.4) ========== */
+const leafToStage = new Map();
+industry.children.forEach(stage => {
+  const stageLabel = stage.name.replace(/^[^·]+·/, '');
+  collectLeaves(stage).forEach(leaf => leafToStage.set(leaf._id, stageLabel));
+});
+
+function renderTopboards() {
+  const scarcityList = allLeaves
+    .filter(l => typeof l._scarcity === 'number' && l._scarcity > 0)
+    .sort((a, b) =>
+      (b._scarcity - a._scarcity) ||
+      ((a.level || 99) - (b.level || 99)) ||
+      a.name.localeCompare(b.name))
+    .slice(0, 10);
+
+  const priceList = allLeaves
+    .filter(l => l._priceUp && typeof l._pricePct === 'number' && l._pricePct > 0)
+    .sort((a, b) =>
+      (b._pricePct - a._pricePct) ||
+      ((b._weight || 0) - (a._weight || 0)) ||
+      a.name.localeCompare(b.name))
+    .slice(0, 10);
+
+  const scRankByLeafId = new Map(scarcityList.map((l, i) => [l._id, i + 1]));
+  const prRankByLeafId = new Map(priceList.map((l, i) => [l._id, i + 1]));
+
+  function rowHtml(leaf, rank, metricHtml) {
+    const stageLabel = leafToStage.get(leaf._id) || '';
+    const dotColor = LEVEL_COLOR[leaf.level] || '#6b7480';
+    const scR = scRankByLeafId.get(leaf._id);
+    const prR = prRankByLeafId.get(leaf._id);
+    let badgeHtml = '';
+    if (scR && prR) {
+      const stars = '★'.repeat(leaf._scarcity);
+      const tooltip = `⚡ 双榜节点\n左榜卡脖子 #${scR} ${stars}\n右榜涨价 #${prR} ↗${leaf._pricePct}%\n= 既卡脖子又涨价,最值得跟踪`;
+      badgeHtml = `<span class="topboard-badge" data-tooltip="${tooltip}">⚡双榜</span>`;
+    }
+    return `<li class="topboard-row" data-id="${leaf._id}">`
+      + `<span class="topboard-rank">${String(rank).padStart(2, '0')}.</span>`
+      + `<span class="topboard-dot" style="background:${dotColor}"></span>`
+      + `<span class="topboard-name-wrap">`
+      +   `<span class="topboard-name" data-tooltip="${leaf.name}">${leaf.name}</span>`
+      +   badgeHtml
+      + `</span>`
+      + (stageLabel ? `<span class="topboard-stage">${stageLabel}</span>` : '')
+      + metricHtml
+      + `</li>`;
+  }
+
+  const olScarcity = document.getElementById('list-scarcity');
+  const olPrice = document.getElementById('list-price');
+  const emptyHtml = '<li style="color:#6b7480;font-size:11px;padding:4px;">暂无数据</li>';
+
+  olScarcity.innerHTML = scarcityList.length
+    ? scarcityList.map((l, i) => {
+        const s = l._scarcity;
+        const stars = '★'.repeat(s) + '☆'.repeat(5 - s);
+        return rowHtml(l, i + 1, `<span class="topboard-metric stars">${stars}</span>`);
+      }).join('')
+    : emptyHtml;
+
+  olPrice.innerHTML = priceList.length
+    ? priceList.map((l, i) =>
+        rowHtml(l, i + 1, `<span class="topboard-metric price">↗${l._pricePct}%</span>`)
+      ).join('')
+    : emptyHtml;
+
+  document.querySelectorAll('#topboards .topboard-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const id = +row.dataset.id;
+      const leaf = allLeaves.find(l => l._id === id);
+      if (!leaf) return;
+      focusNode(leaf);
+      setTimeout(() => {
+        nodeLayer.selectAll('g.node').classed('highlight', d => d.data._id === id);
+        showDetail(leaf);
+      }, 150);
+    });
+  });
+}
+
+(function setupTopboardsToggle() {
+  const tb = document.getElementById('topboards');
+  const btn = document.getElementById('topboards-toggle');
+  const KEY = 'topboards.collapsed';
+  const apply = (collapsed) => {
+    tb.classList.toggle('collapsed', collapsed);
+    btn.textContent = collapsed ? '▸' : '▾';
+  };
+  apply(localStorage.getItem(KEY) === '1');
+  btn.addEventListener('click', () => {
+    const collapsed = !tb.classList.contains('collapsed');
+    apply(collapsed);
+    localStorage.setItem(KEY, collapsed ? '1' : '0');
+  });
+})();
+
+renderTopboards();
+
+(function setupCustomTooltip() {
+  const tip = document.getElementById('custom-tooltip');
+  if (!tip) return;
+  let current = null;
+  document.addEventListener('mouseover', e => {
+    const t = e.target.closest && e.target.closest('[data-tooltip]');
+    if (t === current) return;
+    current = t;
+    if (!t) { tip.style.display = 'none'; return; }
+    tip.textContent = t.getAttribute('data-tooltip') || '';
+    tip.style.display = 'block';
+  });
+  document.addEventListener('mousemove', e => {
+    if (!current) return;
+    const r = tip.getBoundingClientRect();
+    let x = e.clientX + 14, y = e.clientY + 14;
+    if (x + r.width  > window.innerWidth)  x = e.clientX - r.width  - 14;
+    if (y + r.height > window.innerHeight) y = e.clientY - r.height - 14;
+    tip.style.left = x + 'px';
+    tip.style.top  = y + 'px';
+  });
+  document.addEventListener('mouseout', e => {
+    if (!current) return;
+    const to = e.relatedTarget;
+    if (!to || !to.closest || !to.closest('[data-tooltip]')) {
+      tip.style.display = 'none';
+      current = null;
+    }
+  });
+})();
+
+/* ========== D3 树状图 ========== */
+const svg = d3.select('#tree-svg');
+const g = svg.append('g');
+const linkLayer = g.append('g').attr('class','links');
+const nodeLayer = g.append('g').attr('class','nodes');
+const zoom = d3.zoom().scaleExtent([0.2,3]).on('zoom', ev => g.attr('transform', ev.transform));
+svg.call(zoom);
+
+function initCollapse(node, depth=0) {
+  if (depth>=1 && node.children) node._collapsed = true;
+  if (node.children) node.children.forEach(c => initCollapse(c, depth+1));
+}
+initCollapse(industry);
+
+function getVisibleChildren(node) {
+  return node._collapsed ? null : node.children;
+}
+
+function update() {
+  const root = d3.hierarchy(industry, d => getVisibleChildren(d));
+  const treeLayout = d3.tree().nodeSize([28,260]).separation((a,b)=>a.parent===b.parent?1:1.4);
+  treeLayout(root);
+
+  const nodes = root.descendants();
+  const links = root.links();
+
+  const linkSel = linkLayer.selectAll('path.link').data(links, d => d.target.data._id);
+  linkSel.exit().remove();
+  linkSel.enter().append('path').attr('class','link').merge(linkSel)
+    .attr('d', d3.linkHorizontal().x(d=>d.y).y(d=>d.x));
+
+  const nodeSel = nodeLayer.selectAll('g.node').data(nodes, d => d.data._id);
+  nodeSel.exit().remove();
+
+  const nodeEnter = nodeSel.enter().append('g').attr('class','node')
+    .attr('transform', d => `translate(${d.y},${d.x})`)
+    .on('click', (ev, d) => {
+      ev.stopPropagation();
+      if (d.data.children) { d.data._collapsed = !d.data._collapsed; update(); }
+      else { showDetail(d.data); }
+    });
+
+  nodeEnter.append('circle').attr('r', 5);
+  nodeEnter.append('title');
+  nodeEnter.append('text');
+
+  const nodeMerge = nodeEnter.merge(nodeSel);
+  nodeMerge.attr('transform', d => `translate(${d.y},${d.x})`);
+
+  nodeMerge.select('title').text(d => {
+    if (d.data.children) return '';
+    const w = d.data._weight || 0;
+    if (w === 0) return '节点重要性 = 0\n(无关联 A 股 / 无深度情报)';
+    const lines = ['节点重要性 = ' + w];
+    if (d.data._wStocks) lines.push('关联 A 股: ' + d.data._wStocks + ' 家');
+    if (d.data._wIntel) lines.push('深度情报: ' + d.data._wIntel + ' 家');
+    if (d.data._wLvlBonus) lines.push('卡脖子加成: +' + d.data._wLvlBonus);
+    return lines.join('\n');
+  });
+
+  nodeMerge.select('circle')
+    .attr('r', d => d.data.children ? 6 : weightToRadius(d.data._weight || 0))
+    .attr('class', d => !d.data.children ? (d.data.level ? `lvl-${d.data.level}` : 'lvl-cat') : 'lvl-cat')
+    .style('stroke', d => !d.data.children ? LEVEL_COLOR[d.data.level]||'#6b7480' : (d.data._collapsed?'#4287d4':'#6b7480'))
+    .style('fill', d => {
+      if (d.data.children && d.data._collapsed) return '#0a0e14';
+      if (!d.data.children) return LEVEL_COLOR[d.data.level]||'#6b7480';
+      return '#6b7480';
+    });
+
+  nodeMerge.select('text')
+    .attr('dy', '0.32em')
+    .attr('x', d => {
+      const r = d.data.children ? 6 : weightToRadius(d.data._weight || 0);
+      return d.data.children ? -(r + 4) : (r + 4);
+    })
+    .attr('text-anchor', d => d.data.children?'end':'start')
+    .text(d => {
+      let txt = d.data.name;
+      if (d.data.children) {
+        const total = collectLeaves(d.data).length;
+        return `${txt} ${d.data._collapsed?'[+'+total+']':''}`;
+      }
+      const stockCnt = (d.data.stocks||[]).length;
+      let badges = '';
+      if (d.data._scarcity) badges += ' ' + '★'.repeat(d.data._scarcity) + '☆'.repeat(5-d.data._scarcity);
+      if (d.data._priceUp) badges += ' ↗' + (typeof d.data._pricePct === 'number' ? d.data._pricePct + '%' : '');
+      return stockCnt > 0 ? `${txt} (${stockCnt})${badges}` : txt + badges;
+    })
+    .style('font-weight', d => d.data._depth<=1?'700':(d.data._depth===2?'600':'400'))
+    .style('font-size', d => d.data._depth===0?'15px':(d.data._depth===1?'13px':'12px'))
+    .style('fill', d => d.data._depth===0?'#fff':(d.data._depth===1?'#d8dde5':'#9ba3ad'));
+}
+update();
+
+function fitToView() {
+  const bbox = g.node().getBBox();
+  const svgRect = svg.node().getBoundingClientRect();
+  const pad = 60;
+  const scale = Math.min((svgRect.width-pad*2)/bbox.width, (svgRect.height-pad*2)/bbox.height, 1);
+  const tx = (svgRect.width/2)-((bbox.x+bbox.width/2)*scale);
+  const ty = (svgRect.height/2)-((bbox.y+bbox.height/2)*scale);
+  svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity.translate(tx,ty).scale(scale));
+}
+setTimeout(fitToView, 100);
+
+document.getElementById('zoom-in').onclick = () => svg.transition().call(zoom.scaleBy,1.3);
+document.getElementById('zoom-out').onclick = () => svg.transition().call(zoom.scaleBy,0.77);
+document.getElementById('zoom-fit').onclick = () => fitToView();
+
+function expandAll() {
+  allNodes.forEach(n => { if (n.children) n._collapsed = false; });
+  update();
+  nodeLayer.selectAll('g.node').classed('dimmed', false).classed('match', false);
+  linkLayer.selectAll('path.link').classed('dimmed', false);
+  setTimeout(fitToView, 50);
+}
+function collapseAll() {
+  allNodes.forEach(n => { if (n.children) n._collapsed = (n._depth >= 1); });
+  update();
+  nodeLayer.selectAll('g.node').classed('dimmed', false).classed('match', false);
+  linkLayer.selectAll('path.link').classed('dimmed', false);
+  setTimeout(fitToView, 50);
+}
+document.getElementById('expand-all').onclick = expandAll;
+document.getElementById('collapse-all').onclick = collapseAll;
+
+function focusNode(node) {
+  let p = node;
+  while (p) { if (p.children) p._collapsed = false; p = findParent(p); }
+  update();
+}
+function findParent(target) {
+  for (const n of allNodes) { if (n.children && n.children.includes(target)) return n; }
+  return null;
+}
+
+/* ========== 多选筛选 ========== */
+let activeFilters = new Set();
+function toggleFilter(level) {
+  const btn = document.getElementById('filter-'+level);
+  if (activeFilters.has(level)) { activeFilters.delete(level); btn.classList.remove('active'); }
+  else { activeFilters.add(level); btn.classList.add('active'); }
+  applyMultiFilter();
+}
+function nodeHasLabel(node, label) { return node.level === label; }
+function applyMultiFilter() {
+  if (activeFilters.size === 0) {
+    nodeLayer.selectAll('g.node').classed('dimmed', false).classed('match', false);
+    linkLayer.selectAll('path.link').classed('dimmed', false);
+    return;
+  }
+  allNodes.forEach(n => { if (n.children) n._collapsed = false; });
+  update();
+  setTimeout(() => {
+    const selected = Array.from(activeFilters);
+    nodeLayer.selectAll('g.node')
+      .classed('dimmed', d => {
+        if (d.data.children) return false;
+        return !selected.some(l => nodeHasLabel(d.data, l));
+      })
+      .classed('match', d => {
+        if (d.data.children) return false;
+        return selected.some(l => nodeHasLabel(d.data, l));
+      });
+    linkLayer.selectAll('path.link').classed('dimmed', d => {
+      const targetLeaves = collectLeaves(d.target.data);
+      return !targetLeaves.some(l => selected.some(s => nodeHasLabel(l, s)));
+    });
+  }, 100);
+}
+document.querySelectorAll('[data-level]').forEach(btn => {
+  btn.onclick = () => toggleFilter(+btn.dataset.level);
+});
+document.getElementById('filter-clear').onclick = () => {
+  activeFilters.clear();
+  document.querySelectorAll('[id^="filter-"]').forEach(b => b.classList.remove('active'));
+  nodeLayer.selectAll('g.node').classed('dimmed', false).classed('match', false).classed('highlight', false);
+  linkLayer.selectAll('path.link').classed('dimmed', false);
+  document.getElementById('search').value = '';
+};
+
+/* ========== 搜索 ========== */
+const searchInput = document.getElementById('search');
+searchInput.addEventListener('input', () => {
+  const q = searchInput.value.trim().toLowerCase();
+  if (!q) {
+    nodeLayer.selectAll('g.node').classed('highlight', false);
+    applyMultiFilter();
+    return;
+  }
+  const matches = allNodes.filter(n => {
+    if (n.name.toLowerCase().includes(q)) return true;
+    if (n.global && n.global.toLowerCase().includes(q)) return true;
+    if (n.cn && n.cn.toLowerCase().includes(q)) return true;
+    if (n.stocks && n.stocks.some(s => s.includes(q))) return true;
+    return false;
+  });
+  allNodes.forEach(n => { if (n.children) n._collapsed = false; });
+  update();
+  setTimeout(() => {
+    const matchIds = new Set(matches.map(m => m._id));
+    nodeLayer.selectAll('g.node')
+      .classed('highlight', d => matchIds.has(d.data._id))
+      .classed('dimmed', d => !matchIds.has(d.data._id) && !isAncestor(d.data, matches));
+    linkLayer.selectAll('path.link').classed('dimmed', d => {
+      const subLeaves = collectLeaves(d.target.data);
+      return !subLeaves.some(l => matchIds.has(l._id) || matches.some(m=>l._id===m._id));
+    });
+  }, 100);
+});
+function isAncestor(node, descendants) {
+  if (!node.children) return false;
+  const subIds = new Set(collectAll(node).map(n=>n._id));
+  return descendants.some(d => subIds.has(d._id));
+}
+
+/* ========== 详情抽屉 (v5.1增强版) ========== */
+const drawer = document.getElementById('drawer');
+document.getElementById('drawer-close').onclick = () => drawer.classList.remove('open');
+
+function showDetail(node) {
+  document.getElementById('drawer-name').textContent = node.name;
+  document.getElementById('drawer-path').textContent = node._path.slice(0,-1).join(' > ');
+  const tag = document.getElementById('drawer-tag');
+  if (node.level) {
+    tag.textContent = LEVEL_NAME[node.level];
+    tag.style.background = LEVEL_COLOR[node.level];
+  } else {
+    tag.textContent = '分类节点';
+    tag.style.background = '#6b7480';
+  }
+
+  const body = document.getElementById('drawer-body');
+  let html = '';
+
+  if (node._analogy) {
+    html += `<div class="drawer-section" style="background:#1a1810;border-left:3px solid #e69b3f;"><div class="drawer-label">🏷️ 一句话秒懂</div><div class="drawer-value" style="color:#d4a87a;font-size:13px;line-height:1.6;">${node._analogy}</div></div>`;
+  }
+
+  if (node._scarcity) {
+    const stars = '★'.repeat(node._scarcity) + '☆'.repeat(5-node._scarcity);
+    const gapText = node._supplyGap ? '有供需缺口' : '供需平衡';
+    const priceText = node._priceUp
+      ? (typeof node._pricePct === 'number' ? `↗ 涨价 ${node._pricePct}%` : '↗ 涨价(幅度不明)')
+      : '价格稳定';
+    html += `<div class="drawer-section"><div class="drawer-label">📊 紧缺度 & 价格</div><div style="display:flex;gap:12px;margin-top:8px;"><div style="background:#1a1f26;border:1px solid #2a3340;border-radius:8px;padding:8px 12px;text-align:center;flex:1;"><div style="color:#6b7480;font-size:10px;">紧缺度</div><div style="color:#ffc107;font-size:16px;">${stars}</div></div><div style="background:#1a1f26;border:1px solid #2a3340;border-radius:8px;padding:8px 12px;text-align:center;flex:1;"><div style="color:#6b7480;font-size:10px;">价格趋势</div><div style="color:${node._priceUp?'#4caf50':'#9ba3ad'};font-size:16px;">${priceText}</div></div><div style="background:#1a1f26;border:1px solid #2a3340;border-radius:8px;padding:8px 12px;text-align:center;flex:1;"><div style="color:#6b7480;font-size:10px;">供需</div><div style="color:${node._supplyGap?'#d44':'#4caf50'};font-size:16px;">${gapText}</div></div><div style="background:#1a1f26;border:1px solid #2a3340;border-radius:8px;padding:8px 12px;text-align:center;flex:1;"><div style="color:#6b7480;font-size:10px;">国产化</div><div style="color:#4287d4;font-size:16px;">${node._localization}/5</div></div></div></div>`;
+  }
+
+  if (node.role) html += `<div class="drawer-section"><div class="drawer-label">工序定位</div><div class="drawer-value">${node.role}</div></div>`;
+  if (node.global) html += `<div class="drawer-section"><div class="drawer-label">全球玩家(份额)</div><div class="drawer-value">${node.global}</div></div>`;
+  if (node.cn) html += `<div class="drawer-section"><div class="drawer-label">中国玩家(进度)</div><div class="drawer-value">${node.cn}</div></div>`;
+
+  if (node._techRisk) {
+    html += `<div class="drawer-section"><div class="drawer-label">🔬 技术路线 & 替代风险</div><div class="drawer-value" style="color:#e8c8c8;font-size:12px;line-height:1.6;">${node._techRisk}</div></div>`;
+  }
+
+  if (node._catalyst) {
+    html += `<div class="drawer-section"><div class="drawer-label">🚀 催化剂 / 时间轴</div><div class="drawer-value" style="color:#ccc8e0;font-size:12px;line-height:1.6;">${node._catalyst}</div></div>`;
+  }
+
+  if (node.stocks && node.stocks.length > 0) {
+    html += `<div class="drawer-section"><div class="drawer-label">关联A股标的 (点击看估值)</div><div class="stocks-list">${node.stocks.map(s => `<span class="stock-chip" onclick="showStockVal('${s}',event)">${s}</span>`).join('')}</div></div>`;
+    if (node._valuations && node._valuations.length > 0) {
+      node._valuations.forEach(val => {
+        const peCls = val.pe2026 > 0 && val.pe2026 <= 25 ? 'pe-good' : (val.pe2026 > 60 ? 'pe-high' : '');
+        const grColor = val.growth > 80 ? '#4caf50' : (val.growth > 40 ? '#ffc107' : '#9ba3ad');
+        const pegCls = val.peg !== null && val.peg <= 0.5 ? 'positive' : (val.peg !== null && val.peg <= 1.0 ? 'neutral' : 'negative');
+        const pegBarCls = val.peg !== null && val.peg <= 0.5 ? 'green' : (val.peg !== null && val.peg <= 1.0 ? 'yellow' : 'red');
+        const pegW = Math.min((val.peg !== null && val.peg > 0 ? val.peg : 0) * 50, 100);
+        html += `<div class="drawer-section" style="background:#0d1117;"><div class="drawer-label" style="display:flex;align-items:center;gap:8px;"><span style="color:#6ea3ff;font-weight:600;">${val.code}</span><span style="color:#d8dde5;">${val.name}</span><span style="margin-left:auto;font-size:10px;color:#6b7480;">${val.note}</span></div><div class="valuation-grid"><div class="val-card ${peCls}"><div class="val-label">2026E PE</div><div class="val-value ${getPEColor(val.pe2026)}">${formatPE(val.pe2026)}</div></div><div class="val-card"><div class="val-label">营收增速</div><div class="val-value" style="color:${grColor}">${val.growth}%</div></div><div class="val-card"><div class="val-label">PEG</div><div class="val-value ${pegCls}">${getPEGLabel(val.peg)}</div><div class="peg-bar"><div class="peg-fill ${pegBarCls}" style="width:${pegW}%"></div></div></div><div class="val-card"><div class="val-label">2027E PE</div><div class="val-value ${getPEColor(val.pe2027)}">${formatPE(val.pe2027)}</div></div></div></div>`;
+      });
+    }
+  }
+
+  if (node.note) html += `<div class="drawer-section"><div class="drawer-label">关键备注</div><div class="note-box">⚠️ ${node.note}</div></div>`;
+
+  body.innerHTML = html;
+  drawer.classList.add('open');
+}
+
+svg.on('click', () => drawer.classList.remove('open'));
+
+/* ========== 股票估值弹窗 ========== */
+function showStockVal(stockCode, event) {
+  if (event) event.stopPropagation();
+  const val = getValuation(stockCode);
+  let content = '';
+  if (!val) {
+    content = `<h3 style="color:#9ba3ad;margin-bottom:12px;">${stockCode}</h3><p style="color:#6b7480;">暂无该标的的估值数据</p>`;
+  } else {
+    const peCls2026 = getPEColor(val.pe2026);
+    const grColor = val.growth > 80 ? '#4caf50' : (val.growth > 40 ? '#ffc107' : '#9ba3ad');
+    const pegCls = val.peg !== null && val.peg <= 0.5 ? 'green' : (val.peg !== null && val.peg <= 1.0 ? 'yellow' : 'red');
+    const pegW = Math.min((val.peg !== null && val.peg > 0 ? val.peg : 0) * 50, 100);
+    const pegText = val.peg !== null && val.peg <= 0.5 ? '低估区间' : (val.peg !== null && val.peg <= 1.0 ? '合理区间' : val.peg !== null ? '高估区间' : 'N/A');
+    const investAdvice = val.pe2026 > 0 && val.pe2026 <= 25 && val.peg !== null && val.peg <= 0.5 ? '✅ 低估区间，建议重点关注' :
+          val.pe2026 > 0 && val.pe2026 <= 40 && val.peg !== null && val.peg <= 1.0 ? '⭕ 估值合理，具备安全边际' :
+          val.pe2026 > 60 || (val.peg !== null && val.peg > 1.5) ? '⚠️ 估值偏高，需等待回调' :
+          val.pe2026 < 0 ? '⏸️ 当前亏损，主题投资，关注盈利拐点' : '🔍 建议结合基本面综合判断';
+
+    content = `<h3 style="color:#6ea3ff;margin-bottom:4px;">${val.name} <span style="color:#9ba3ad;font-size:13px;">${stockCode}</span></h3><p style="color:#6b7480;font-size:11px;margin-bottom:16px;">${val.note}</p><div class="valuation-grid" style="margin-bottom:16px;"><div class="val-card"><div class="val-label">2025A PE</div><div class="val-value ${getPEColor(val.pe2025)}">${formatPE(val.pe2025)}</div></div><div class="val-card"><div class="val-label">2026E PE</div><div class="val-value ${peCls2026}">${formatPE(val.pe2026)}</div></div><div class="val-card"><div class="val-label">增速</div><div class="val-value" style="color:${grColor}">${val.growth}%</div></div><div class="val-card"><div class="val-label">2027E PE</div><div class="val-value ${getPEColor(val.pe2027)}">${formatPE(val.pe2027)}</div></div></div><div style="background:#1a2332;border:1px solid #2a4055;border-radius:8px;padding:12px;margin-bottom:12px;"><div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span style="color:#6b7480;font-size:11px;">PEG</span><span style="color:${val.peg !== null && val.peg <= 1.0 ? '#4caf50' : '#d44'};font-size:16px;font-weight:700;">${getPEGLabel(val.peg)}</span></div><div class="peg-bar"><div class="peg-fill ${pegCls}" style="width:${pegW}%"></div></div><div style="color:#9ba3ad;font-size:10px;margin-top:6px;">${pegText}</div></div><div style="background:#1a1810;border-left:3px solid #e69b3f;padding:8px 12px;border-radius:0 4px 4px 0;"><div style="color:#d4a87a;font-size:11px;line-height:1.6;">💡 <strong>投资建议</strong><br>${investAdvice}</div></div>`;
+
+    const intel = getIntel(stockCode);
+    if (intel) {
+      content += `<div style="margin-top:14px;border-top:1px solid #1e2530;padding-top:14px;"><div style="color:#6b7480;font-size:10px;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">📋 公司情报追踪</div>${intel.tech?`<div style="background:#0d1a14;border-left:3px solid #4caf50;padding:8px 12px;border-radius:0 4px 4px 0;margin-bottom:6px;"><div style="color:#6b7480;font-size:10px;">🔬 技术</div><div style="color:#c8d5d0;font-size:12px;line-height:1.5;margin-top:3px;">${intel.tech}</div></div>`:''}${intel.expansion?`<div style="background:#0d141a;border-left:3px solid #4287d4;padding:8px 12px;border-radius:0 4px 4px 0;margin-bottom:6px;"><div style="color:#6b7480;font-size:10px;">🏭 扩产</div><div style="color:#c8ced8;font-size:12px;line-height:1.5;margin-top:3px;">${intel.expansion}</div></div>`:''}${intel.supply?`<div style="background:#1a0d14;border-left:3px solid #e69b3f;padding:8px 12px;border-radius:0 4px 4px 0;margin-bottom:6px;"><div style="color:#6b7480;font-size:10px;">🔗 供应链</div><div style="color:#d8d0c8;font-size:12px;line-height:1.5;margin-top:3px;">${intel.supply}</div></div>`:''}${intel.orders?`<div style="background:#0d1a0d;border-left:3px solid #4caf50;padding:8px 12px;border-radius:0 4px 4px 0;margin-bottom:6px;"><div style="color:#6b7480;font-size:10px;">📦 订单</div><div style="color:#c8d5c8;font-size:12px;line-height:1.5;margin-top:3px;">${intel.orders}</div></div>`:''}${intel.risk?`<div style="background:#1a0d0d;border-left:3px solid #d44;padding:8px 12px;border-radius:0 4px 4px 0;"><div style="color:#6b7480;font-size:10px;">⚠️ 风险</div><div style="color:#e8c8c8;font-size:12px;line-height:1.5;margin-top:3px;">${intel.risk}</div></div>`:''}</div>`;
+    }
+    content += `<p style="color:#4a5260;font-size:10px;margin-top:12px;">数据来源: 2026年5月券商一致预期 · 仅供参考</p>`;
+  }
+  document.getElementById('stock-modal-content').innerHTML = content;
+  document.getElementById('stock-modal').classList.add('show');
+}
+window.showStockVal = showStockVal;
+</script>
+
+<div id="custom-tooltip"></div>
+
+<!-- 股票估值弹窗 -->
+<div class="stock-modal" id="stock-modal">
+  <div class="stock-modal-box">
+    <button class="stock-modal-close" onclick="document.getElementById('stock-modal').classList.remove('show')">✕</button>
+    <div id="stock-modal-content"></div>
+  </div>
+</div>
+
+</body>
+</html>

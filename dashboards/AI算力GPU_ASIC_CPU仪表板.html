@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI算力 GPU+ASIC+CPU 产业投研仪表板</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Microsoft YaHei', sans-serif;
+  background: #0a0e1a;
+  color: #e2e8f0;
+  min-height: 100vh;
+  padding: 24px;
+}
+.container { max-width: 1600px; margin: 0 auto; }
+
+/* 标题 */
+.header {
+  background: linear-gradient(135deg, #1e3a8a 0%, #1e1b4b 100%);
+  padding: 32px;
+  border-radius: 16px;
+  margin-bottom: 24px;
+  border: 1px solid #334155;
+}
+.header h1 {
+  font-size: 32px;
+  font-weight: 700;
+  background: linear-gradient(90deg, #60a5fa 0%, #a78bfa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 8px;
+}
+.header .subtitle { color: #94a3b8; font-size: 14px; margin-bottom: 16px; }
+.header .thesis {
+  background: rgba(59, 130, 246, 0.1);
+  border-left: 3px solid #3b82f6;
+  padding: 12px 16px;
+  font-size: 13px;
+  color: #cbd5e1;
+  border-radius: 4px;
+  line-height: 1.7;
+}
+
+/* 5变量权重展示 */
+.variables-bar {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.var-card {
+  background: #131827;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid #1e293b;
+  position: relative;
+  overflow: hidden;
+}
+.var-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: var(--c);
+}
+.var-card .var-id {
+  font-size: 11px;
+  color: var(--c);
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+.var-card .var-name {
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 4px;
+  color: #f1f5f9;
+}
+.var-card .var-weight {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--c);
+  margin-top: 6px;
+}
+
+/* Section 标题 */
+.section { margin-bottom: 28px; }
+.section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #e2e8f0;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.section-title::before {
+  content: '';
+  width: 4px;
+  height: 18px;
+  background: linear-gradient(180deg, #3b82f6, #8b5cf6);
+  border-radius: 2px;
+}
+
+/* 三大变革卡片 */
+.conflicts-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.conflict-card {
+  background: #131827;
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.2s;
+}
+.conflict-card:hover {
+  border-color: #3b82f6;
+  transform: translateY(-2px);
+}
+.conflict-card .conflict-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #fbbf24;
+  margin-bottom: 4px;
+}
+.conflict-card .conflict-subtitle {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-bottom: 12px;
+}
+.conflict-card .conflict-summary {
+  font-size: 13px;
+  color: #e2e8f0;
+  margin-bottom: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+.conflict-card .winners-label {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-bottom: 6px;
+}
+.conflict-card .winners {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.winner-tag {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+.conflict-card .conflict-details {
+  font-size: 12px;
+  color: #94a3b8;
+  line-height: 1.6;
+  border-top: 1px solid #1e293b;
+  padding-top: 10px;
+}
+
+/* 公司表格 */
+.companies-section { background: #131827; border-radius: 12px; padding: 20px; border: 1px solid #1e293b; }
+.filter-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.filter-btn {
+  background: #1e293b;
+  color: #94a3b8;
+  border: 1px solid #334155;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.filter-btn:hover { background: #334155; color: #e2e8f0; }
+.filter-btn.active {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+thead th {
+  background: #0f172a;
+  color: #94a3b8;
+  font-weight: 600;
+  padding: 10px 8px;
+  text-align: center;
+  font-size: 12px;
+  letter-spacing: 0.3px;
+  border-bottom: 1px solid #334155;
+}
+thead th.left { text-align: left; }
+tbody tr {
+  border-bottom: 1px solid #1e293b;
+  transition: background 0.1s;
+  cursor: pointer;
+}
+tbody tr:hover { background: rgba(59, 130, 246, 0.06); }
+tbody td {
+  padding: 10px 8px;
+  text-align: center;
+  color: #cbd5e1;
+}
+tbody td.left { text-align: left; }
+.rank-num {
+  font-weight: 700;
+  color: #64748b;
+  width: 30px;
+}
+.company-name {
+  font-weight: 600;
+  color: #f1f5f9;
+}
+.code-tag {
+  font-size: 11px;
+  color: #64748b;
+  margin-left: 6px;
+}
+.plate-tag {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 600;
+}
+.plate-A股 { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+.plate-美股 { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+.plate-韩股 { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
+
+/* 评分单元格 */
+.score {
+  display: inline-block;
+  width: 28px;
+  height: 28px;
+  line-height: 28px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 12px;
+}
+.score-5 { background: #166534; color: #bbf7d0; }
+.score-4 { background: #14532d; color: #86efac; }
+.score-3 { background: #713f12; color: #fde68a; }
+.score-2 { background: #7c2d12; color: #fdba74; }
+.score-1 { background: #7f1d1d; color: #fecaca; }
+.score-0 { background: #1e293b; color: #64748b; }
+
+/* 综合分柱 */
+.total-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+}
+.total-num {
+  font-weight: 700;
+  font-size: 14px;
+  min-width: 38px;
+  text-align: right;
+}
+.total-bar {
+  width: 80px;
+  height: 6px;
+  background: #1e293b;
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+.total-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ef4444 0%, #f59e0b 30%, #10b981 60%, #3b82f6 100%);
+  border-radius: 3px;
+}
+
+/* 入选状态 */
+.status {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.status-core { background: #166534; color: #bbf7d0; }
+.status-watch { background: #713f12; color: #fde68a; }
+.status-drop { background: #1e293b; color: #64748b; }
+
+/* 锚点描述 */
+.anchor {
+  font-size: 12px;
+  color: #94a3b8;
+  text-align: left;
+  line-height: 1.5;
+  max-width: 460px;
+}
+
+/* 排行榜 */
+.rankings {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.ranking-card {
+  background: #131827;
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+  padding: 20px;
+}
+.ranking-card .rank-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e2e8f0;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ranking-card .rank-icon {
+  font-size: 18px;
+}
+.ranking-card .rank-list { display: flex; flex-direction: column; gap: 8px; }
+.rank-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: #0f172a;
+  border-radius: 6px;
+  font-size: 13px;
+}
+.rank-item .name { color: #e2e8f0; font-weight: 500; }
+.rank-item .val { color: #fbbf24; font-weight: 700; font-family: monospace; }
+.rank-item.gold { background: linear-gradient(90deg, rgba(251, 191, 36, 0.15), rgba(15, 23, 42, 0.5)); border-left: 3px solid #fbbf24; }
+.rank-item.silver { background: linear-gradient(90deg, rgba(148, 163, 184, 0.12), rgba(15, 23, 42, 0.5)); border-left: 3px solid #94a3b8; }
+.rank-item.bronze { background: linear-gradient(90deg, rgba(180, 83, 9, 0.12), rgba(15, 23, 42, 0.5)); border-left: 3px solid #b45309; }
+
+/* 详情侧边栏 */
+.detail-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  backdrop-filter: blur(4px);
+}
+.detail-overlay.active { display: flex; }
+.detail-modal {
+  background: #131827;
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 600px;
+  width: 90%;
+  border: 1px solid #334155;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.detail-modal h2 {
+  font-size: 24px;
+  color: #f1f5f9;
+  margin-bottom: 4px;
+}
+.detail-modal .det-code { color: #64748b; font-size: 13px; margin-bottom: 16px; }
+.detail-scores {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.detail-score-card {
+  background: #0f172a;
+  border-radius: 8px;
+  padding: 12px;
+  text-align: center;
+}
+.detail-score-card .ds-label {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-bottom: 4px;
+}
+.detail-score-card .ds-val {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--cc);
+}
+.detail-anchor {
+  background: #0f172a;
+  padding: 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #cbd5e1;
+  line-height: 1.7;
+  margin-bottom: 16px;
+}
+.detail-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  background: linear-gradient(90deg, #1e3a8a, #1e1b4b);
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+.detail-total .lbl { color: #94a3b8; font-size: 13px; }
+.detail-total .val { font-size: 28px; font-weight: 700; color: #fbbf24; font-family: monospace; }
+.detail-close {
+  position: absolute;
+  top: 16px; right: 20px;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 24px;
+  cursor: pointer;
+}
+.detail-close:hover { color: #f1f5f9; }
+.detail-modal-wrap { position: relative; }
+.framework-note {
+  background: rgba(139, 92, 246, 0.1);
+  border-left: 3px solid #8b5cf6;
+  padding: 12px 16px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #cbd5e1;
+  line-height: 1.6;
+  margin-top: 16px;
+}
+
+/* 滚动条美化 */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #0f172a; }
+::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+/* 响应式 */
+@media (max-width: 1024px) {
+  .conflicts-grid { grid-template-columns: 1fr; }
+  .rankings { grid-template-columns: 1fr; }
+  .variables-bar { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <h1>AI算力核心三件套 · GPU + ASIC + CPU 产业投研仪表板</h1>
+    <div class="subtitle">框架版本 V1.0 &nbsp;|&nbsp; 评估窗口 2026-2027 &nbsp;|&nbsp; 候选公司 30家 &nbsp;|&nbsp; 入选标的 14家</div>
+    <div class="thesis">
+      <strong>核心命题:</strong> 在大模型训练放量、推理爆发、ASIC份额上升、CPU-加速器集成深化的四重浪潮下,识别2026-2027有业绩兑现确定性的核心标的。
+    </div>
+  </div>
+
+  <!-- 5变量权重 -->
+  <div class="section">
+    <div class="section-title">5变量量化权重</div>
+    <div class="variables-bar" id="vars-bar"></div>
+  </div>
+
+  <!-- 三大核心变革 -->
+  <div class="section">
+    <div class="section-title">2026-2027 三大核心产业变革</div>
+    <div class="conflicts-grid" id="conflicts-grid"></div>
+  </div>
+
+  <!-- 排行榜 -->
+  <div class="section">
+    <div class="section-title">单维度TOP 5排行榜</div>
+    <div class="rankings" id="rankings"></div>
+  </div>
+
+  <!-- 公司全景表 -->
+  <div class="section">
+    <div class="section-title">30家公司打分总表(可点击查看详情)</div>
+    <div class="companies-section">
+      <div class="filter-bar" id="filter-bar"></div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:40px">#</th>
+            <th class="left">标的</th>
+            <th>板块</th>
+            <th title="主线趋势绑定度 27.5%">V1</th>
+            <th title="技术路线正确性 22.5%">V2</th>
+            <th title="产业链卡位 22.5%">V3</th>
+            <th title="估值成长包容度 17.5%">V4</th>
+            <th title="地缘/供应链风险 10%">V5</th>
+            <th>综合分</th>
+            <th>状态</th>
+            <th class="left">核心定位</th>
+          </tr>
+        </thead>
+        <tbody id="companies-tbody"></tbody>
+      </table>
+      <div class="framework-note">
+        💡 <strong>使用提示:</strong> 综合分 = 0.275×V1 + 0.225×V2 + 0.225×V3 + 0.175×V4 + 0.10×V5。
+        ☑️ 核心入选(≥4.0): 14家 &nbsp;|&nbsp; 👀 观察名单(3.5-4.0): 11家 &nbsp;|&nbsp; ⏸ 落选(&lt;3.5): 5家。
+        点击表格行可查看公司打分详情。
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- 详情弹层 -->
+<div class="detail-overlay" id="detail-overlay" onclick="closeDetail(event)">
+  <div class="detail-modal-wrap">
+    <div class="detail-modal">
+      <button class="detail-close" onclick="closeDetail(event, true)">×</button>
+      <h2 id="det-name"></h2>
+      <div class="det-code" id="det-code"></div>
+      <div class="detail-total">
+        <span class="lbl">综合分</span>
+        <span class="val" id="det-total"></span>
+      </div>
+      <div class="detail-scores" id="det-scores"></div>
+      <div class="detail-anchor" id="det-anchor"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const VARS = [{"id": "V1", "name": "主线趋势", "weight": 27.5, "color": "#3b82f6"}, {"id": "V2", "name": "技术路线", "weight": 22.5, "color": "#8b5cf6"}, {"id": "V3", "name": "产业链卡位", "weight": 22.5, "color": "#ec4899"}, {"id": "V4", "name": "估值", "weight": 17.5, "color": "#f59e0b"}, {"id": "V5", "name": "地缘", "weight": 10.0, "color": "#10b981"}];
+const CONFLICTS = [{"title": "GPU vs ASIC", "subtitle": "训练 vs 推理的份额之战", "summary": "训练侧GPU仍是绝对主力,但推理侧ASIC份额快速上升", "winners": "AVGO MRVL TSM SK Hynix", "details": "Google TPU/AWS Trainium/Meta MTIA 2026-2027大规模出货,Broadcom和Marvell是最大受益者。NVDA面临'蛋糕越来越大但份额可能下降'。"}, {"title": "x86 vs ARM", "subtitle": "CPU架构之争", "summary": "ARM在云端持续渗透,x86份额被挤压", "winners": "AMD ARM NVDA AVGO", "details": "AMD EPYC吃Intel份额,NVDA Grace + AWS Graviton + Ampere 持续渗透云端。MI300A/Grace+Hopper代表'CPU+GPU紧耦合'新趋势。Intel Foundry转型挣扎是最大风险点。"}, {"title": "互联标准战", "subtitle": "scale-up/out/across拓扑之争", "summary": "NVLink vs UALink、InfiniBand vs Ethernet、CXL定义新边界", "winners": "NVDA AVGO MRVL 澜起科技", "details": "scale-up: NVDA NVLink独家 vs UALink联盟。scale-out: InfiniBand(NVDA) vs Ethernet(AVGO)。CXL: Intel主导但NVDA以NVLink Fusion应对。这场战争决定2026-2030算力网络拓扑。"}];
+const COMPANIES = [{"code": "AVGO", "name": "Broadcom", "plate": "美股", "v1": 5, "v2": 5, "v3": 5, "v4": 5, "v5": 5, "total": 5.0, "anchor": "ASIC定制行业第一(Google TPU/Meta MTIA核心合作伙伴)+Tomahawk网络ASIC+硅光全栈"}, {"code": "TSM", "name": "TSMC", "plate": "美股", "v1": 5, "v2": 5, "v3": 5, "v4": 5, "v5": 4, "total": 4.9, "anchor": "所有先进算力芯片唯一规模化代工,CoWoS先进封装垄断,N2/A16节点领跑"}, {"code": "SKHYNIX", "name": "SK Hynix", "plate": "韩股", "v1": 5, "v2": 5, "v3": 5, "v4": 5, "v5": 4, "total": 4.9, "anchor": "HBM绝对龙头,HBM3e独供NVIDIA H200/B200,HBM4领先三星半代+"}, {"code": "NVDA", "name": "NVIDIA", "plate": "美股", "v1": 5, "v2": 5, "v3": 5, "v4": 4, "v5": 5, "total": 4.825, "anchor": "GPGPU绝对垄断+CUDA生态护城河+收购Mellanox锁住互联+Grace ARM CPU+全栈AI算力定义者"}, {"code": "MRVL", "name": "Marvell", "plate": "美股", "v1": 5, "v2": 5, "v3": 4, "v4": 5, "v5": 5, "total": 4.775, "anchor": "ASIC定制双雄之一(AWS Trainium/微软Maia)+DSP行业标准+SerDes IP护城河"}, {"code": "MU", "name": "Micron", "plate": "美股", "v1": 5, "v2": 4, "v3": 5, "v4": 4, "v5": 4, "total": 4.5, "anchor": "HBM三大供应商之一,HBM3e大规模量产,HBM4追赶海力士,DRAM周期反转"}, {"code": "SAMSUNG", "name": "三星电子", "plate": "韩股", "v1": 5, "v2": 4, "v3": 5, "v4": 4, "v5": 4, "total": 4.5, "anchor": "HBM追赶+Foundry+DRAM三轮驱动,但HBM4进度落后SK Hynix,Foundry份额被台积电压制"}, {"code": "AMD", "name": "AMD", "plate": "美股", "v1": 5, "v2": 4.5, "v3": 4, "v4": 4, "v5": 5, "total": 4.487, "anchor": "GPU+CPU双轮驱动,MI300A是CPU+GPU紧耦合先驱,EPYC吃Intel份额,生态成熟度仍弱于NVDA"}, {"code": "ASML", "name": "ASML", "plate": "美股", "v1": 4, "v2": 5, "v3": 5, "v4": 4, "v5": 4, "total": 4.45, "anchor": "EUV/High-NA EUV独家垄断,所有先进制程瓶颈所在,但对华管制挤压增长曲线"}, {"code": "SNPS", "name": "Synopsys", "plate": "美股", "v1": 5, "v2": 4, "v3": 4, "v4": 4, "v5": 5, "total": 4.375, "anchor": "EDA双寡头,所有AI芯片设计入口,IP库丰富,但近年分拆软件IP业务后波动"}, {"code": "CDNS", "name": "Cadence", "plate": "美股", "v1": 5, "v2": 4, "v3": 4, "v4": 4, "v5": 5, "total": 4.375, "anchor": "EDA双寡头,AI芯片设计软件几乎不可替代,芯片设计人月效率核心工具"}, {"code": "AMAT", "name": "Applied Mat", "plate": "美股", "v1": 4, "v2": 4, "v3": 4, "v4": 4, "v5": 4, "total": 4.0, "anchor": "半导体设备综合龙头,沉积/离子注入/CMP多条线,HBM相关设备也有受益"}, {"code": "LRCX", "name": "Lam Research", "plate": "美股", "v1": 4, "v2": 4, "v3": 4, "v4": 4, "v5": 4, "total": 4.0, "anchor": "刻蚀设备龙头+HBM专用设备深度受益,先进制程刻蚀步骤成倍增加"}, {"code": "中微公司", "name": "中微公司", "plate": "A股", "v1": 4, "v2": 4, "v3": 4, "v4": 4, "v5": 4, "total": 4.0, "anchor": "刻蚀设备国产龙头,先进制程刻蚀机已进入台积电体系,HBM工艺受益"}, {"code": "沪电股份", "name": "沪电股份", "plate": "A股", "v1": 5, "v2": 3, "v3": 4, "v4": 4, "v5": 3, "total": 3.95, "anchor": "AI服务器高速PCB细分龙头,800G/1.6T层数升级直接受益"}, {"code": "澜起科技", "name": "澜起科技", "plate": "A股", "v1": 4, "v2": 4, "v3": 4, "v4": 4, "v5": 3, "total": 3.9, "anchor": "CXL/MRCD/MDB+DDR5内存接口芯片细分龙头,AI服务器内存升级核心受益"}, {"code": "SMCI", "name": "SuperMicro", "plate": "美股", "v1": 5, "v2": 3, "v3": 3, "v4": 4, "v5": 4, "total": 3.825, "anchor": "AI服务器先发优势+液冷整机柜方案,但毛利低+审计风波,系统集成无芯片"}, {"code": "KLAC", "name": "KLA Tencor", "plate": "美股", "v1": 4, "v2": 4, "v3": 3, "v4": 4, "v5": 4, "total": 3.775, "anchor": "检测/量测设备双寡头,先进制程良率提升刚需,EUV层数增加直接拉动"}, {"code": "北方华创", "name": "北方华创", "plate": "A股", "v1": 4, "v2": 3, "v3": 4, "v4": 4, "v5": 4, "total": 3.775, "anchor": "半导体设备国产化龙头,刻蚀/沉积/清洗多线突破,受益国产替代"}, {"code": "工业富联", "name": "工业富联", "plate": "A股", "v1": 5, "v2": 2, "v3": 4, "v4": 4, "v5": 3, "total": 3.725, "anchor": "全球AI服务器代工绝对龙头,NVIDIA/AMD整机集成,系统组装属性"}, {"code": "INTC", "name": "Intel", "plate": "美股", "v1": 4, "v2": 3, "v3": 4, "v4": 3, "v5": 5, "total": 3.7, "anchor": "x86 CPU基本盘仍在但被AMD/ARM挤压,Gaudi ASIC份额边缘化,Foundry转型挣扎"}, {"code": "长电科技", "name": "长电科技", "plate": "A股", "v1": 4, "v2": 3, "v3": 4, "v4": 4, "v5": 3, "total": 3.675, "anchor": "封测国产龙头,先进封装(2.5D/3D)布局,但CoWoS仍以台日韩为主"}, {"code": "通富微电", "name": "通富微电", "plate": "A股", "v1": 4, "v2": 3, "v3": 4, "v4": 4, "v5": 3, "total": 3.675, "anchor": "AMD核心封装合作伙伴,深度绑定AMD CPU/GPU封装订单"}, {"code": "中芯国际", "name": "中芯国际", "plate": "A股", "v1": 4, "v2": 3, "v3": 4, "v4": 3, "v5": 3, "total": 3.5, "anchor": "国产先进算力依赖核心,但先进制程仍滞后台积电2-3代,被美管制"}, {"code": "浪潮信息", "name": "浪潮信息", "plate": "A股", "v1": 5, "v2": 2, "v3": 3, "v4": 4, "v5": 3, "total": 3.5, "anchor": "国产AI服务器龙头,出货量第一,系统集成无核心芯片,曾被列入实体清单"}, {"code": "中科曙光", "name": "中科曙光", "plate": "A股", "v1": 5, "v2": 2, "v3": 3, "v4": 4, "v5": 3, "total": 3.5, "anchor": "高端AI服务器+海光关联+液冷,服务器集成属性,无独立芯片设计"}, {"code": "ARM", "name": "ARM Holdings", "plate": "美股", "v1": 4, "v2": 4, "v3": 3, "v4": 2, "v5": 4, "total": 3.425, "anchor": "ARM架构持续渗透云端CPU(Grace/Graviton/鲲鹏)+IP授权模式,但PE极高,无晶圆封装"}, {"code": "海光信息", "name": "海光信息", "plate": "A股", "v1": 4, "v2": 3, "v3": 4, "v4": 2, "v5": 3, "total": 3.325, "anchor": "国产x86 CPU+DCU GPU双线,信创订单稳定,基于AMD Zen授权但仍受制裁影响"}, {"code": "寒武纪", "name": "寒武纪", "plate": "A股", "v1": 4, "v2": 4, "v3": 3, "v4": 1, "v5": 3, "total": 3.15, "anchor": "国产ASIC龙头,思元自研架构,但实体清单+高估值+台积电断供风险"}, {"code": "龙芯中科", "name": "龙芯中科", "plate": "A股", "v1": 3, "v2": 3, "v3": 3, "v4": 2, "v5": 3, "total": 2.825, "anchor": "LoongArch自主指令集,军政信创基本盘,商业化偏弱,生态短板明显"}];
+
+// 5变量权重卡片
+function renderVars() {
+  const html = VARS.map(v => `
+    <div class="var-card" style="--c: ${v.color}">
+      <div class="var-id">${v.id}</div>
+      <div class="var-name">${v.name}</div>
+      <div class="var-weight">${v.weight}%</div>
+    </div>
+  `).join('');
+  document.getElementById('vars-bar').innerHTML = html;
+}
+
+// 三大变革卡片
+function renderConflicts() {
+  const html = CONFLICTS.map(c => `
+    <div class="conflict-card">
+      <div class="conflict-title">${c.title}</div>
+      <div class="conflict-subtitle">${c.subtitle}</div>
+      <div class="conflict-summary">${c.summary}</div>
+      <div class="winners-label">主要受益者</div>
+      <div class="winners">
+        ${c.winners.split(' ').map(w => `<span class="winner-tag">${w}</span>`).join('')}
+      </div>
+      <div class="conflict-details">${c.details}</div>
+    </div>
+  `).join('');
+  document.getElementById('conflicts-grid').innerHTML = html;
+}
+
+// 排行榜
+function renderRankings() {
+  const dims = [
+    { key: 'v1', name: 'V1 主线绑定度', icon: '🚀' },
+    { key: 'v3', name: 'V3 产业链卡位', icon: '🔗' },
+    { key: 'total', name: '综合分总榜', icon: '🏆' }
+  ];
+  
+  const html = dims.map(d => {
+    const sorted = [...COMPANIES].sort((a, b) => b[d.key] - a[d.key]).slice(0, 5);
+    const items = sorted.map((c, i) => {
+      const cls = i === 0 ? 'gold' : (i === 1 ? 'silver' : (i === 2 ? 'bronze' : ''));
+      return `<div class="rank-item ${cls}">
+        <span class="name">${i+1}. ${c.name}</span>
+        <span class="val">${typeof c[d.key] === 'number' ? c[d.key].toFixed(d.key === 'total' ? 3 : 1) : c[d.key]}</span>
+      </div>`;
+    }).join('');
+    return `<div class="ranking-card">
+      <div class="rank-title"><span class="rank-icon">${d.icon}</span>${d.name}</div>
+      <div class="rank-list">${items}</div>
+    </div>`;
+  }).join('');
+  
+  document.getElementById('rankings').innerHTML = html;
+}
+
+// 过滤栏
+let currentFilter = 'all';
+function renderFilters() {
+  const filters = [
+    { id: 'all', label: '全部', count: COMPANIES.length },
+    { id: 'core', label: '☑️ 核心入选 (≥4.0)', count: COMPANIES.filter(c => c.total >= 4.0).length },
+    { id: 'watch', label: '👀 观察名单 (3.5-4.0)', count: COMPANIES.filter(c => c.total >= 3.5 && c.total < 4.0).length },
+    { id: '美股', label: '🇺🇸 美股', count: COMPANIES.filter(c => c.plate === '美股').length },
+    { id: 'A股', label: '🇨🇳 A股', count: COMPANIES.filter(c => c.plate === 'A股').length },
+    { id: '韩股', label: '🇰🇷 韩股', count: COMPANIES.filter(c => c.plate === '韩股').length },
+  ];
+  const html = filters.map(f => 
+    `<button class="filter-btn ${f.id === currentFilter ? 'active' : ''}" onclick="setFilter('${f.id}')">${f.label} <span style="opacity:0.6">(${f.count})</span></button>`
+  ).join('');
+  document.getElementById('filter-bar').innerHTML = html;
+}
+
+function setFilter(id) {
+  currentFilter = id;
+  renderFilters();
+  renderTable();
+}
+
+// 公司表
+function renderTable() {
+  let list = COMPANIES;
+  if (currentFilter === 'core') list = list.filter(c => c.total >= 4.0);
+  else if (currentFilter === 'watch') list = list.filter(c => c.total >= 3.5 && c.total < 4.0);
+  else if (['美股', 'A股', '韩股'].includes(currentFilter)) list = list.filter(c => c.plate === currentFilter);
+  
+  const html = list.map((c, i) => {
+    const status = c.total >= 4.0 ? 'core' : (c.total >= 3.5 ? 'watch' : 'drop');
+    const statusLabel = c.total >= 4.0 ? '☑️ 入选' : (c.total >= 3.5 ? '👀 观察' : '⏸ 落选');
+    const totalPct = Math.min(100, c.total / 5 * 100);
+    return `<tr onclick="showDetail('${c.code}')">
+      <td class="rank-num">${i+1}</td>
+      <td class="left"><span class="company-name">${c.name}</span><span class="code-tag">${c.code}</span></td>
+      <td><span class="plate-tag plate-${c.plate}">${c.plate}</span></td>
+      <td><span class="score score-${Math.round(c.v1)}">${c.v1}</span></td>
+      <td><span class="score score-${Math.round(c.v2)}">${c.v2}</span></td>
+      <td><span class="score score-${Math.round(c.v3)}">${c.v3}</span></td>
+      <td><span class="score score-${Math.round(c.v4)}">${c.v4}</span></td>
+      <td><span class="score score-${Math.round(c.v5)}">${c.v5}</span></td>
+      <td>
+        <div class="total-cell">
+          <span class="total-num">${c.total.toFixed(2)}</span>
+          <div class="total-bar"><div class="total-bar-fill" style="width:${totalPct}%"></div></div>
+        </div>
+      </td>
+      <td><span class="status status-${status}">${statusLabel}</span></td>
+      <td class="anchor">${c.anchor}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('companies-tbody').innerHTML = html;
+}
+
+// 详情弹层
+function showDetail(code) {
+  const c = COMPANIES.find(x => x.code === code);
+  if (!c) return;
+  document.getElementById('det-name').textContent = c.name;
+  document.getElementById('det-code').textContent = `${c.code} · ${c.plate}`;
+  document.getElementById('det-total').textContent = c.total.toFixed(3);
+  
+  const scores = [
+    { id: 'V1', name: '主线趋势', val: c.v1, color: '#3b82f6' },
+    { id: 'V2', name: '技术路线', val: c.v2, color: '#8b5cf6' },
+    { id: 'V3', name: '产业链', val: c.v3, color: '#ec4899' },
+    { id: 'V4', name: '估值', val: c.v4, color: '#f59e0b' },
+    { id: 'V5', name: '地缘', val: c.v5, color: '#10b981' }
+  ];
+  document.getElementById('det-scores').innerHTML = scores.map(s => `
+    <div class="detail-score-card" style="--cc: ${s.color}">
+      <div class="ds-label">${s.id} ${s.name}</div>
+      <div class="ds-val">${s.val}</div>
+    </div>
+  `).join('');
+  document.getElementById('det-anchor').textContent = c.anchor;
+  
+  document.getElementById('detail-overlay').classList.add('active');
+}
+
+function closeDetail(e, force) {
+  if (force || e.target.id === 'detail-overlay') {
+    document.getElementById('detail-overlay').classList.remove('active');
+  }
+}
+
+// 初始化
+renderVars();
+renderConflicts();
+renderRankings();
+renderFilters();
+renderTable();
+</script>
+
+</body>
+</html>

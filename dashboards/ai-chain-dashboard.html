@@ -1,0 +1,1726 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 链条系统风险监控仪表盘 · v1.0</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans+SC:wght@300;400;500;600;700&family=IBM+Plex+Serif:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #141414;
+  --bg-tertiary: #1c1c1c;
+  --bg-elevated: #232323;
+  --text-primary: #e8e4d8;
+  --text-secondary: #9a958a;
+  --text-tertiary: #5a5650;
+  --accent-amber: #d4a017;
+  --accent-red: #c8553d;
+  --accent-orange: #d77a40;
+  --accent-yellow: #b8a060;
+  --accent-green: #6b8e4e;
+  --accent-blue: #5b8db8;
+  --border-subtle: rgba(232, 228, 216, 0.08);
+  --border-emphasis: rgba(232, 228, 216, 0.16);
+  --font-sans: 'IBM Plex Sans SC', system-ui, -apple-system, sans-serif;
+  --font-serif: 'IBM Plex Serif', Georgia, serif;
+  --font-mono: 'IBM Plex Mono', 'SF Mono', monospace;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  font-size: 14px;
+  font-weight: 300;
+  letter-spacing: 0.01em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+/* === Header === */
+.masthead {
+  border-bottom: 1px solid var(--border-emphasis);
+  padding: 24px 0;
+  background: var(--bg-primary);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(12px);
+  background: rgba(10, 10, 10, 0.92);
+}
+
+.masthead-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.brand {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 20px;
+  letter-spacing: -0.01em;
+}
+
+.brand-subtitle {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin-top: 2px;
+}
+
+.masthead-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-align: right;
+  letter-spacing: 0.05em;
+}
+
+.masthead-meta span {
+  display: block;
+}
+
+.masthead-meta .live {
+  color: var(--accent-green);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.masthead-meta .live::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--accent-green);
+  border-radius: 50%;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* === Hero === */
+.hero {
+  padding: 80px 0 60px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 64px;
+  align-items: end;
+}
+
+.hero-left h1 {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: 56px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin-bottom: 24px;
+}
+
+.hero-left h1 em {
+  font-style: italic;
+  color: var(--accent-amber);
+}
+
+.hero-tagline {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 18px;
+  color: var(--text-secondary);
+  max-width: 520px;
+  line-height: 1.6;
+}
+
+.hero-score-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  padding: 32px;
+  position: relative;
+}
+
+.hero-score-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent-amber);
+}
+
+.score-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--text-tertiary);
+  margin-bottom: 16px;
+}
+
+.score-value {
+  font-family: var(--font-serif);
+  font-size: 96px;
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--accent-amber);
+}
+
+.score-divider {
+  font-size: 32px;
+  color: var(--text-tertiary);
+  font-weight: 300;
+}
+
+.score-max {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.score-status {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: rgba(212, 160, 23, 0.08);
+  border: 1px solid var(--accent-amber);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--accent-amber);
+}
+
+.status-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--accent-amber);
+  border-radius: 50%;
+}
+
+.score-trend {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+  letter-spacing: 0.05em;
+}
+
+/* === Section === */
+.section {
+  padding: 80px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 48px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-emphasis);
+}
+
+.section-number {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.2em;
+  margin-bottom: 8px;
+}
+
+.section-title {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: 36px;
+  letter-spacing: -0.01em;
+}
+
+.section-title em {
+  font-style: italic;
+  color: var(--accent-amber);
+}
+
+.section-subtitle {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--text-secondary);
+  max-width: 380px;
+  text-align: right;
+}
+
+/* === Quick Insights === */
+.insights-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  margin-bottom: 48px;
+}
+
+.insight-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  padding: 24px;
+  position: relative;
+  transition: border-color 0.2s;
+}
+
+.insight-card:hover {
+  border-color: var(--border-emphasis);
+}
+
+.insight-card.alert {
+  border-left: 2px solid var(--accent-red);
+}
+
+.insight-card.warning {
+  border-left: 2px solid var(--accent-orange);
+}
+
+.insight-card.healthy {
+  border-left: 2px solid var(--accent-green);
+}
+
+.insight-card.watching {
+  border-left: 2px solid var(--accent-amber);
+}
+
+.insight-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.insight-title {
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+
+.insight-detail {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 300;
+  line-height: 1.5;
+}
+
+.insight-meta {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-subtle);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.1em;
+}
+
+/* === Charts === */
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+}
+
+.chart-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  padding: 32px;
+}
+
+.chart-title {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.chart-description {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+}
+
+.chart-container {
+  position: relative;
+  width: 100%;
+  height: 360px;
+}
+
+.chart-container.tall {
+  height: 480px;
+}
+
+/* === Indicator Table === */
+.controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 16px 20px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+}
+
+.filter-group {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.filter-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-right: 8px;
+}
+
+.btn {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  padding: 6px 14px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn:hover {
+  border-color: var(--border-emphasis);
+  color: var(--text-primary);
+}
+
+.btn.active {
+  background: var(--bg-elevated);
+  border-color: var(--accent-amber);
+  color: var(--accent-amber);
+}
+
+.btn.primary {
+  background: var(--accent-amber);
+  border-color: var(--accent-amber);
+  color: var(--bg-primary);
+  font-weight: 500;
+}
+
+.btn.primary:hover {
+  background: #b8870e;
+}
+
+.search-input {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  padding: 6px 12px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  width: 200px;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--accent-amber);
+}
+
+.indicator-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+}
+
+.indicator-table thead th {
+  background: var(--bg-tertiary);
+  padding: 14px 16px;
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  font-weight: 500;
+  border-bottom: 1px solid var(--border-emphasis);
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+}
+
+.indicator-table thead th:hover {
+  color: var(--text-secondary);
+}
+
+.indicator-table thead th.sortable::after {
+  content: '↕';
+  margin-left: 6px;
+  opacity: 0.4;
+  font-size: 9px;
+}
+
+.indicator-table thead th.sort-asc::after {
+  content: '↑';
+  opacity: 1;
+  color: var(--accent-amber);
+}
+
+.indicator-table thead th.sort-desc::after {
+  content: '↓';
+  opacity: 1;
+  color: var(--accent-amber);
+}
+
+.indicator-table tbody tr {
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background 0.15s;
+}
+
+.indicator-table tbody tr:hover {
+  background: var(--bg-tertiary);
+}
+
+.indicator-table td {
+  padding: 14px 16px;
+  font-size: 12px;
+  vertical-align: top;
+}
+
+.indicator-table td.col-num {
+  font-family: var(--font-mono);
+  color: var(--text-tertiary);
+  width: 48px;
+}
+
+.indicator-table td.col-name {
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.indicator-table td.col-name .indicator-current {
+  display: block;
+  font-weight: 300;
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  font-family: var(--font-mono);
+}
+
+.indicator-table td.col-category {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.05em;
+}
+
+.indicator-table td.col-weight {
+  text-align: center;
+  font-family: var(--font-mono);
+  width: 70px;
+  color: var(--text-secondary);
+}
+
+.indicator-table td.col-score {
+  text-align: center;
+  width: 90px;
+}
+
+.score-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  user-select: none;
+}
+
+.score-pill.red {
+  background: rgba(200, 85, 61, 0.15);
+  color: var(--accent-red);
+  border: 1px solid rgba(200, 85, 61, 0.3);
+}
+
+.score-pill.orange {
+  background: rgba(215, 122, 64, 0.15);
+  color: var(--accent-orange);
+  border: 1px solid rgba(215, 122, 64, 0.3);
+}
+
+.score-pill.yellow {
+  background: rgba(184, 160, 96, 0.15);
+  color: var(--accent-yellow);
+  border: 1px solid rgba(184, 160, 96, 0.3);
+}
+
+.score-pill.green {
+  background: rgba(107, 142, 78, 0.15);
+  color: var(--accent-green);
+  border: 1px solid rgba(107, 142, 78, 0.3);
+}
+
+.indicator-table td.col-weighted {
+  text-align: center;
+  width: 80px;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.indicator-table td.col-source {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  width: 200px;
+}
+
+/* === Detail panel === */
+.detail-row {
+  display: none;
+  background: var(--bg-tertiary) !important;
+}
+
+.detail-row.expanded {
+  display: table-row;
+}
+
+.detail-content {
+  padding: 24px 32px !important;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.detail-section h4 {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.detail-section p {
+  font-size: 13px;
+  color: var(--text-primary);
+  line-height: 1.6;
+  font-weight: 300;
+}
+
+.detail-edit {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.detail-edit label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.detail-edit input,
+.detail-edit textarea {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  padding: 6px 10px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  width: 100%;
+  resize: vertical;
+}
+
+.detail-edit input:focus,
+.detail-edit textarea:focus {
+  outline: none;
+  border-color: var(--accent-amber);
+}
+
+.thresholds {
+  background: var(--bg-elevated);
+  padding: 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.8;
+  color: var(--text-secondary);
+}
+
+/* === Action Plan === */
+.action-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  border: 1px solid var(--border-subtle);
+}
+
+.action-tier {
+  padding: 32px 24px;
+  border-right: 1px solid var(--border-subtle);
+  position: relative;
+}
+
+.action-tier:last-child {
+  border-right: none;
+}
+
+.action-tier-num {
+  font-family: var(--font-serif);
+  font-size: 64px;
+  font-weight: 300;
+  line-height: 1;
+  margin-bottom: 16px;
+  font-style: italic;
+}
+
+.action-tier.t1 .action-tier-num { color: var(--accent-green); }
+.action-tier.t2 .action-tier-num { color: var(--accent-yellow); }
+.action-tier.t3 .action-tier-num { color: var(--accent-orange); }
+.action-tier.t4 .action-tier-num { color: var(--accent-red); }
+
+.action-tier-trigger {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-tertiary);
+  margin-bottom: 12px;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 12px;
+}
+
+.action-tier-action {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 500;
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+.action-tier-detail {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 300;
+  line-height: 1.6;
+}
+
+/* === Methodology === */
+.methodology-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 32px;
+}
+
+.method-block h3 {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 500;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.method-block ul {
+  list-style: none;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.8;
+  font-weight: 300;
+}
+
+.method-block ul li {
+  padding-left: 20px;
+  position: relative;
+  margin-bottom: 8px;
+}
+
+.method-block ul li::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  color: var(--accent-amber);
+  font-family: var(--font-mono);
+}
+
+/* === Data Manager === */
+.data-manager {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.snapshots-list {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  padding: 24px;
+}
+
+.snapshot-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-subtle);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.snapshot-item:last-child {
+  border-bottom: none;
+}
+
+.snapshot-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.snapshot-actions button {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  padding: 4px 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.snapshot-actions button:hover {
+  border-color: var(--accent-amber);
+  color: var(--accent-amber);
+}
+
+.snapshot-actions button.delete:hover {
+  border-color: var(--accent-red);
+  color: var(--accent-red);
+}
+
+/* === Footer === */
+.footer {
+  padding: 64px 0;
+  text-align: center;
+  border-top: 1px solid var(--border-emphasis);
+  background: var(--bg-secondary);
+}
+
+.footer-tagline {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--text-secondary);
+  max-width: 600px;
+  margin: 0 auto 24px;
+  line-height: 1.7;
+}
+
+.disclaimer {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.05em;
+  max-width: 800px;
+  margin: 0 auto;
+  line-height: 1.8;
+}
+
+/* === Responsive === */
+@media (max-width: 980px) {
+  .container { padding: 0 20px; }
+  .hero-grid, .charts-grid, .insights-grid, .action-grid, .methodology-grid, .data-manager {
+    grid-template-columns: 1fr;
+  }
+  .insights-grid { gap: 16px; }
+  .hero-left h1 { font-size: 36px; }
+  .score-value { font-size: 64px; }
+  .section-header { flex-direction: column; gap: 12px; align-items: flex-start; }
+  .section-subtitle { text-align: left; }
+  .indicator-table { font-size: 11px; }
+  .indicator-table thead th { padding: 10px 8px; font-size: 9px; }
+  .indicator-table td { padding: 10px 8px; }
+  .indicator-table td.col-source { display: none; }
+  .action-tier { border-right: none; border-bottom: 1px solid var(--border-subtle); }
+  .action-tier:last-child { border-bottom: none; }
+}
+
+/* === Utility === */
+.kbd {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 2px 6px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-emphasis);
+  border-radius: 2px;
+  color: var(--text-secondary);
+}
+
+.text-mono { font-family: var(--font-mono); }
+.text-serif { font-family: var(--font-serif); }
+.text-secondary { color: var(--text-secondary); }
+.text-tertiary { color: var(--text-tertiary); }
+.text-amber { color: var(--accent-amber); }
+.text-red { color: var(--accent-red); }
+.text-green { color: var(--accent-green); }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="container masthead-inner">
+    <div>
+      <div class="brand">AI 链条系统风险监控</div>
+      <div class="brand-subtitle">SYSTEMIC RISK DASHBOARD · 60 INDICATORS</div>
+    </div>
+    <div class="masthead-meta">
+      <span class="live">实时数据</span>
+      <span id="last-updated">最后更新: 2026.05.09</span>
+      <span>v1.0 · Burry 时间窗口 254 天</span>
+    </div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="container hero-grid">
+    <div class="hero-left">
+      <h1>当所有人都在赚钱时，<br><em>最危险的事是什么？</em></h1>
+      <p class="hero-tagline">这是基于 60 项前置指标的 AI 链条系统风险评估框架。每一项指标都有明确的数据来源、阈值和权重。综合评分越高，链条断裂的紧迫程度越高。</p>
+    </div>
+    <div class="hero-score-card">
+      <div class="score-label">当前综合风险评分</div>
+      <div style="display: flex; align-items: baseline; gap: 12px;">
+        <span class="score-value" id="overall-score">3.7</span>
+        <span class="score-divider">/</span>
+        <span class="score-max">10.0</span>
+      </div>
+      <div class="score-status">
+        <span class="status-badge" id="status-badge">黄灯 · 早期阶段</span>
+        <span class="score-trend" id="score-trend">基准: 2026.05.09</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <div>
+        <div class="section-number">— 01</div>
+        <h2 class="section-title">关键<em>洞察</em></h2>
+      </div>
+      <div class="section-subtitle">链条最薄弱的几个节点，每周扫一眼即可</div>
+    </div>
+    <div class="insights-grid" id="insights-grid"></div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <div>
+        <div class="section-number">— 02</div>
+        <h2 class="section-title">风险<em>分布</em></h2>
+      </div>
+      <div class="section-subtitle">10 大类别加权评分概览 · Top 15 加权风险节点</div>
+    </div>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-title">10 大类别雷达图</div>
+        <div class="chart-description">越靠外越危险，理想状态是均匀的小圆</div>
+        <div class="chart-container">
+          <canvas id="radar-chart" role="img" aria-label="10 大类别风险评分雷达图"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Top 15 加权风险节点</div>
+        <div class="chart-description">权重 × 评分排序，优先监控这些</div>
+        <div class="chart-container">
+          <canvas id="top-bar-chart" role="img" aria-label="Top 15 加权风险节点条形图"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <div>
+        <div class="section-number">— 03</div>
+        <h2 class="section-title">60 项<em>指标矩阵</em></h2>
+      </div>
+      <div class="section-subtitle">点击任一行展开详情 · 双击数据可编辑 · 表头可排序</div>
+    </div>
+
+    <div class="controls">
+      <div class="filter-group">
+        <span class="filter-label">等级</span>
+        <button class="btn active" onclick="filterByLevel('all')">全部 (60)</button>
+        <button class="btn" onclick="filterByLevel('red')">红灯</button>
+        <button class="btn" onclick="filterByLevel('orange')">橙灯</button>
+        <button class="btn" onclick="filterByLevel('yellow')">黄灯</button>
+        <button class="btn" onclick="filterByLevel('green')">绿灯</button>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">类别</span>
+        <select class="search-input" id="category-filter" onchange="applyFilters()" style="width: 140px;">
+          <option value="all">全部类别</option>
+        </select>
+        <input type="text" class="search-input" id="search-input" placeholder="搜索指标..." oninput="applyFilters()">
+      </div>
+      <div class="filter-group">
+        <button class="btn" onclick="exportCSV()">导出 CSV</button>
+        <button class="btn primary" onclick="saveSnapshot()">保存快照</button>
+      </div>
+    </div>
+
+    <table class="indicator-table" id="indicator-table">
+      <thead>
+        <tr>
+          <th class="sortable" data-sort="n">序号</th>
+          <th>指标 / 当前数据</th>
+          <th>类别</th>
+          <th class="sortable" data-sort="w">权重</th>
+          <th class="sortable" data-sort="s">评分</th>
+          <th class="sortable sort-desc" data-sort="weighted">加权</th>
+          <th>主要数据源</th>
+        </tr>
+      </thead>
+      <tbody id="indicator-tbody"></tbody>
+    </table>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <div>
+        <div class="section-number">— 04</div>
+        <h2 class="section-title">行动<em>决策框架</em></h2>
+      </div>
+      <div class="section-subtitle">不是预测顶部，是结构性减仓的科学</div>
+    </div>
+    <div class="action-grid">
+      <div class="action-tier t1">
+        <div class="action-tier-num">01</div>
+        <div class="action-tier-trigger">综合分 &lt; 4.0</div>
+        <div class="action-tier-action">观察</div>
+        <div class="action-tier-detail">维持现有仓位，停止任何 AI 链条新增加仓。每周扫一眼前 5 大红橙节点。</div>
+      </div>
+      <div class="action-tier t2">
+        <div class="action-tier-num">02</div>
+        <div class="action-tier-trigger">综合分 4.0–5.5</div>
+        <div class="action-tier-action">减仓 30%</div>
+        <div class="action-tier-detail">从 Beta 最高的标的开始减——半导体 ETF、CoreWeave、Oracle、英伟达期权。保留核心持仓。</div>
+      </div>
+      <div class="action-tier t3">
+        <div class="action-tier-num">03</div>
+        <div class="action-tier-trigger">综合分 5.5–7.0</div>
+        <div class="action-tier-action">减仓 50–60%</div>
+        <div class="action-tier-detail">进入防御模式。减仓所有循环融资链条标的。考虑买入 SOXX 看跌期权或反向 ETF 对冲。</div>
+      </div>
+      <div class="action-tier t4">
+        <div class="action-tier-num">04</div>
+        <div class="action-tier-trigger">综合分 ≥ 7.0</div>
+        <div class="action-tier-action">清仓</div>
+        <div class="action-tier-detail">全面退出 AI 链条暴露。资金转向防御性资产（公用事业、消费必需、黄金）。等待第二轮入场。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <div>
+        <div class="section-number">— 05</div>
+        <h2 class="section-title">历史<em>快照</em></h2>
+      </div>
+      <div class="section-subtitle">本地存储 · 用于跟踪综合评分随时间的变化</div>
+    </div>
+    <div class="data-manager">
+      <div class="snapshots-list">
+        <h3 style="font-family: var(--font-serif); font-size: 16px; margin-bottom: 16px;">已保存快照</h3>
+        <div id="snapshots-container"></div>
+      </div>
+      <div class="snapshots-list">
+        <h3 style="font-family: var(--font-serif); font-size: 16px; margin-bottom: 16px;">使用说明</h3>
+        <ul style="font-size: 13px; color: var(--text-secondary); line-height: 1.9; font-weight: 300; padding-left: 0; list-style: none;">
+          <li style="margin-bottom: 12px;"><span class="text-amber text-mono" style="font-size: 10px;">①</span> 每个季度末更新一次 60 项指标的最新数据</li>
+          <li style="margin-bottom: 12px;"><span class="text-amber text-mono" style="font-size: 10px;">②</span> 点击「保存快照」将当前评分存入本地</li>
+          <li style="margin-bottom: 12px;"><span class="text-amber text-mono" style="font-size: 10px;">③</span> 通过快照对比，捕捉系统风险的趋势变化</li>
+          <li style="margin-bottom: 12px;"><span class="text-amber text-mono" style="font-size: 10px;">④</span> 数据保存在浏览器本地，清除浏览器数据会丢失</li>
+          <li><span class="text-amber text-mono" style="font-size: 10px;">⑤</span> 建议定期导出 CSV 作为长期备份</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <div>
+        <div class="section-number">— 06</div>
+        <h2 class="section-title">方法<em>论说明</em></h2>
+      </div>
+      <div class="section-subtitle">透明性是分析框架可信度的基础</div>
+    </div>
+    <div class="methodology-grid">
+      <div class="method-block">
+        <h3>评分逻辑</h3>
+        <ul>
+          <li>0-2 分：绿灯，安全状态</li>
+          <li>3-5 分：黄灯，需要关注</li>
+          <li>6-7 分：橙灯，警戒级别</li>
+          <li>8-10 分：红灯，立即行动</li>
+          <li>评分代表「链条断裂的紧迫程度」</li>
+        </ul>
+      </div>
+      <div class="method-block">
+        <h3>权重设计</h3>
+        <ul>
+          <li>权重 5：顶级关键，不可替代</li>
+          <li>权重 4：关键，结构性影响</li>
+          <li>权重 3：重要，需持续跟踪</li>
+          <li>权重 2：辅助，验证用</li>
+          <li>权重 1：参考，背景信息</li>
+        </ul>
+      </div>
+      <div class="method-block">
+        <h3>综合分计算</h3>
+        <ul>
+          <li>加权平均: Σ(权重 × 评分) ÷ Σ(权重)</li>
+          <li>总权重: 245 (60 项加总)</li>
+          <li>10 大类别独立计算</li>
+          <li>避免单一指标过度影响</li>
+          <li>同时跟踪类别间的均衡度</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container">
+    <p class="footer-tagline">"在华尔街，有两种疯子：一种是在泡沫里跳舞的，一种是在泡沫外等待的。区别是——后一种疯子只需要对一次。"</p>
+    <p class="disclaimer">本仪表盘仅供分析参考，不构成投资建议。所有数据来源于公开信息，但准确性和实时性需自行验证。投资决策应基于个人财务状况和风险承受能力。系统性风险评估存在主观判断成分，使用者需独立思考。版本 1.0 · 2026年5月9日构建 · 60 项指标全交互监控框架</p>
+  </div>
+</footer>
+
+<script>
+const indicatorsData = [
+  {n:1,c:"信用市场",w:5,s:8,name:"Oracle 5 年期 CDS",cur:"198 基点（历史新高）",src:"S&P Global Market Intelligence",srcUrl:"https://www.spglobal.com/marketintelligence",thr:"突破 200 基点橙，250 红",detail:"信用违约互换利差是最敏感的早期信号。Oracle 当前 198 bps 已经接近历史最高水平，反映市场对其 AI 资本支出的担忧。"},
+  {n:2,c:"信用市场",w:5,s:7,name:"CoreWeave 债券价格",cur:"债务/股本 4.5x，$4.2B 到期墙",src:"FINRA TRACE",srcUrl:"https://www.finra.org/finra-data/fixed-income/corp-and-agency",thr:"跌破 90 橙，跌破 80 红",detail:"CoreWeave 用 GPU 抵押贷款，2026 下半年有 $4.2B 债务到期，资金链最脆弱的环节。"},
+  {n:3,c:"信用市场",w:5,s:7,name:"Oracle 信用评级",cur:"S&P BBB+ 展望负面",src:"S&P/Moody's/Fitch",srcUrl:"https://www.spglobal.com/ratings",thr:"下调一级橙，跌破投资级红",thr:"下调一级橙，跌破投资级红",detail:"Oracle 因 Stargate 项目承担巨额债务，已被 S&P 调整为负面展望。下一步若降至 BB+ 即跌入垃圾级。"},
+  {n:4,c:"信用市场",w:3,s:3,name:"高收益债利差",cur:"约 280 基点",src:"FRED 数据库 BAMLH0A0HYM2",srcUrl:"https://fred.stlouisfed.org/series/BAMLH0A0HYM2",thr:"突破 400 黄，500 橙，600 红",detail:"整体信用市场紧张度。当 HY spread 扩大，AI 链条这种高 Beta 资产受冲击最大。"},
+  {n:5,c:"信用市场",w:4,s:4,name:"美 10 年期国债",cur:"4.39%（5月8日）",src:"FRED DGS10",srcUrl:"https://fred.stlouisfed.org/series/DGS10",thr:"突破 5% 黄，5.5% 橙，6% 红",detail:"利率上升直接打击高估值成长股。AI 投资周期建立在低利率假设上。"},
+  {n:6,c:"私募市场",w:5,s:2,name:"Anthropic 二级估值",cur:"$3800 亿（2026/2 G 轮）",src:"Hiive、Forge Global",srcUrl:"https://www.hiive.com",thr:"折价 10% 黄，30% 红",detail:"基本面最健康的 AI 公司。如果它都开始降估值，整个故事就破了——这是终极信号。"},
+  {n:7,c:"私募市场",w:5,s:5,name:"OpenAI 二级估值",cur:"$8500 亿（2026/2 软银轮）",src:"Hiive、Forge Global",srcUrl:"https://www.hiive.com",thr:"折价 10% 黄，30% 红",detail:"OpenAI 二级市场已经开始出现温和折价信号，反映对收入未达标的担忧。"},
+  {n:8,c:"私募市场",w:3,s:4,name:"xAI 二级估值",cur:"约 $2000 亿",src:"Hiive、Forge Global",srcUrl:"https://www.hiive.com",thr:"折价 10% 黄，30% 红",detail:"Musk 的 AI 公司，估值波动较大，反映市场对独立 AI 实验室的整体情绪。"},
+  {n:9,c:"私募市场",w:5,s:6,name:"OpenAI 融资进展",cur:"$120B 完成但需中东资金",src:"The Information、彭博",srcUrl:"https://www.theinformation.com",thr:"延期橙，降估值红",detail:"OpenAI 必须不断融资续命。下一轮中东主权基金的 $50B 是否能按时到位是关键。"},
+  {n:10,c:"私募市场",w:4,s:2,name:"中东主权基金 AI 投入",cur:"MGX 年度 100 亿，PIF 强劲",src:"impactalpha.com、CNBC",srcUrl:"https://impactalpha.com",thr:"季度下降 30% 黄，50% 橙",detail:"中东资金是 AI 资本支出的最后买家。他们的承诺金额和到位速度决定生命线。"},
+  {n:11,c:"芯片产能",w:5,s:2,name:"台积电月度收入",cur:"同比 +30% 强劲",src:"台积电官网每月 10 日",srcUrl:"https://www.tsmc.com/english/investorRelations/sales_archive.htm",thr:"增速跌破 20% 黄",detail:"AI 链条最早的物理信号。台积电收入是所有先进芯片产能的最直接指标。"},
+  {n:12,c:"芯片产能",w:5,s:2,name:"ASML 季度订单",cur:"Q4 2025 创纪录 132 亿欧元",src:"ASML 官网季报",srcUrl:"https://www.asml.com/en/investors/financial-results",thr:"环比降 30% 黄",detail:"光刻机订单代表 18-24 个月后的产能。最前置的资本支出领先指标。"},
+  {n:13,c:"芯片产能",w:4,s:2,name:"HBM 内存价格",cur:"短缺，价格高位",src:"TrendForce",srcUrl:"https://www.trendforce.com",thr:"开始下跌 黄",detail:"HBM 是 AI 芯片最贵的组件。价格下跌意味着供应过剩，需求拐点信号。"},
+  {n:14,c:"芯片产能",w:4,s:2,name:"SK 海力士 HBM 收入",cur:"高速增长",src:"SK 海力士季报",srcUrl:"https://www.skhynix.com/eng/ir/IRMain.do",thr:"增速放缓 黄",detail:"HBM 全球老大。其增速直接反映 AI 训练芯片的真实需求。"},
+  {n:15,c:"芯片产能",w:3,s:2,name:"美光 DRAM 收入",cur:"高位",src:"美光季报",srcUrl:"https://investors.micron.com",thr:"持平 橙",detail:"美光是 HBM 第二梯队。其市场份额变化反映竞争格局。"},
+  {n:16,c:"芯片产能",w:5,s:2,name:"台积电 CoWoS 产能",cur:"满产，2026底目标13万片/月",src:"TrendForce、台积电",srcUrl:"https://www.trendforce.com",thr:"利用率降到 80% 橙",detail:"AI 芯片的物理瓶颈。所有 GPU/TPU 都需要 CoWoS 封装。"},
+  {n:17,c:"芯片产能",w:5,s:3,name:"H100 一年期租金",cur:"$2.35/h（峰值 $9.34）",src:"SemiAnalysis 月报",srcUrl:"https://newsletter.semianalysis.com",thr:"跌破 2.00 黄，1.50 红",detail:"GPU 租赁价格是 GPU 残值的真实反映，决定整个 GPU 抵押贷款金融工程的稳定性。"},
+  {n:18,c:"芯片产能",w:5,s:4,name:"H100 二手价格",cur:"二手 $15K-28K",src:"compute.exchange",srcUrl:"https://compute.exchange",thr:"跌破 12000 黄",detail:"二手价是抵押品真实价值。CoreWeave 等用 GPU 抵押贷款的脆弱性直接相关。"},
+  {n:19,c:"芯片产能",w:4,s:2,name:"GPU 等待时间",cur:"6-9 个月",src:"SemiAnalysis",srcUrl:"https://newsletter.semianalysis.com",thr:"缩到 3-4 月 黄",detail:"等待时间反映需求强度。突然缩短意味着 6 个月前订单在减少。"},
+  {n:20,c:"芯片产能",w:5,s:3,name:"Broadcom AI 收入占比",cur:"43% 总营收，$8.4B Q1（+106%）",src:"Broadcom 季报",srcUrl:"https://investors.broadcom.com",thr:"增速跌破 60% 黄",detail:"ASIC 替代 GPU 趋势的代理变量。如果 Broadcom 增速远超英伟达，市场将重新定价垄断。"},
+  {n:21,c:"英伟达",w:5,s:6,name:"英伟达 DSO",cur:"51 天（同比从 41 上升）",src:"sec.gov 10-Q",srcUrl:"https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0001045810",thr:"突破 60 黄，70 橙，80 红",detail:"应收账款周转天数。从 41 天升到 51 天意味着客户付款变慢，可能资金紧张。"},
+  {n:22,c:"英伟达",w:5,s:7,name:"英伟达对循环客户应收",cur:"$385 亿（同比 +67%）",src:"英伟达 10-K 客户附注",srcUrl:"https://investor.nvidia.com",thr:"前 2 大占 45% 黄",detail:"循环融资真实敞口。应收账款增速远超营收增速是危险信号——英伟达可能在间接资助客户。"},
+  {n:23,c:"英伟达",w:4,s:5,name:"英伟达期权卖空",cur:"Burry 加仓 1/2027 $115 put",src:"OpenInsider、Yahoo 期权",srcUrl:"https://openinsider.com",thr:"P/C 比率 0.9 黄",detail:"聪明钱定位。Goldman Sachs 报告对冲基金过去 13 年最快减仓英伟达。"},
+  {n:24,c:"英伟达",w:4,s:3,name:"AMD 数据中心收入",cur:"高速增长",src:"AMD 季报",srcUrl:"https://ir.amd.com",thr:"增速降一半 黄",detail:"AMD 在数据中心市场份额已超 30%，威胁英伟达定价权。"},
+  {n:25,c:"英伟达",w:3,s:5,name:"英特尔数据中心",cur:"持续疲弱",src:"英特尔季报",srcUrl:"https://www.intc.com",thr:"加速下降 橙",detail:"英特尔在 AI 数据中心市场已被 AMD 严重侵蚀，反映传统 CPU 玩家的衰落。"},
+  {n:26,c:"系统ODM",w:3,s:3,name:"Super Micro 订单",cur:"高位但波动",src:"季报",srcUrl:"https://ir.supermicro.com",thr:"跌幅 20% 橙",detail:"AI 服务器集成商，对 GPU 需求最敏感。"},
+  {n:27,c:"系统ODM",w:3,s:3,name:"Dell 服务器积压",cur:"增长中",src:"Dell 季报",srcUrl:"https://investors.delltechnologies.com",thr:"持平 橙",detail:"Dell PowerEdge 服务器订单积压反映企业 AI 投资节奏。"},
+  {n:28,c:"系统ODM",w:4,s:2,name:"鸿海 AI 服务器收入",cur:"强劲增长",src:"鸿海月度公告",srcUrl:"https://www.foxconn.com/en-us/investors",thr:"增速放缓 黄",detail:"鸿海是英伟达 AI 服务器主要组装商。月度营收是最快的产业链信号。"},
+  {n:29,c:"系统ODM",w:4,s:2,name:"广达月度营收",cur:"高速增长",src:"台股每月公告",srcUrl:"https://www.quantatw.com/Quanta/english/Investor",thr:"同比降至 +30% 黄",detail:"广达是 OpenAI、Meta 等的 AI 服务器供应商。台股月度披露速度优势。"},
+  {n:30,c:"系统ODM",w:3,s:2,name:"纬创月度营收",cur:"高速增长",src:"台股每月公告",srcUrl:"https://www.wistron.com/en/Investors",thr:"同比降至 +30% 黄",detail:"纬创是 AI 服务器二级供应商。其营收变化反映整体 ODM 行业。"},
+  {n:31,c:"网络基建",w:3,s:3,name:"Arista Networks",cur:"高速增长",src:"Arista 季报",srcUrl:"https://investors.arista.com",thr:"增速降一半 黄",detail:"数据中心交换机龙头。AI 网络基建的指示性公司。"},
+  {n:32,c:"网络基建",w:4,s:2,name:"中际旭创",cur:"高速增长",src:"沪深公告",srcUrl:"http://www.innolight.com",thr:"增速降一半 黄",detail:"光模块全球龙头。月度披露速度优势，是非常前置的信号。"},
+  {n:33,c:"网络基建",w:3,s:2,name:"Coherent 光模块",cur:"高速增长",src:"Coherent 季报",srcUrl:"https://investors.coherent.com",thr:"持平 橙",detail:"高端光模块供应商。北美 AI 网络的主要受益者。"},
+  {n:34,c:"网络基建",w:3,s:2,name:"Vertiv 订单",cur:"高位",src:"Vertiv 季报",srcUrl:"https://investors.vertiv.com",thr:"增速降一半 黄",detail:"数据中心电源/制冷系统。基建强度的物理代理。"},
+  {n:35,c:"网络基建",w:3,s:2,name:"Eaton 数据中心",cur:"高速增长",src:"Eaton 季报",srcUrl:"https://www.eaton.com/us/en-us/company/investor-relations.html",thr:"增速降一半 黄",detail:"电源管理系统供应商。其数据中心业务是 AI 投资的领先指标。"},
+  {n:36,c:"电力基建",w:4,s:3,name:"维州 Dominion 队列",cur:"排队多年",src:"Dominion Energy 公告",srcUrl:"https://www.dominionenergy.com",thr:"出现取消 橙",detail:"数据中心电力签约需要 18-24 个月。如果出现取消，意味着两年后产能过剩。"},
+  {n:37,c:"电力基建",w:3,s:3,name:"Texas ERCOT 签约",cur:"强劲",src:"ERCOT 公告",srcUrl:"https://www.ercot.com",thr:"增速放缓 黄",detail:"得州电力市场是 AI 数据中心新热点。其新增大用户队列反映需求。"},
+  {n:38,c:"电力基建",w:3,s:2,name:"Constellation 长期合同",cur:"高速签约",src:"Constellation 季报",srcUrl:"https://investors.constellationenergy.com",thr:"速度放缓 黄",detail:"美国最大核电运营商。其与 Microsoft、Meta 等的长期合同反映对 AI 持续需求的判断。"},
+  {n:39,c:"电力基建",w:3,s:2,name:"Equinix 入住率",cur:"高位",src:"Equinix 季报",srcUrl:"https://investor.equinix.com",thr:"微降 黄",detail:"全球最大数据中心运营商。入住率是物业层最直接的需求信号。"},
+  {n:40,c:"电力基建",w:4,s:2,name:"PPA 签约速度",cur:"2026 Q1-Q2 密集签约",src:"latitudemedia.com、SEC",srcUrl:"https://www.latitudemedia.com",thr:"减半 黄，出现取消 橙",detail:"购电协议是 12-24 个月的领先指标。最前置的物理信号。"},
+  {n:41,c:"模型公司",w:5,s:1,name:"Anthropic 收入增速",cur:"30 倍/年（$300 亿 ARR）",src:"Sacra、媒体披露",srcUrl:"https://sacra.com/c/anthropic",thr:"降到 5 倍 黄",detail:"基本面最健康的 AI 公司。Anthropic 增速是整个 AI 行业的火车头。"},
+  {n:42,c:"模型公司",w:5,s:3,name:"Anthropic 烧钱率",cur:"33%（2027 预计 9%）",src:"WSJ、Fortune",srcUrl:"https://www.wsj.com",thr:"升到 50% 黄，75% 橙",detail:"烧钱率/收入比下降意味着 Anthropic 接近自我造血。这是健康信号。"},
+  {n:43,c:"模型公司",w:4,s:1,name:"Anthropic 企业 NRR",cur:"估算 130%+（健康）",src:"行业基准 SaaS NRR",srcUrl:"https://www.feinternational.com",thr:"跌破 110% 黄",detail:"客户留存与扩张率。NRR > 100% 意味着客户每年花更多钱，是 SaaS 公司最关键指标。"},
+  {n:44,c:"模型公司",w:5,s:5,name:"OpenAI 收入增速",cur:"3 倍/年但 miss 内部目标",src:"WSJ 报道、Sacra",srcUrl:"https://sacra.com/c/openai",thr:"降到 2 倍 黄，1.5 倍 橙",detail:"WSJ 已报道 OpenAI 多次未达内部增长目标。Sarah Friar 的内部警告暴露了链条最薄弱的一环。"},
+  {n:45,c:"模型公司",w:5,s:7,name:"OpenAI 烧钱率",cur:"57%（亏 $14B/年）",src:"内部文件、Fortune",srcUrl:"https://fortune.com",thr:"升到 75% 橙，100% 红",detail:"OpenAI 每收 1 美元亏 0.57 美元。HSBC 测算 2030 年前不会盈利，需再融资 $207B。"},
+  {n:46,c:"模型公司",w:5,s:6,name:"企业 AI 市场份额",cur:"OpenAI 25% Anthropic 32%",src:"Gartner、IDC、PitchBook",srcUrl:"https://www.gartner.com",thr:"OpenAI 跌破 20% 黄",detail:"企业市场是利润最高的部分。OpenAI 从 50% 跌到 25% 是结构性转折。"},
+  {n:47,c:"模型公司",w:4,s:5,name:"ChatGPT 流量份额",cur:"64.5%（一年前 86.7%）",src:"Similarweb",srcUrl:"https://www.similarweb.com",thr:"跌破 60% 黄",detail:"消费者市场份额。一年从 86.7% 跌到 64.5%，反映 Google Gemini 和其他模型的崛起。"},
+  {n:48,c:"模型公司",w:5,s:6,name:"中美 SWE-Bench 对比",cur:"DeepSeek/GLM/Kimi 紧追",src:"benchlm.ai",srcUrl:"https://benchlm.ai",thr:"中国反超任一美国闭源 橙",detail:"中国开源模型在 SWE-Bench 已经接近美国闭源前沿。如果反超，整个美国 AI 估值溢价就破。"},
+  {n:49,c:"模型公司",w:4,s:5,name:"前沿基准 ARC-AGI-3",cur:"顶尖模型不到 1%",src:"arcprize.org",srcUrl:"https://arcprize.org",thr:"半年仍 <5% 黄",detail:"如果 ARC-AGI-3 长期没有进展，意味着 Scaling Law 接近极限，整个 AI 资本支出故事的根基动摇。"},
+  {n:50,c:"模型公司",w:3,s:3,name:"顶级研究员流向",cur:"无明显异动",src:"LinkedIn、媒体披露",srcUrl:"https://www.linkedin.com",thr:"集体离职 橙",detail:"顶级 AI 研究员的流向是行业最聪明大脑的判断。集体离职是最强的领先信号。"},
+  {n:51,c:"应用层",w:4,s:2,name:"Salesforce Agentforce ARR",cur:"$800M（同比 +169%）",src:"Salesforce 季报",srcUrl:"https://investor.salesforce.com",thr:"增速降到 80% 黄",detail:"企业 AI 真实付费的代理变量。$800M ARR 169% 增速反映企业 AI 真在产生价值。"},
+  {n:52,c:"应用层",w:4,s:2,name:"ServiceNow Now Assist",cur:"$1B+ ARR 目标",src:"ServiceNow 季报",srcUrl:"https://www.servicenow.com/company/investor-relations.html",thr:"增速降到 50% 黄",detail:"工作流自动化 AI 平台。其 ARR 增长反映 AI 在企业核心流程的渗透。"},
+  {n:53,c:"应用层",w:4,s:3,name:"Microsoft Copilot ARR",cur:"披露受限",src:"Microsoft 季报",srcUrl:"https://www.microsoft.com/en-us/investor",thr:"披露下调 橙",detail:"全球最大 AI 应用收入流。Microsoft 不再单独披露是个微妙信号。"},
+  {n:54,c:"应用层",w:3,s:3,name:"AI 应用层融资速度",cur:"温和放缓",src:"PitchBook、CB Insights",srcUrl:"https://pitchbook.com",thr:"骤减 50% 橙",detail:"AI 应用层创业公司的融资节奏。如果骤减，意味着风险偏好下降。"},
+  {n:55,c:"应用层",w:3,s:3,name:"财富 500 AI 使用率",cur:"92% 但深度集成低",src:"Gartner、IDC",srcUrl:"https://www.gartner.com",thr:"使用率下降 橙",detail:"广度 vs 深度的差距是关键。92% 听起来高，但真正深度集成不到 15%。"},
+  {n:56,c:"宏观情绪",w:5,s:6,name:"软银股价",cur:"波动剧烈，3 月跌 45% 后反弹",src:"Yahoo Finance 9984.T",srcUrl:"https://finance.yahoo.com/quote/9984.T",thr:"周跌 20% 红",detail:"OpenAI 公开代理。软银的股价就是 OpenAI 的股价。最直观的信心指标。"},
+  {n:57,c:"宏观情绪",w:3,s:3,name:"美元兑人民币",cur:"约 7.2",src:"任何财经网站",srcUrl:"https://www.investing.com/currencies/usd-cny",thr:"突破 7.5 黄",detail:"汇率。中国 AI 厂商的成本优势在贬值时放大，对美国 AI 公司利润的冲击。"},
+  {n:58,c:"宏观情绪",w:4,s:5,name:"七巨头股价分化",cur:"开始分化，QQEW vs QQQ 收敛",src:"对比 QQEW QQQ",srcUrl:"https://www.invesco.com/qqq",thr:"QQEW +5% 黄",detail:"等权 vs 市值加权指数。如果等权跑赢，意味着资金在抛售七巨头转向其他。"},
+  {n:59,c:"宏观情绪",w:4,s:5,name:"OpenAI 用户增速",cur:"未达 10 亿目标",src:"Similarweb、WSJ 披露",srcUrl:"https://www.similarweb.com",thr:"环比下降 橙",detail:"消费用户增长是收入的领先指标。10 亿目标未达成已被 WSJ 报道。"},
+  {n:60,c:"宏观情绪",w:5,s:3,name:"Microsoft Azure capex 指引",cur:"持续上调",src:"Microsoft 季报",srcUrl:"https://www.microsoft.com/en-us/investor",thr:"增速放缓 黄，下降 红"},
+];
+
+let currentLevel = 'all';
+let currentSort = { col: 'weighted', dir: 'desc' };
+let currentSearch = '';
+let currentCategory = 'all';
+
+function getColorClass(score) {
+  if (score >= 8) return 'red';
+  if (score >= 6) return 'orange';
+  if (score >= 3) return 'yellow';
+  return 'green';
+}
+
+function getColorLabel(score) {
+  if (score >= 8) return '红';
+  if (score >= 6) return '橙';
+  if (score >= 3) return '黄';
+  return '绿';
+}
+
+function calculateOverallScore() {
+  let weightedSum = 0;
+  let weightTotal = 0;
+  indicatorsData.forEach(i => {
+    weightedSum += i.w * i.s;
+    weightTotal += i.w;
+  });
+  return (weightedSum / weightTotal).toFixed(2);
+}
+
+function getStatusBadge(score) {
+  if (score >= 7.0) return { label: '红灯 · 立即行动', color: 'var(--accent-red)' };
+  if (score >= 5.5) return { label: '橙灯 · 进入防御', color: 'var(--accent-orange)' };
+  if (score >= 4.0) return { label: '黄灯 · 减仓 30%', color: 'var(--accent-yellow)' };
+  return { label: '黄灯 · 早期阶段', color: 'var(--accent-amber)' };
+}
+
+function calculateCategoryScores() {
+  const categoryScores = {};
+  const categoryWeights = {};
+  indicatorsData.forEach(i => {
+    if (!categoryScores[i.c]) {
+      categoryScores[i.c] = 0;
+      categoryWeights[i.c] = 0;
+    }
+    categoryScores[i.c] += i.w * i.s;
+    categoryWeights[i.c] += i.w;
+  });
+  const result = {};
+  Object.keys(categoryScores).forEach(c => {
+    result[c] = categoryScores[c] / categoryWeights[c];
+  });
+  return result;
+}
+
+function renderInsights() {
+  const score = calculateOverallScore();
+  const sorted = [...indicatorsData].sort((a, b) => (b.w * b.s) - (a.w * a.s));
+  const mostDangerous = sorted[0];
+  const earliestSignal = indicatorsData.find(i => i.n === 22);
+  const healthiest = [...indicatorsData].sort((a, b) => (a.s) - (b.s))[0];
+  const watching = indicatorsData.find(i => i.n === 56);
+
+  document.getElementById('insights-grid').innerHTML = `
+    <div class="insight-card alert">
+      <div class="insight-label">最危险节点</div>
+      <div class="insight-title">${mostDangerous.name}</div>
+      <div class="insight-detail">${mostDangerous.cur}</div>
+      <div class="insight-meta">权重 ${mostDangerous.w} × 评分 ${mostDangerous.s} = ${mostDangerous.w * mostDangerous.s}</div>
+    </div>
+    <div class="insight-card warning">
+      <div class="insight-label">最早信号</div>
+      <div class="insight-title">${earliestSignal.name}</div>
+      <div class="insight-detail">${earliestSignal.cur}</div>
+      <div class="insight-meta">权重 ${earliestSignal.w} × 评分 ${earliestSignal.s} = ${earliestSignal.w * earliestSignal.s}</div>
+    </div>
+    <div class="insight-card healthy">
+      <div class="insight-label">基本面最健康</div>
+      <div class="insight-title">${healthiest.name}</div>
+      <div class="insight-detail">${healthiest.cur}</div>
+      <div class="insight-meta">权重 ${healthiest.w} × 评分 ${healthiest.s} = ${healthiest.w * healthiest.s}</div>
+    </div>
+    <div class="insight-card watching">
+      <div class="insight-label">最值得每周跟踪</div>
+      <div class="insight-title">${watching.name}</div>
+      <div class="insight-detail">${watching.cur}</div>
+      <div class="insight-meta">权重 ${watching.w} × 评分 ${watching.s} = ${watching.w * watching.s}</div>
+    </div>
+  `;
+}
+
+function renderRadar() {
+  const ctx = document.getElementById('radar-chart');
+  const cats = calculateCategoryScores();
+  const order = ['信用市场','私募市场','芯片产能','英伟达','系统ODM','网络基建','电力基建','模型公司','应用层','宏观情绪'];
+  const labels = order;
+  const data = order.map(c => cats[c] || 0);
+  
+  if (window.radarChart) window.radarChart.destroy();
+  window.radarChart = new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels,
+      datasets: [{
+        label: '类别加权评分',
+        data,
+        backgroundColor: 'rgba(212, 160, 23, 0.15)',
+        borderColor: '#d4a017',
+        borderWidth: 1.5,
+        pointBackgroundColor: '#d4a017',
+        pointRadius: 4,
+        pointHoverRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => `评分: ${ctx.parsed.r.toFixed(2)} / 10`
+          }
+        }
+      },
+      scales: {
+        r: {
+          beginAtZero: true,
+          min: 0,
+          max: 10,
+          ticks: {
+            stepSize: 2,
+            color: '#5a5650',
+            backdropColor: 'transparent',
+            font: { size: 10, family: 'IBM Plex Mono' }
+          },
+          grid: { color: 'rgba(232, 228, 216, 0.08)' },
+          angleLines: { color: 'rgba(232, 228, 216, 0.08)' },
+          pointLabels: {
+            color: '#9a958a',
+            font: { size: 11, family: 'IBM Plex Sans SC' }
+          }
+        }
+      }
+    }
+  });
+}
+
+function renderTopBar() {
+  const ctx = document.getElementById('top-bar-chart');
+  const top15 = [...indicatorsData]
+    .map(i => ({ ...i, weighted: i.w * i.s }))
+    .sort((a, b) => b.weighted - a.weighted)
+    .slice(0, 15);
+  
+  const colors = top15.map(i => {
+    if (i.s >= 8) return '#c8553d';
+    if (i.s >= 6) return '#d77a40';
+    if (i.s >= 3) return '#b8a060';
+    return '#6b8e4e';
+  });
+  
+  if (window.topBarChart) window.topBarChart.destroy();
+  window.topBarChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: top15.map(i => i.name),
+      datasets: [{
+        label: '加权风险',
+        data: top15.map(i => i.weighted),
+        backgroundColor: colors,
+        borderRadius: 2,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            afterLabel: (ctx) => {
+              const i = top15[ctx.dataIndex];
+              return `权重 ${i.w} × 评分 ${i.s}\n${i.c}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          max: 50,
+          ticks: { color: '#9a958a', font: { size: 10, family: 'IBM Plex Mono' } },
+          grid: { color: 'rgba(232, 228, 216, 0.05)' }
+        },
+        y: {
+          ticks: { color: '#9a958a', font: { size: 10, family: 'IBM Plex Sans SC' } },
+          grid: { display: false }
+        }
+      }
+    }
+  });
+}
+
+function renderTable() {
+  let filtered = [...indicatorsData];
+  
+  if (currentLevel !== 'all') {
+    filtered = filtered.filter(i => getColorClass(i.s) === currentLevel);
+  }
+  if (currentCategory !== 'all') {
+    filtered = filtered.filter(i => i.c === currentCategory);
+  }
+  if (currentSearch) {
+    const s = currentSearch.toLowerCase();
+    filtered = filtered.filter(i => 
+      i.name.toLowerCase().includes(s) || 
+      i.cur.toLowerCase().includes(s) ||
+      i.c.toLowerCase().includes(s)
+    );
+  }
+  
+  filtered.sort((a, b) => {
+    const dir = currentSort.dir === 'desc' ? -1 : 1;
+    if (currentSort.col === 'weighted') {
+      return dir * ((b.w * b.s) - (a.w * a.s));
+    }
+    return dir * (b[currentSort.col] - a[currentSort.col]);
+  });
+  
+  const tbody = document.getElementById('indicator-tbody');
+  let html = '';
+  filtered.forEach(i => {
+    const colorClass = getColorClass(i.s);
+    const colorLabel = getColorLabel(i.s);
+    html += `
+      <tr class="indicator-row" onclick="toggleDetail(${i.n})">
+        <td class="col-num">#${String(i.n).padStart(2, '0')}</td>
+        <td class="col-name">${i.name}<span class="indicator-current">${i.cur}</span></td>
+        <td class="col-category">${i.c}</td>
+        <td class="col-weight">W${i.w}</td>
+        <td class="col-score"><span class="score-pill ${colorClass}">${colorLabel} ${i.s}</span></td>
+        <td class="col-weighted">${i.w * i.s}</td>
+        <td class="col-source">${i.src}</td>
+      </tr>
+      <tr class="detail-row" id="detail-${i.n}">
+        <td colspan="7" class="detail-content">
+          <div class="detail-grid">
+            <div>
+              <div class="detail-section">
+                <h4>详细分析</h4>
+                <p>${i.detail || '该指标的详细背景分析待补充。'}</p>
+              </div>
+              <div class="detail-section" style="margin-top: 16px;">
+                <h4>阈值定义</h4>
+                <div class="thresholds">${i.thr || '阈值待定义'}</div>
+              </div>
+            </div>
+            <div>
+              <div class="detail-section">
+                <h4>数据来源</h4>
+                <p>${i.src} ${i.srcUrl ? `<a href="${i.srcUrl}" target="_blank" style="color: var(--accent-amber); text-decoration: none;">↗ 访问</a>` : ''}</p>
+              </div>
+              <div class="detail-section" style="margin-top: 16px;">
+                <h4>编辑数据</h4>
+                <div class="detail-edit">
+                  <label>当前数值</label>
+                  <input type="text" value="${i.cur.replace(/"/g, '&quot;')}" onchange="updateField(${i.n}, 'cur', this.value)">
+                  <label>评分 (0-10)</label>
+                  <input type="number" min="0" max="10" step="1" value="${i.s}" onchange="updateField(${i.n}, 's', parseInt(this.value))">
+                  <label>权重 (1-5)</label>
+                  <input type="number" min="1" max="5" step="1" value="${i.w}" onchange="updateField(${i.n}, 'w', parseInt(this.value))">
+                </div>
+              </div>
+            </div>
+          </div>
+        </td>
+      </tr>
+    `;
+  });
+  
+  tbody.innerHTML = html;
+}
+
+function toggleDetail(n) {
+  const detail = document.getElementById(`detail-${n}`);
+  if (detail) detail.classList.toggle('expanded');
+}
+
+function updateField(n, field, value) {
+  const idx = indicatorsData.findIndex(i => i.n === n);
+  if (idx !== -1) {
+    indicatorsData[idx][field] = value;
+    saveToLocalStorage();
+    renderAll();
+  }
+}
+
+function filterByLevel(level) {
+  currentLevel = level;
+  document.querySelectorAll('.filter-group .btn').forEach(b => {
+    if (b.textContent.includes('全部') || b.textContent.includes('红') || b.textContent.includes('橙') || b.textContent.includes('黄') || b.textContent.includes('绿')) {
+      b.classList.remove('active');
+    }
+  });
+  event.target.classList.add('active');
+  renderTable();
+}
+
+function applyFilters() {
+  currentCategory = document.getElementById('category-filter').value;
+  currentSearch = document.getElementById('search-input').value;
+  renderTable();
+}
+
+function setupSorting() {
+  document.querySelectorAll('th.sortable').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.sort;
+      if (currentSort.col === col) {
+        currentSort.dir = currentSort.dir === 'desc' ? 'asc' : 'desc';
+      } else {
+        currentSort.col = col;
+        currentSort.dir = 'desc';
+      }
+      document.querySelectorAll('th.sortable').forEach(t => {
+        t.classList.remove('sort-asc', 'sort-desc');
+      });
+      th.classList.add(currentSort.dir === 'asc' ? 'sort-asc' : 'sort-desc');
+      renderTable();
+    });
+  });
+}
+
+function populateCategoryFilter() {
+  const cats = [...new Set(indicatorsData.map(i => i.c))];
+  const sel = document.getElementById('category-filter');
+  cats.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c;
+    opt.textContent = c;
+    sel.appendChild(opt);
+  });
+}
+
+function exportCSV() {
+  const headers = ['编号','类别','指标','当前数据','权重','评分','加权分','颜色','数据来源','阈值','详细'];
+  const rows = indicatorsData.map(i => [
+    i.n, i.c, i.name, i.cur, i.w, i.s, i.w * i.s, getColorLabel(i.s), i.src, i.thr || '', (i.detail || '').replace(/\n/g, ' ')
+  ]);
+  
+  let csv = headers.join(',') + '\n';
+  rows.forEach(row => {
+    csv += row.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',') + '\n';
+  });
+  
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  const date = new Date().toISOString().split('T')[0];
+  link.download = `ai-chain-risk-${date}.csv`;
+  link.click();
+}
+
+function saveSnapshot() {
+  const score = calculateOverallScore();
+  const cats = calculateCategoryScores();
+  const snapshot = {
+    date: new Date().toISOString(),
+    score: parseFloat(score),
+    categoryScores: cats,
+    indicators: indicatorsData.map(i => ({ n: i.n, s: i.s, w: i.w, cur: i.cur }))
+  };
+  
+  const snapshots = JSON.parse(localStorage.getItem('aiChainSnapshots') || '[]');
+  snapshots.unshift(snapshot);
+  if (snapshots.length > 30) snapshots.pop();
+  localStorage.setItem('aiChainSnapshots', JSON.stringify(snapshots));
+  renderSnapshots();
+  
+  const btn = event.target;
+  const orig = btn.textContent;
+  btn.textContent = '✓ 已保存';
+  setTimeout(() => btn.textContent = orig, 1500);
+}
+
+function renderSnapshots() {
+  const snapshots = JSON.parse(localStorage.getItem('aiChainSnapshots') || '[]');
+  const container = document.getElementById('snapshots-container');
+  
+  if (snapshots.length === 0) {
+    container.innerHTML = '<div style="color: var(--text-tertiary); font-size: 12px; padding: 16px 0;">暂无快照。点击「保存快照」开始记录。</div>';
+    return;
+  }
+  
+  let html = '';
+  snapshots.forEach((s, idx) => {
+    const date = new Date(s.date);
+    const dateStr = date.toLocaleString('zh-CN', { 
+      year: 'numeric', month: '2-digit', day: '2-digit', 
+      hour: '2-digit', minute: '2-digit' 
+    });
+    const colorClass = getColorClass(s.score);
+    html += `
+      <div class="snapshot-item">
+        <div>
+          <span style="color: var(--text-tertiary);">#${snapshots.length - idx}</span>
+          &nbsp;&nbsp;<span style="color: var(--text-secondary);">${dateStr}</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span class="score-pill ${colorClass}" style="cursor: default;">${s.score.toFixed(2)}</span>
+          <div class="snapshot-actions">
+            <button onclick="loadSnapshot(${idx})">载入</button>
+            <button class="delete" onclick="deleteSnapshot(${idx})">删除</button>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+  container.innerHTML = html;
+}
+
+function loadSnapshot(idx) {
+  const snapshots = JSON.parse(localStorage.getItem('aiChainSnapshots') || '[]');
+  const s = snapshots[idx];
+  if (!s) return;
+  
+  s.indicators.forEach(saved => {
+    const i = indicatorsData.find(x => x.n === saved.n);
+    if (i) {
+      i.s = saved.s;
+      i.w = saved.w;
+      if (saved.cur) i.cur = saved.cur;
+    }
+  });
+  saveToLocalStorage();
+  renderAll();
+}
+
+function deleteSnapshot(idx) {
+  if (!confirm('确认删除该快照？')) return;
+  const snapshots = JSON.parse(localStorage.getItem('aiChainSnapshots') || '[]');
+  snapshots.splice(idx, 1);
+  localStorage.setItem('aiChainSnapshots', JSON.stringify(snapshots));
+  renderSnapshots();
+}
+
+function saveToLocalStorage() {
+  localStorage.setItem('aiChainCurrentData', JSON.stringify(indicatorsData));
+}
+
+function loadFromLocalStorage() {
+  const saved = localStorage.getItem('aiChainCurrentData');
+  if (saved) {
+    try {
+      const data = JSON.parse(saved);
+      data.forEach(saved => {
+        const i = indicatorsData.find(x => x.n === saved.n);
+        if (i) {
+          i.s = saved.s;
+          i.w = saved.w;
+          i.cur = saved.cur;
+        }
+      });
+    } catch(e) { console.warn('载入失败', e); }
+  }
+}
+
+function renderAll() {
+  const score = calculateOverallScore();
+  document.getElementById('overall-score').textContent = score;
+  
+  const status = getStatusBadge(score);
+  const badge = document.getElementById('status-badge');
+  badge.textContent = status.label;
+  badge.style.color = status.color;
+  badge.style.borderColor = status.color;
+  badge.style.background = `rgba(${status.color === 'var(--accent-red)' ? '200, 85, 61' : status.color === 'var(--accent-orange)' ? '215, 122, 64' : status.color === 'var(--accent-yellow)' ? '184, 160, 96' : '212, 160, 23'}, 0.08)`;
+  
+  renderInsights();
+  renderRadar();
+  renderTopBar();
+  renderTable();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadFromLocalStorage();
+  populateCategoryFilter();
+  setupSorting();
+  renderAll();
+  renderSnapshots();
+});
+</script>
+
+</body>
+</html>
