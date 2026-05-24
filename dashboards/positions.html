@@ -403,6 +403,12 @@ function renderSummary() {
 }
 
 function renderHoldings() {
+  // Save which cards are currently open before re-rendering
+  const openCodes = new Set();
+  document.querySelectorAll(".card-header.open").forEach(h => {
+    openCodes.add(h.getAttribute("data-code"));
+  });
+
   const sorted = sortData(allData);
   let html = "";
 
@@ -557,6 +563,16 @@ function renderHoldings() {
   });
 
   document.getElementById("holdings").innerHTML = html;
+
+  // Restore open state for cards that were previously expanded
+  openCodes.forEach(code => {
+    const header = document.querySelector(`.card-header[data-code="${code}"]`);
+    if (header) {
+      header.classList.add("open");
+      const body = header.nextElementSibling;
+      if (body) body.classList.add("open");
+    }
+  });
 }
 
 function daysSince(dateStr) {
