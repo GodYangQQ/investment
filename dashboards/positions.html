@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>持仓监控仪表板</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: #0a0e14;
+  color: #e4e6eb;
+}
+
+.header {
+  padding: 12px 24px;
+  background: #0f141c;
+  border-bottom: 1px solid #1e2530;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.header h1 { font-size: 18px; font-weight: 600; color: #fff; }
+.header .meta { color: #6b7480; font-size: 12px; }
+.header .update-dot { width: 8px; height: 8px; border-radius: 50%; background: #4caf50; margin-left: auto; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+.summary {
+  display: flex; gap: 12px; padding: 14px 24px;
+  background: #0d1218; border-bottom: 1px solid #1e2530;
+  flex-wrap: wrap;
+}
+.summary-card {
+  flex: 1; min-width: 150px; max-width: 220px;
+  background: #0f141c; border: 1px solid #1e2530;
+  border-radius: 8px; padding: 12px 16px;
+}
+.summary-card .label { font-size: 11px; color: #6b7480; margin-bottom: 4px; }
+.summary-card .value { font-size: 20px; font-weight: 700; color: #fff; }
+.summary-card .sub { font-size: 11px; color: #9ba3ad; margin-top: 2px; }
+.pnl-pos { color: #4caf50 !important; }
+.pnl-neg { color: #f44336 !important; }
+.pnl-warn { color: #ff9800 !important; }
+
+.holdings-wrap {
+  padding: 16px 24px; display: flex; flex-direction: column; gap: 16px;
+  flex: 1; overflow-y: auto;
+}
+.stock-card {
+  background: #0f141c; border: 1px solid #1e2530; border-radius: 8px;
+  overflow: hidden; transition: border-color 0.2s;
+}
+.stock-card:hover { border-color: #2a3340; }
+.stock-card.pnl-up { border-left: 3px solid #4caf50; }
+.stock-card.pnl-down { border-left: 3px solid #f44336; }
+.stock-card.pnl-near { border-left: 3px solid #ff9800; }
+
+.card-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px; cursor: pointer;
+  background: #0d1218; border-bottom: 1px solid #1e2530;
+  user-select: none;
+}
+.card-header:hover { background: #121820; }
+.card-header .chevron { color: #6b7480; font-size: 12px; transition: transform 0.2s; display: inline-block; width: 14px; }
+.card-header.open .chevron { transform: rotate(90deg); }
+.card-header .code { font-size: 13px; font-weight: 600; color: #fff; min-width: 70px; }
+.card-header .name { font-size: 14px; font-weight: 600; color: #e4e6eb; }
+.card-header .tier { font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+.tier-core { background: #e91e6322; color: #e91e63; }
+.tier-watch { background: #ff980022; color: #ff9800; }
+
+.card-header .quick-stats { display: flex; gap: 16px; margin-left: auto; font-size: 12px; }
+.card-header .qs-item { text-align: right; }
+.card-header .qs-label { color: #6b7480; font-size: 10px; }
+.card-header .qs-value { font-weight: 600; }
+
+.card-body { display: none; padding: 16px; }
+.card-body.open { display: block; }
+
+.info-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px; margin-bottom: 16px;
+}
+.info-item { background: #121820; border-radius: 6px; padding: 8px 12px; }
+.info-item .ilabel { font-size: 10px; color: #6b7480; }
+.info-item .ivalue { font-size: 14px; font-weight: 600; color: #e4e6eb; }
+
+.section-title {
+  font-size: 13px; font-weight: 600; color: #d8dde5;
+  margin: 16px 0 10px; padding-bottom: 6px; border-bottom: 1px solid #1e2530;
+  letter-spacing: 0.5px;
+}
+.section-title:first-child { margin-top: 0; }
+
+table {
+  width: 100%; border-collapse: collapse; font-size: 12px;
+  margin-bottom: 12px;
+}
+th { text-align: left; padding: 6px 10px; color: #6b7480; font-weight: 500; font-size: 11px; border-bottom: 1px solid #1e2530; }
+td { padding: 6px 10px; border-bottom: 1px solid #151c24; color: #e4e6eb; }
+tr:hover td { background: #121820; }
+
+.green { color: #4caf50; }
+.red { color: #f44336; }
+.yellow { color: #ff9800; }
+.white { color: #fff; }
+.muted { color: #9ba3ad; }
+.bold { font-weight: 600; }
+.mono { font-family: 'SF Mono', 'Consolas', monospace; }
+
+.badge { font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 600; white-space: nowrap; }
+.badge-green { background: #4caf5022; color: #4caf50; }
+.badge-red { background: #f4433622; color: #f44336; }
+.badge-yellow { background: #ff980022; color: #ff9800; }
+.badge-aplus { background: #e91e6322; color: #e91e63; }
+.badge-a { background: #ff980022; color: #ff9800; }
+.badge-b { background: #2196f322; color: #2196f3; }
+
+.score-bar-wrap {
+  height: 6px; background: #1e2530; border-radius: 3px;
+  margin-top: 4px; overflow: hidden;
+}
+.score-bar {
+  height: 100%; border-radius: 3px; transition: width 0.3s;
+}
+.score-high { background: #4caf50; }
+.score-mid { background: #ff9800; }
+.score-low { background: #f44336; }
+
+.stop-loss-near { animation: flash-warn 1s infinite; }
+@keyframes flash-warn { 0%,100%{background: transparent} 50%{background: #ff980015} }
+
+.refresh-btn {
+  background: #1a1f26; border: 1px solid #2a3340; color: #e4e6eb;
+  padding: 5px 12px; border-radius: 6px; font-size: 11px; cursor: pointer;
+  margin-left: auto; transition: all 0.15s;
+}
+.refresh-btn:hover { background: #2a3340; border-color: #4287d4; }
+
+.toolbar-row {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 0 0 12px;
+}
+.pill {
+  font-size: 11px; padding: 3px 10px; border-radius: 12px;
+  background: #1a1f26; color: #9ba3ad; cursor: pointer;
+  border: 1px solid #2a3340; transition: all 0.15s;
+}
+.pill:hover { border-color: #4287d4; color: #e4e6eb; }
+.pill.active { background: #4287d422; border-color: #4287d4; color: #4287d4; }
+
+.footer { padding: 12px 24px; background: #0d1218; border-top: 1px solid #1e2530; font-size: 10px; color: #4a5260; text-align: center; }
+
+/* Level cards */
+.level-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+}
+.level-box {
+  background: #121820; border-radius: 6px; padding: 10px 14px;
+}
+.level-box h4 { font-size: 12px; color: #9ba3ad; font-weight: 500; margin-bottom: 6px; }
+.level-row {
+  display: flex; justify-content: space-between; padding: 3px 0;
+  font-size: 12px; border-bottom: 1px solid #151c24;
+}
+.level-row:last-child { border-bottom: none; }
+.level-row .lprice { font-family: 'SF Mono', monospace; font-weight: 600; }
+.level-row .ldist { font-size: 10px; color: #6b7480; }
+
+.tp-tags {
+  display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap;
+  padding-top: 6px; border-top: 1px solid #1a2028;
+}
+.tp-tag {
+  font-size: 10px; padding: 2px 8px; border-radius: 4px;
+  font-family: 'SF Mono', 'Consolas', monospace;
+  font-weight: 600; white-space: nowrap;
+}
+.tp-near { background: #4caf5018; color: #4caf50; border: 1px solid #4caf5028; }
+.tp-far { background: #4287d418; color: #4287d4; border: 1px solid #4287d428; }
+.sl-tag { background: #f4433618; color: #f44336; border: 1px solid #f4433628; }
+.sl-draw { background: #ff980018; color: #ff9800; border: 1px solid #ff980028; }
+.tp-tag:hover { filter: brightness(1.3); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>持仓监控仪表板</h1>
+  <span class="meta" id="updateTime">加载中...</span>
+  <span class="meta" id="refreshCount" style="margin-left:4px;"></span>
+  <div class="update-dot" id="updateDot"></div>
+</div>
+
+<div class="summary" id="summary"></div>
+
+<div class="toolbar-row" style="padding:8px 24px;">
+  <span style="font-size:11px;color:#6b7480;">持仓明细</span>
+  <span class="pill active" data-sort="total" onclick="resort('total',this)">按总分</span>
+  <span class="pill" data-sort="pnl" onclick="resort('pnl',this)">按盈亏</span>
+  <span class="pill" data-sort="code" onclick="resort('code',this)">按代码</span>
+  <span class="pill" data-sort="hold" onclick="resort('hold',this)">按市值</span>
+</div>
+
+<div class="holdings-wrap" id="holdings"></div>
+
+<div class="footer" id="footer">数据来源：腾讯行情API | 策略规则：PROMPT_TEMPLATE.md | 持仓组合仪表板 v1.0</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// 持仓数据 → 从 dashboards/holdings_data.json 动态加载
+// 生成命令: python scripts/update_holdings_data.py
+// ═══════════════════════════════════════════════════════════════════
+let HOLDINGS = [];  // 由 loadHoldingsData() 填充
+
+// ═══════════════════════════════════════════════════════════════════
+// 实时行情拉取
+// ═══════════════════════════════════════════════════════════════════
+async function fetchQuotes(codes) {
+  const results = {};
+  const batch = codes.map(async code => {
+    const prefix = code.startsWith("6") ? "sh" : "sz";
+    try {
+      const resp = await fetch(`https://qt.gtimg.cn/q=${prefix}${code}`, {cache: "no-cache"});
+      const text = await resp.text();
+      const m = text.match(/="(.+?)"/);
+      if (!m) return;
+      const f = m[1].split("~");
+      results[code] = {
+        price: parseFloat(f[3]) || 0,
+        prev_close: parseFloat(f[4]) || 0,
+        open: parseFloat(f[5]) || 0,
+        high: parseFloat(f[33]) || 0,
+        low: parseFloat(f[34]) || 0,
+        turnover: parseFloat(f[38]) || 0,
+        pe_ttm: parseFloat(f[39]) || 0,
+        total_mv: parseFloat(f[44]) || 0,
+        change_pct: parseFloat(f[32]) || 0
+      };
+    } catch(e) {}
+  });
+  await Promise.all(batch);
+  return results;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// 计算引擎
+// ═══════════════════════════════════════════════════════════════════
+function calcStopLoss(h, price) {
+  const s = h.signals;
+  // Hard stop: -10% from cost
+  const hardStop = h.cost * 0.90;
+
+  // Drawdown stop-profit: grade-based
+  const drawdownStop = price > h.cost
+    ? Math.max(h.cost, price * (1 - h.drawdownLine / 100))
+    : hardStop;
+
+  // Nearest actual resistance for first take-profit
+  const resistances = [
+    { label: "布林上轨", price: s.bb_upper },
+    { label: "20日高", price: s.high_20d },
+    { label: "60日高", price: s.high_60d }
+  ].filter(r => r.price > price).sort((a, b) => a.price - b.price);
+  const firstResistance = resistances.length > 0 ? resistances[0] : null;
+
+  // Moving stop-profit: ATR×2
+  const atr2Stop = price > h.cost ? price - s.atr14 * 2 : h.cost - s.atr14 * 2;
+
+  // Fixed take-profits
+  const tpBandHalf = h.cost * 1.15;   // +15% 半仓
+  const tpBandFull = h.cost * 1.25;   // +25% 全仓
+
+  // Support levels (sorted nearest to furthest from price below)
+  const supports = [
+    { label: "布林下轨", price: s.bb_lower },
+    { label: "MA20", price: s.ma20 },
+    { label: "20日低", price: s.low_20d },
+    { label: "MA60", price: s.ma60 },
+    { label: "60日低", price: s.low_60d }
+  ].filter(r => r.price < price).sort((a, b) => b.price - a.price);
+
+  // Resistance levels (sorted nearest to furthest from price above)
+  const resistancesAll = [
+    { label: "MA5", price: s.ma5 },
+    { label: "MA10", price: s.ma10 },
+    { label: "布林上轨", price: s.bb_upper },
+    { label: "20日高", price: s.high_20d },
+    { label: "MA20", price: s.ma20 },
+    { label: "60日高", price: s.high_60d }
+  ].filter(r => r.price > price).sort((a, b) => a.price - b.price);
+
+  return {
+    hardStop, drawdownStop, atr2Stop,
+    firstResistance, tpBandHalf, tpBandFull,
+    supports, resistancesAll,
+    allResistances: resistances  // only the 3 key ones
+  };
+}
+
+function calcPnL(h, price) {
+  const pnlPct = (price - h.cost) / h.cost * 100;
+  const pnlAmt = (price - h.cost) * h.shares;
+  const mktValue = price * h.shares;
+  const costValue = h.cost * h.shares;
+  return { pnlPct, pnlAmt, mktValue, costValue };
+}
+
+function pnlClass(pnlPct) {
+  if (pnlPct > 3) return "green";
+  if (pnlPct < -5) return "red";
+  if (pnlPct < -3) return "yellow";
+  return "white";
+}
+
+function pnlCardClass(pnlPct) {
+  if (pnlPct > 0) return "pnl-up";
+  if (pnlPct < -5) return "pnl-down";
+  if (pnlPct < 0) return "pnl-near";
+  return "";
+}
+
+function gradeBadge(grade) {
+  if (grade === "A+") return '<span class="badge badge-aplus">A+</span>';
+  if (grade === "A") return '<span class="badge badge-a">A</span>';
+  return '<span class="badge badge-b">B</span>';
+}
+
+function scoreColor(total) {
+  if (total >= 78) return "score-high";
+  if (total >= 55) return "score-mid";
+  return "score-low";
+}
+
+function fmtNum(n, d) { return (n || 0).toFixed(d || 2); }
+function fmtPct(n) { const v = n || 0; return (v >= 0 ? "+" : "") + v.toFixed(2) + "%"; }
+function fmtSign(n, d) { const v = n || 0; return (v >= 0 ? "+" : "") + v.toFixed(d || 1); }
+
+// ═══════════════════════════════════════════════════════════════════
+// 渲染
+// ═══════════════════════════════════════════════════════════════════
+let currentSort = "total";
+let currentPrices = {};
+let allData = [...HOLDINGS];
+
+function sortData(data) {
+  if (currentSort === "total") return [...data].sort((a, b) => b.scoreTotal - a.scoreTotal);
+  if (currentSort === "pnl") {
+    return [...data].sort((a, b) => {
+      const pa = currentPrices[a.code]?.price || 0;
+      const pb = currentPrices[b.code]?.price || 0;
+      return ((pb - b.cost) / b.cost) - ((pa - a.cost) / a.cost);
+    });
+  }
+  if (currentSort === "code") return [...data].sort((a, b) => a.code.localeCompare(b.code));
+  if (currentSort === "hold") {
+    return [...data].sort((a, b) => {
+      const pa = currentPrices[a.code]?.price || 0;
+      const pb = currentPrices[b.code]?.price || 0;
+      return (pb * b.shares) - (pa * a.shares);
+    });
+  }
+  return data;
+}
+
+function renderSummary() {
+  const sorted = sortData(allData);
+  let totalCost = 0, totalMkt = 0;
+  let best = null, worst = null;
+
+  sorted.forEach(h => {
+    const p = currentPrices[h.code];
+    if (!p || !p.price) return;
+    const { pnlPct, mktValue, costValue } = calcPnL(h, p.price);
+    totalCost += costValue;
+    totalMkt += mktValue;
+    if (!best || pnlPct > best.pnlPct) best = { name: h.name, pnlPct };
+    if (!worst || pnlPct < worst.pnlPct) worst = { name: h.name, pnlPct };
+  });
+
+  const totalPnl = totalMkt - totalCost;
+  const totalPnlPct = totalCost > 0 ? (totalPnl / totalCost * 100) : 0;
+
+  let health = "良好";
+  let healthClass = "green";
+  const upCount = sorted.filter(h => {
+    const p = currentPrices[h.code];
+    return p && p.price > h.cost;
+  }).length;
+  if (upCount <= 1) { health = "⚠️ 偏弱"; healthClass = "yellow"; }
+  if (upCount === 0) { health = "🔴 全线亏损"; healthClass = "red"; }
+
+  document.getElementById("summary").innerHTML = `
+    <div class="summary-card"><div class="label">总市值</div><div class="value mono">${fmtNum(totalMkt, 0)}</div></div>
+    <div class="summary-card"><div class="label">总成本</div><div class="value mono">${fmtNum(totalCost, 0)}</div></div>
+    <div class="summary-card"><div class="label">总盈亏</div><div class="value mono ${totalPnl >= 0 ? 'pnl-pos' : 'pnl-neg'}">${fmtSign(totalPnl, 0)}</div><div class="sub ${totalPnl >= 0 ? 'pnl-pos' : 'pnl-neg'}">${fmtPct(totalPnlPct)}</div></div>
+    <div class="summary-card"><div class="label">最佳</div><div class="value" style="font-size:15px;color:#4caf50;">${best ? best.name + ' ' + fmtPct(best.pnlPct) : '—'}</div></div>
+    <div class="summary-card"><div class="label">最差</div><div class="value" style="font-size:15px;color:#f44336;">${worst ? worst.name + ' ' + fmtPct(worst.pnlPct) : '—'}</div></div>
+    <div class="summary-card"><div class="label">组合健康度</div><div class="value" style="font-size:15px;" class="${healthClass}">${health}</div><div class="sub">${upCount}/${sorted.length} 浮盈</div></div>
+  `;
+}
+
+function renderHoldings() {
+  const sorted = sortData(allData);
+  let html = "";
+
+  sorted.forEach((h, i) => {
+    const p = currentPrices[h.code];
+    const price = p?.price || 0;
+    const prevClose = p?.prev_close || 0;
+    const changePct = p?.change_pct || 0;
+    const turnover = p?.turnover || 0;
+    const pe = p?.pe_ttm || 0;
+    const s = h.signals;
+    const { pnlPct, pnlAmt, mktValue, costValue } = calcPnL(h, price);
+    const stop = price > 0 ? calcStopLoss(h, price) : null;
+
+    const cardClass = pnlCardClass(pnlPct);
+    const sc = scoreColor(h.scoreTotal);
+
+    html += `
+    <div class="stock-card ${cardClass}">
+      <div class="card-header" onclick="toggleCard(this)" data-code="${h.code}">
+        <span class="chevron">▶</span>
+        <span class="code">${h.code}</span>
+        <span class="name">${h.name}</span>
+        ${gradeBadge(h.grade)}
+        <span class="badge tier-core">${h.tier}</span>
+        <div class="quick-stats">
+          <div class="qs-item">
+            <div class="qs-label">现价</div>
+            <div class="qs-value mono">${price > 0 ? price.toFixed(2) : '—'}</div>
+          </div>
+          <div class="qs-item">
+            <div class="qs-label">今日</div>
+            <div class="qs-value mono ${changePct >= 0 ? 'green' : 'red'}">${fmtSign(changePct)}%</div>
+          </div>
+          <div class="qs-item">
+            <div class="qs-label">盈亏</div>
+            <div class="qs-value mono ${pnlClass(pnlPct)}">${fmtPct(pnlPct)}</div>
+          </div>
+          <div class="qs-item">
+            <div class="qs-label">评分</div>
+            <div class="qs-value mono">${h.scoreTotal}</div>
+          </div>
+        </div>
+        <div class="tp-tags">
+          ${stop && stop.firstResistance ? `<span class="tp-tag tp-near" title="最近止盈: ${stop.firstResistance.label}">🎯 止盈 ${stop.firstResistance.price.toFixed(2)}</span>` : ''}
+          <span class="tp-tag tp-far" title="全仓固定止盈: 成本×1.25">🏁 远盈 ${(h.cost * 1.25).toFixed(2)}</span>
+          <span class="tp-tag sl-tag" title="硬止损 -10%">🛑 止损 ${(h.cost * 0.90).toFixed(2)}</span>
+          <span class="tp-tag sl-draw" title="${h.grade}级回撤止盈 -${h.drawdownLine}%">📉 回撤 ${(price > h.cost ? Math.max(h.cost, price * (1 - h.drawdownLine / 100)) : h.cost * 0.90).toFixed(2)}</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="section-title">基本信息</div>
+        <div class="info-grid">
+          <div class="info-item"><div class="ilabel">成本价</div><div class="ivalue mono">${h.cost.toFixed(2)}</div></div>
+          <div class="info-item"><div class="ilabel">现价</div><div class="ivalue mono ${pnlClass(pnlPct)}">${price > 0 ? price.toFixed(2) : '—'}</div></div>
+          <div class="info-item"><div class="ilabel">持仓量</div><div class="ivalue mono">${h.shares} 股</div></div>
+          <div class="info-item"><div class="ilabel">市值</div><div class="ivalue mono">${fmtNum(mktValue, 0)}</div></div>
+          <div class="info-item"><div class="ilabel">盈亏%</div><div class="ivalue mono ${pnlClass(pnlPct)}">${fmtPct(pnlPct)}</div></div>
+          <div class="info-item"><div class="ilabel">盈亏金额</div><div class="ivalue mono ${pnlAmt >= 0 ? 'green' : 'red'}">${fmtSign(pnlAmt, 0)}</div></div>
+          <div class="info-item"><div class="ilabel">今日涨跌</div><div class="ivalue mono ${changePct >= 0 ? 'green' : 'red'}">${fmtSign(changePct)}%</div></div>
+          <div class="info-item"><div class="ilabel">换手率</div><div class="ivalue mono">${turnover.toFixed(2)}%</div></div>
+          <div class="info-item"><div class="ilabel">PE(TTM)</div><div class="ivalue mono">${pe.toFixed(2)}</div></div>
+          <div class="info-item"><div class="ilabel">RSI(14)</div><div class="ivalue mono">${h.rsi_detail.rsi_current.toFixed(1)} ${h.rsi_detail.rsi_arrow}</div></div>
+          <div class="info-item"><div class="ilabel">买入日期</div><div class="ivalue">${h.buyDate}</div></div>
+          <div class="info-item"><div class="ilabel">持仓天数</div><div class="ivalue mono">${daysSince(h.buyDate)} 天</div></div>
+        </div>
+
+        <div class="section-title">量化评分</div>
+        <div class="info-grid">
+          <div class="info-item"><div class="ilabel">总分</div><div class="ivalue mono">${h.scoreTotal} / 100</div><div class="score-bar-wrap"><div class="score-bar ${sc}" style="width:${Math.min(h.scoreTotal,100)}%"></div></div></div>
+          <div class="info-item"><div class="ilabel">可买度</div><div class="ivalue">${h.buyability}</div></div>
+          <div class="info-item"><div class="ilabel">动量总分</div><div class="ivalue mono">${h.momentum_grade}</div></div>
+          <div class="info-item"><div class="ilabel">标的等级</div><div class="ivalue">${gradeBadge(h.grade)} 基本面${h.fStar}⭐ 概念${h.cStar}⭐</div></div>
+          <div class="info-item"><div class="ilabel">ROE</div><div class="ivalue mono">${fmtNum(h.fundamental.roe)}%</div></div>
+          <div class="info-item"><div class="ilabel">毛利率</div><div class="ivalue mono">${fmtNum(h.fundamental.gross_margin)}%</div></div>
+        </div>
+
+        <div class="level-grid" style="margin-bottom:12px;">
+          <div class="level-box">
+            <h4>🛡️ 支撑阶梯 (由近到远)</h4>
+            ${stop ? stop.supports.slice(0, 5).map((s, i) => `
+              <div class="level-row">
+                <span>S${i+1} ${s.label}</span>
+                <span class="lprice">${s.price.toFixed(2)}</span>
+                <span class="ldist">${fmtSign((s.price / price - 1) * 100)}%</span>
+              </div>
+            `).join("") : '<div class="level-row"><span>数据加载中...</span></div>'}
+          </div>
+          <div class="level-box">
+            <h4>📈 阻力阶梯 (由近到远)</h4>
+            ${stop ? stop.resistancesAll.slice(0, 5).map((r, i) => `
+              <div class="level-row">
+                <span>R${i+1} ${r.label}</span>
+                <span class="lprice">${r.price.toFixed(2)}</span>
+                <span class="ldist">${fmtSign((r.price / price - 1) * 100)}%</span>
+              </div>
+            `).join("") : '<div class="level-row"><span>数据加载中...</span></div>'}
+          </div>
+        </div>
+
+        <div class="section-title">止盈止损表</div>
+        <table>
+          <thead><tr><th>类型</th><th>价格</th><th>操作</th><th>状态</th></tr></thead>
+          <tbody>
+            ${stop && stop.firstResistance ? `
+            <tr>
+              <td>第一止盈(半仓①)</td>
+              <td class="mono bold">${stop.firstResistance.price.toFixed(2)}</td>
+              <td class="muted">${stop.firstResistance.label}，最近阻力位</td>
+              <td>${price >= stop.firstResistance.price ? '<span class="badge badge-green">已触发</span>' : `<span class="muted">距+${fmtSign((stop.firstResistance.price/price-1)*100)}%</span>`}</td>
+            </tr>` : `<tr><td>第一止盈</td><td class="mono">—</td><td class="muted">无上方阻力</td><td>—</td></tr>`}
+            <tr>
+              <td>固定止盈(半仓②)</td>
+              <td class="mono bold">${stop ? stop.tpBandHalf.toFixed(2) : ''}</td>
+              <td class="muted">成本价×1.15</td>
+              <td>${price >= (stop ? stop.tpBandHalf : 0) ? '<span class="badge badge-green">已触发</span>' : `<span class="muted">距+${fmtSign((stop ? stop.tpBandHalf/price-1 : 0) * 100)}%</span>`}</td>
+            </tr>
+            <tr>
+              <td>全仓固定止盈</td>
+              <td class="mono bold">${stop ? stop.tpBandFull.toFixed(2) : ''}</td>
+              <td class="muted">成本价×1.25</td>
+              <td>${price >= (stop ? stop.tpBandFull : 0) ? '<span class="badge badge-green">已触发</span>' : `<span class="muted">距+${fmtSign((stop ? stop.tpBandFull/price-1 : 0) * 100)}%</span>`}</td>
+            </tr>
+            <tr>
+              <td>移动止盈(ATR×2)</td>
+              <td class="mono bold">${stop ? stop.atr2Stop.toFixed(2) : ''}</td>
+              <td class="muted">ATR(14)=${s.atr14.toFixed(2)}，ATR×2回撤跟踪</td>
+              <td>${price <= (stop ? stop.atr2Stop : 0) && price > h.cost ? '<span class="badge badge-yellow">临近</span>' : '<span class="muted">安全</span>'}</td>
+            </tr>
+            <tr>
+              <td>回撤止盈(兜底)</td>
+              <td class="mono bold">${stop ? stop.drawdownStop.toFixed(2) : ''}</td>
+              <td class="muted">${h.grade}级：从最高点回撤-${h.drawdownLine}%</td>
+              <td class="muted">兜底保护</td>
+            </tr>
+            <tr>
+              <td>全仓止损</td>
+              <td class="mono bold red">${stop ? stop.hardStop.toFixed(2) : ''}</td>
+              <td class="muted">-10%硬止损 / 布林下轨 / 跌破MA60</td>
+              <td>${price <= (stop ? stop.hardStop : 0) ? '<span class="badge badge-red">☠ 触发</span>' : price <= h.cost * 0.93 ? '<span class="badge badge-yellow">⚠ 逼近</span>' : '<span class="muted">安全</span>'}</td>
+            </tr>
+            <tr>
+              <td>趋势卖出</td>
+              <td class="mono bold">MA20: ${s.ma20.toFixed(2)}</td>
+              <td class="muted">持≥10天+价&lt;MA20，或持≥5天+价&lt;MA20且价&lt;MA60</td>
+              <td>${price < s.ma20 && daysSince(h.buyDate) >= 10 ? '<span class="badge badge-yellow">⚠ 信号</span>' : '<span class="muted">安全</span>'}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+  });
+
+  document.getElementById("holdings").innerHTML = html;
+}
+
+function daysSince(dateStr) {
+  const d = new Date(dateStr + "T00:00:00");
+  const now = new Date();
+  return Math.floor((now - d) / 86400000);
+}
+
+function toggleCard(header) {
+  header.classList.toggle("open");
+  const body = header.nextElementSibling;
+  body.classList.toggle("open");
+}
+
+function resort(sort, el) {
+  currentSort = sort;
+  document.querySelectorAll(".pill").forEach(p => p.classList.remove("active"));
+  if (el) el.classList.add("active");
+  renderSummary();
+  renderHoldings();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// 主循环
+// ═══════════════════════════════════════════════════════════════════
+let refreshCount = 0;
+
+async function tick() {
+  const codes = allData.map(h => h.code);
+  try {
+    currentPrices = await fetchQuotes(codes);
+    refreshCount++;
+  } catch(e) {}
+
+  const now = new Date();
+  document.getElementById("updateTime").textContent =
+    now.toLocaleString("zh-CN", { hour12: false });
+  document.getElementById("refreshCount").textContent =
+    `(刷新 #${refreshCount})`;
+  document.getElementById("updateDot").style.background = "#4caf50";
+  setTimeout(() => { document.getElementById("updateDot").style.background = "#4caf50"; }, 300);
+
+  renderSummary();
+  renderHoldings();
+
+  // Check for stop-loss proximity warnings
+  checkAlerts();
+}
+
+function checkAlerts() {
+  allData.forEach(h => {
+    const p = currentPrices[h.code];
+    if (!p || !p.price) return;
+    const stop = calcStopLoss(h, p.price);
+    const cards = document.querySelectorAll(`.card-header[data-code="${h.code}"]`);
+    cards.forEach(card => {
+      const row = card.closest(".stock-card");
+      const isNearStop = p.price <= h.cost * 0.93;
+      if (isNearStop) row.classList.add("stop-loss-near");
+      else row.classList.remove("stop-loss-near");
+    });
+  });
+}
+
+// Init: load JSON then start loop
+(async function init() {
+  await loadHoldingsData();
+  tick();
+  setInterval(tick, 10000);
+})();
+
+async function loadHoldingsData() {
+  try {
+    const resp = await fetch("holdings_data.json", {cache: "no-cache"});
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    HOLDINGS = await resp.json();
+    allData = [...HOLDINGS];
+    document.getElementById("footer").textContent = "数据源: data/my_pool.csv → quant_score.py → holdings_data.json | 腾讯行情API | v1.1";
+    console.log(`✅ 已加载 ${HOLDINGS.length} 只持仓数据`);
+  } catch(e) {
+    console.warn("⚠ 无法加载 holdings_data.json，使用内嵌默认值", e);
+    HOLDINGS = DEFAULT_HOLDINGS;
+    allData = [...HOLDINGS];
+    document.getElementById("footer").textContent = "⚠ 使用内嵌默认数据 | 请运行: python scripts/update_holdings_data.py";
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// 内嵌默认数据 (holdings_data.json 加载失败时使用)
+// ═══════════════════════════════════════════════════════════════════
+const DEFAULT_HOLDINGS = [
+  {code:"002463",name:"沪电股份",tier:"核心",cost:102.27,shares:100,buyDate:"2026-04-28",grade:"A+",drawdownLine:10,fStar:4,cStar:5,scoreTotal:57.1,buyability:"🟡 关注",momentum_total:5,momentum_grade:"中等动量(5/8)",signals:{ma5:105.64,ma10:106.82,ma20:105.43,ma60:90.09,bb_upper:112.71,bb_lower:98.16,bb_mid:105.43,atr14:6.01,rsi14:67.91,high_20d:114.46,low_20d:98.3,high_60d:114.46,low_60d:68.48},rsi_detail:{rsi_current:67.9,rsi_slope_5d:3.5,rsi_arrow:"↑"},fundamental:{roe:7.8,gross_margin:35.6,debt_ratio:48.6,cf_ratio:0.082}},
+  {code:"600026",name:"中远海能",tier:"核心",cost:21.79,shares:500,buyDate:"2026-05-15",grade:"A",drawdownLine:8,fStar:4,cStar:3,scoreTotal:81.1,buyability:"🟢 强烈推荐",momentum_total:5,momentum_grade:"中等动量(5/8)",signals:{ma5:22.25,ma10:22.29,ma20:22.09,ma60:22.89,bb_upper:23.35,bb_lower:20.83,bb_mid:22.09,atr14:1.22,rsi14:58.03,high_20d:23.85,low_20d:20.6,high_60d:27.17,low_60d:18.3},rsi_detail:{rsi_current:58.0,rsi_slope_5d:1.6,rsi_arrow:"↑"},fundamental:{roe:4.6,gross_margin:42.7,debt_ratio:45.6,cf_ratio:0.516}},
+  {code:"603893",name:"瑞芯微",tier:"核心",cost:195.12,shares:100,buyDate:"2026-05-13",grade:"A+",drawdownLine:10,fStar:4,cStar:5,scoreTotal:73.9,buyability:"🟢 推荐",momentum_total:4,momentum_grade:"中等动量(4/8)",signals:{ma5:190.11,ma10:184.12,ma20:182.43,ma60:170.74,bb_upper:194.42,bb_lower:170.44,bb_mid:182.43,atr14:9.3,rsi14:61.16,high_20d:203.0,low_20d:170.0,high_60d:203.0,low_60d:145.45},rsi_detail:{rsi_current:61.2,rsi_slope_5d:3.7,rsi_arrow:"↑"},fundamental:{roe:7.2,gross_margin:43.0,debt_ratio:17.9,cf_ratio:0.318}},
+  {code:"002466",name:"天齐锂业",tier:"核心",cost:66.50,shares:100,buyDate:"2026-04-22",grade:"B",drawdownLine:6,fStar:2,cStar:3,scoreTotal:53.0,buyability:"🟠 偏弱",momentum_total:3,momentum_grade:"弱动量(3/8)",signals:{ma5:67.28,ma10:70.27,ma20:72.68,ma60:61.64,bb_upper:82.13,bb_lower:63.24,bb_mid:72.68,atr14:3.75,rsi14:34.59,high_20d:82.49,low_20d:64.68,high_60d:82.49,low_60d:48.28},rsi_detail:{rsi_current:34.6,rsi_slope_5d:-2.6,rsi_arrow:"↓"},fundamental:{roe:4.3,gross_margin:62.7,debt_ratio:28.4,cf_ratio:0.05}},
+  {code:"002475",name:"立讯精密",tier:"核心",cost:72.75,shares:700,buyDate:"2026-04-15",grade:"B",drawdownLine:6,fStar:2,cStar:3,scoreTotal:71.7,buyability:"🟢 推荐",momentum_total:4,momentum_grade:"中等动量(4/8)",signals:{ma5:71.13,ma10:73.84,ma20:71.28,ma60:58.16,bb_upper:78.94,bb_lower:63.63,bb_mid:71.28,atr14:4.43,rsi14:55.95,high_20d:81.78,low_20d:64.37,high_60d:81.78,low_60d:44.57},rsi_detail:{rsi_current:55.9,rsi_slope_5d:-0.7,rsi_arrow:"↓"},fundamental:{roe:4.2,gross_margin:11.9,debt_ratio:66.5,cf_ratio:-0.085}},
+  {code:"601138",name:"工业富联",tier:"核心",cost:68.88,shares:800,buyDate:"2026-04-10",grade:"B",drawdownLine:6,fStar:2,cStar:3,scoreTotal:69.3,buyability:"🟢 推荐",momentum_total:6,momentum_grade:"强动量(6/8)",signals:{ma5:67.67,ma10:67.57,ma20:66.53,ma60:58.23,bb_upper:70.94,bb_lower:62.12,bb_mid:66.53,atr14:3.57,rsi14:51.75,high_20d:74.0,low_20d:61.03,high_60d:74.0,low_60d:47.35},rsi_detail:{rsi_current:51.7,rsi_slope_5d:0.1,rsi_arrow:"→"},fundamental:{roe:6.2,gross_margin:7.4,debt_ratio:61.4,cf_ratio:0.1}}
+];
+</script>
+</body>
+</html>

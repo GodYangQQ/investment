@@ -30,8 +30,8 @@ AI 读完后会按照模板中定义的工作流（数据质量门禁 → 选股
 | 回测策略 | `回测一下多因子策略，从2024年1月1号开始` |
 | 看资金流向 | `今天的资金流向报告跑一下，只看主板` |
 | 验证策略改动 | `我把quant_score.py的RSI权重改了，帮我回测验证` |
-| 评估持仓 | `帮我跑一下my_pool.csv里的持仓打分` |
-| 断网续跑 | `上次排名跑到一半断了，帮我续跑` |
+| **更新持仓** | `更新持仓` → 自动OCR识别 持仓.jpg → 覆盖my_pool.csv → 刷新JSON |
+| **打开持仓看板** | `打开持仓看板` → 浏览器打开 dashboards/positions.html |
 
 ### 第三步：让 AI 帮你读结果
 
@@ -209,7 +209,13 @@ investment/
 │   └── backtest/                回测净值 + 交易明细
 │
 ├── experiments/             ← 参考策略（聚宽平台代码，供借鉴）
-├── dashboard/               ← HTML可视化看板
+├── dashboards/              ← HTML可视化看板
+│   ├── positions.html           持仓监控仪表板（实时行情+止盈止损）
+│   ├── holdings_data.json       持仓量化数据（由脚本自动生成）
+│   └── dashboard-v50.html       AI算力产业链全景看板
+├── scripts/                 ← 工具脚本
+│   ├── update_holdings_data.py  持仓数据生成器（my_pool.csv → holdings_data.json）
+│   └── monitor_ambush.py        策略埋点实时监控终端
 ├── ml/                      ← 深度学习训练+预测 🆕
 │   ├── build_features.py        特征矩阵构建
 │   ├── dataset.py               动态序列切片 Dataset
@@ -244,10 +250,13 @@ investment/
 ### 场景C：实盘持仓评估
 
 ```
-  1. 将持仓写入 data/my_pool.csv（填入成本价、持仓量、买入日期）
-  2. python core/quant_score.py --pool data/my_pool.csv
-  3. 查看每只持仓的成本修正分 → 辅助判断是否该止盈/补仓
+  1. 保存券商APP持仓截图 → 覆盖项目根目录 持仓.jpg
+  2. 对AI说："更新持仓"
+     → 自动OCR识别持仓.jpg → 更新 data/my_pool.csv → 运行 update_holdings_data.py
+  3. 浏览器打开 dashboards/positions.html 查看实时看板
 ```
+
+> 📌 **约定**：持仓截图固定为项目根目录 `持仓.jpg`，每次截图覆盖即可。Agent 找不到文件时会提示"请先将持仓截图保存为 持仓.jpg"。
 
 ---
 

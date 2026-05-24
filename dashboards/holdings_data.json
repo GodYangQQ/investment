@@ -1,0 +1,254 @@
+[
+  {
+    "code": "002463",
+    "name": "沪电股份",
+    "tier": "核心",
+    "cost": 102.27,
+    "shares": 100,
+    "buyDate": "2026-04-28",
+    "grade": "A+",
+    "drawdownLine": 10,
+    "fStar": 4,
+    "cStar": 5,
+    "scoreTotal": 57.1,
+    "buyability": "🟡 关注",
+    "momentum_total": 5,
+    "momentum_grade": "中等动量(5/8)",
+    "signals": {
+      "ma5": 105.64,
+      "ma10": 106.82,
+      "ma20": 105.43,
+      "ma60": 90.09,
+      "bb_upper": 112.71,
+      "bb_lower": 98.16,
+      "bb_mid": 105.43,
+      "atr14": 6.01,
+      "rsi14": 67.91,
+      "high_20d": 114.46,
+      "low_20d": 98.3,
+      "high_60d": 114.46,
+      "low_60d": 68.48
+    },
+    "rsi_detail": {
+      "rsi_current": 67.9,
+      "rsi_slope_5d": 3.5,
+      "rsi_arrow": "↑"
+    },
+    "fundamental": {
+      "roe": 7.8,
+      "gross_margin": 35.6,
+      "debt_ratio": 48.6,
+      "cf_ratio": 0.082
+    }
+  },
+  {
+    "code": "002466",
+    "name": "天齐锂业",
+    "tier": "核心",
+    "cost": 66.5,
+    "shares": 100,
+    "buyDate": "2026-04-22",
+    "grade": "B",
+    "drawdownLine": 6,
+    "fStar": 2,
+    "cStar": 3,
+    "scoreTotal": 53.0,
+    "buyability": "🟠 偏弱",
+    "momentum_total": 3,
+    "momentum_grade": "弱动量(3/8)",
+    "signals": {
+      "ma5": 67.28,
+      "ma10": 70.27,
+      "ma20": 72.68,
+      "ma60": 61.64,
+      "bb_upper": 82.13,
+      "bb_lower": 63.24,
+      "bb_mid": 72.68,
+      "atr14": 3.75,
+      "rsi14": 34.59,
+      "high_20d": 82.49,
+      "low_20d": 64.68,
+      "high_60d": 82.49,
+      "low_60d": 48.28
+    },
+    "rsi_detail": {
+      "rsi_current": 34.6,
+      "rsi_slope_5d": -2.6,
+      "rsi_arrow": "↓"
+    },
+    "fundamental": {
+      "roe": 4.3,
+      "gross_margin": 62.7,
+      "debt_ratio": 28.4,
+      "cf_ratio": 0.05
+    }
+  },
+  {
+    "code": "002475",
+    "name": "立讯精密",
+    "tier": "核心",
+    "cost": 72.75,
+    "shares": 700,
+    "buyDate": "2026-04-15",
+    "grade": "B",
+    "drawdownLine": 6,
+    "fStar": 2,
+    "cStar": 3,
+    "scoreTotal": 71.7,
+    "buyability": "🟢 推荐",
+    "momentum_total": 4,
+    "momentum_grade": "中等动量(4/8)",
+    "signals": {
+      "ma5": 71.13,
+      "ma10": 73.84,
+      "ma20": 71.28,
+      "ma60": 58.16,
+      "bb_upper": 78.94,
+      "bb_lower": 63.63,
+      "bb_mid": 71.28,
+      "atr14": 4.43,
+      "rsi14": 55.95,
+      "high_20d": 81.78,
+      "low_20d": 64.37,
+      "high_60d": 81.78,
+      "low_60d": 44.57
+    },
+    "rsi_detail": {
+      "rsi_current": 55.9,
+      "rsi_slope_5d": -0.7,
+      "rsi_arrow": "↓"
+    },
+    "fundamental": {
+      "roe": 4.2,
+      "gross_margin": 11.9,
+      "debt_ratio": 66.5,
+      "cf_ratio": -0.085
+    }
+  },
+  {
+    "code": "600026",
+    "name": "中远海能",
+    "tier": "核心",
+    "cost": 21.79,
+    "shares": 500,
+    "buyDate": "2026-05-15",
+    "grade": "A",
+    "drawdownLine": 8,
+    "fStar": 4,
+    "cStar": 3,
+    "scoreTotal": 81.1,
+    "buyability": "🟢 强烈推荐",
+    "momentum_total": 5,
+    "momentum_grade": "中等动量(5/8)",
+    "signals": {
+      "ma5": 22.25,
+      "ma10": 22.29,
+      "ma20": 22.09,
+      "ma60": 22.89,
+      "bb_upper": 23.35,
+      "bb_lower": 20.83,
+      "bb_mid": 22.09,
+      "atr14": 1.22,
+      "rsi14": 58.03,
+      "high_20d": 23.85,
+      "low_20d": 20.6,
+      "high_60d": 27.17,
+      "low_60d": 18.3
+    },
+    "rsi_detail": {
+      "rsi_current": 58.0,
+      "rsi_slope_5d": 1.6,
+      "rsi_arrow": "↑"
+    },
+    "fundamental": {
+      "roe": 4.6,
+      "gross_margin": 42.7,
+      "debt_ratio": 45.6,
+      "cf_ratio": 0.516
+    }
+  },
+  {
+    "code": "601138",
+    "name": "工业富联",
+    "tier": "核心",
+    "cost": 68.88,
+    "shares": 800,
+    "buyDate": "2026-04-10",
+    "grade": "B",
+    "drawdownLine": 6,
+    "fStar": 2,
+    "cStar": 3,
+    "scoreTotal": 69.3,
+    "buyability": "🟢 推荐",
+    "momentum_total": 6,
+    "momentum_grade": "强动量(6/8)",
+    "signals": {
+      "ma5": 67.67,
+      "ma10": 67.57,
+      "ma20": 66.53,
+      "ma60": 58.23,
+      "bb_upper": 70.94,
+      "bb_lower": 62.12,
+      "bb_mid": 66.53,
+      "atr14": 3.57,
+      "rsi14": 51.75,
+      "high_20d": 74.0,
+      "low_20d": 61.03,
+      "high_60d": 74.0,
+      "low_60d": 47.35
+    },
+    "rsi_detail": {
+      "rsi_current": 51.7,
+      "rsi_slope_5d": 0.1,
+      "rsi_arrow": "→"
+    },
+    "fundamental": {
+      "roe": 6.2,
+      "gross_margin": 7.4,
+      "debt_ratio": 61.4,
+      "cf_ratio": 0.1
+    }
+  },
+  {
+    "code": "603893",
+    "name": "瑞芯微",
+    "tier": "核心",
+    "cost": 195.12,
+    "shares": 100,
+    "buyDate": "2026-05-13",
+    "grade": "A+",
+    "drawdownLine": 10,
+    "fStar": 4,
+    "cStar": 5,
+    "scoreTotal": 73.9,
+    "buyability": "🟢 推荐",
+    "momentum_total": 4,
+    "momentum_grade": "中等动量(4/8)",
+    "signals": {
+      "ma5": 190.11,
+      "ma10": 184.12,
+      "ma20": 182.43,
+      "ma60": 170.74,
+      "bb_upper": 194.42,
+      "bb_lower": 170.44,
+      "bb_mid": 182.43,
+      "atr14": 9.3,
+      "rsi14": 61.16,
+      "high_20d": 203.0,
+      "low_20d": 170.0,
+      "high_60d": 203.0,
+      "low_60d": 145.45
+    },
+    "rsi_detail": {
+      "rsi_current": 61.2,
+      "rsi_slope_5d": 3.7,
+      "rsi_arrow": "↑"
+    },
+    "fundamental": {
+      "roe": 7.2,
+      "gross_margin": 43.0,
+      "debt_ratio": 17.9,
+      "cf_ratio": 0.318
+    }
+  }
+]
