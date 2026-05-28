@@ -1,0 +1,1927 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>光模块 & PCB钻针 投资研究报告 2026</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js">
+    </script>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --bg2: #161b22;
+            --bg3: #1c2128;
+            --border: rgba(255, 255, 255, 0.08);
+            --border2: rgba(255, 255, 255, 0.14);
+            --text1: #e6edf3;
+            --text2: #8b949e;
+            --text3: #484f58;
+            --blue: #1f6feb;
+            --blue-light: #388bfd;
+            --teal: #1d9e75;
+            --teal-light: #2dcc97;
+            --amber: #e3b341;
+            --red: #da3633;
+            --coral: #d85a30;
+            --purple: #8b5cf6;
+            --font: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+            --radius: 10px;
+            --radius-sm: 6px;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text1);
+            font-family: var(--font);
+            font-size: 14px;
+            line-height: 1.6;
+            min-height: 100vh;
+            padding-bottom: 80px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #0d1117 0%, #1a1f2e 50%, #0d1117 100%);
+            border-bottom: 1px solid var(--border);
+            padding: 40px 0 32px;
+            position: relative;
+            overflow: hidden;
+        }
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -60px;
+            right: -60px;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(31, 111, 235, 0.12) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: -40px;
+            left: 200px;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(29, 158, 117, 0.08) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .header-inner {
+            position: relative;
+            z-index: 1;
+        }
+        .header-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(31, 111, 235, 0.15);
+            border: 1px solid rgba(31, 111, 235, 0.3);
+            border-radius: 20px;
+            padding: 4px 14px;
+            font-size: 11px;
+            color: var(--blue-light);
+            margin-bottom: 16px;
+        }
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text1);
+            margin-bottom: 10px;
+            letter-spacing: -0.3px;
+        }
+        .header h1 span {
+            color: var(--blue-light);
+        }
+        .header-meta {
+            font-size: 12px;
+            color: var(--text2);
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .header-meta span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .nav-wrap {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(13, 17, 23, 0.96);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+        }
+        .nav {
+            display: flex;
+            gap: 4px;
+            padding: 10px 0;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .nav::-webkit-scrollbar {
+            display: none;
+        }
+        .nav a {
+            flex-shrink: 0;
+            font-size: 12px;
+            font-weight: 500;
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1px solid transparent;
+            color: var(--text2);
+            text-decoration: none;
+            transition: all .2s;
+            white-space: nowrap;
+        }
+        .nav a:hover {
+            background: var(--bg2);
+            border-color: var(--border);
+            color: var(--text1);
+        }
+
+        .verify-banner {
+            background: rgba(29, 158, 117, 0.08);
+            border: 1px solid rgba(29, 158, 117, 0.2);
+            border-radius: var(--radius-sm);
+            padding: 10px 16px;
+            font-size: 12px;
+            color: var(--text2);
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin: 24px 0;
+        }
+        .vdot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--teal-light);
+            flex-shrink: 0;
+            margin-top: 4px;
+        }
+
+        .section {
+            padding: 32px 0 0;
+            scroll-margin-top: 70px;
+        }
+        .section-header {
+            margin-bottom: 20px;
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 4px;
+        }
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 18px;
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+        .s-blue .section-title::before {
+            background: var(--blue-light);
+        }
+        .s-teal .section-title::before {
+            background: var(--teal-light);
+        }
+        .s-amber .section-title::before {
+            background: var(--amber);
+        }
+        .s-red .section-title::before {
+            background: var(--red);
+        }
+        .s-purple .section-title::before {
+            background: var(--purple);
+        }
+        .section-sub {
+            font-size: 12px;
+            color: var(--text2);
+        }
+        .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 32px 0 0;
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .metric {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 14px 16px;
+        }
+        .metric .mlabel {
+            font-size: 11px;
+            color: var(--text2);
+            margin-bottom: 6px;
+            line-height: 1.4;
+        }
+        .metric .mval {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text1);
+            line-height: 1.1;
+        }
+        .metric .mval .munit {
+            font-size: 13px;
+            font-weight: 400;
+        }
+        .metric .msub {
+            font-size: 11px;
+            margin-top: 4px;
+        }
+        .mup {
+            color: var(--teal-light);
+        }
+        .mdn {
+            color: var(--red);
+        }
+
+        .chart-row {
+            display: grid;
+            gap: 14px;
+            margin-bottom: 14px;
+        }
+        .chart-row.col2 {
+            grid-template-columns: 1fr 1fr;
+        }
+        .chart-row.col3 {
+            grid-template-columns: 1fr 1fr 1fr;
+        }
+        .chart-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px 18px;
+        }
+        .chart-card h3 {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text1);
+            margin-bottom: 2px;
+        }
+        .chart-card .csub {
+            font-size: 11px;
+            color: var(--text2);
+            margin-bottom: 14px;
+        }
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 12px;
+            font-size: 11px;
+            color: var(--text2);
+        }
+        .leg-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .leg-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+
+        .hbar-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 9px;
+        }
+        .hbar-label {
+            font-size: 11px;
+            color: var(--text2);
+            width: 76px;
+            flex-shrink: 0;
+            text-align: right;
+        }
+        .hbar-wrap {
+            flex: 1;
+            background: var(--bg3);
+            border-radius: 4px;
+            height: 18px;
+            overflow: hidden;
+        }
+        .hbar-fill {
+            height: 100%;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 8px;
+            min-width: 40px;
+        }
+        .hbar-val {
+            font-size: 10px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .price-bar-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 9px;
+        }
+        .price-label-c {
+            font-size: 11px;
+            color: var(--text2);
+            width: 68px;
+            flex-shrink: 0;
+        }
+        .price-wrap {
+            flex: 1;
+            background: var(--bg3);
+            border-radius: 4px;
+            height: 20px;
+            overflow: hidden;
+        }
+        .price-fill {
+            height: 100%;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            padding-left: 10px;
+        }
+        .price-fill span {
+            font-size: 10px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .supply-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-bottom: 14px;
+        }
+        .supply-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px 18px;
+        }
+        .supply-card h3 {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text1);
+            margin-bottom: 4px;
+        }
+        .supply-card .scsub {
+            font-size: 11px;
+            color: var(--text2);
+            margin-bottom: 14px;
+        }
+        .bottleneck {
+            border-left: 3px solid rgba(218, 54, 51, 0.4);
+            padding-left: 12px;
+            margin-bottom: 12px;
+        }
+        .bname {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text1);
+            margin-bottom: 2px;
+        }
+        .bdesc {
+            font-size: 11px;
+            color: var(--text2);
+            line-height: 1.5;
+        }
+        .btag {
+            display: inline-block;
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-right: 4px;
+            margin-top: 6px;
+        }
+        .tag-red {
+            background: rgba(218, 54, 51, 0.15);
+            color: #ff7b7b;
+            border: 1px solid rgba(218, 54, 51, 0.3);
+        }
+        .tag-amber {
+            background: rgba(227, 179, 65, 0.12);
+            color: #e3b341;
+            border: 1px solid rgba(227, 179, 65, 0.3);
+        }
+        .tag-teal {
+            background: rgba(29, 158, 117, 0.12);
+            color: var(--teal-light);
+            border: 1px solid rgba(29, 158, 117, 0.3);
+        }
+        .tag-blue {
+            background: rgba(31, 111, 235, 0.12);
+            color: var(--blue-light);
+            border: 1px solid rgba(31, 111, 235, 0.3);
+        }
+
+        .tech-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-bottom: 14px;
+        }
+        .tech-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px 18px;
+        }
+        .tech-card h3 {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text1);
+            margin-bottom: 4px;
+        }
+        .tech-card .csub {
+            font-size: 11px;
+            color: var(--text2);
+            margin-bottom: 14px;
+        }
+        .tl-item {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .tl-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-top: 5px;
+        }
+        .tl-text {
+            font-size: 12px;
+            color: var(--text2);
+            line-height: 1.5;
+        }
+        .tl-text strong {
+            color: var(--text1);
+            font-weight: 600;
+        }
+
+        .prog-item {
+            margin-bottom: 12px;
+        }
+        .prog-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        .prog-label {
+            font-size: 11px;
+            color: var(--text2);
+        }
+        .prog-val {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text1);
+        }
+        .prog-bar {
+            height: 6px;
+            background: var(--bg3);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .prog-fill {
+            height: 100%;
+            border-radius: 3px;
+        }
+
+        .stock-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .stock-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 14px 16px;
+            position: relative;
+            overflow: hidden;
+            transition: border-color .2s, transform .15s;
+        }
+        .stock-card:hover {
+            border-color: var(--border2);
+            transform: translateY(-2px);
+        }
+        .tier-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+        }
+        .tier1 {
+            background: var(--blue-light);
+        }
+        .tier2 {
+            background: var(--teal-light);
+        }
+        .tier3 {
+            background: var(--amber);
+        }
+        .stock-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            margin-top: 8px;
+        }
+        .stock-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text1);
+        }
+        .stock-code {
+            font-size: 10px;
+            color: var(--text3);
+            margin-top: 2px;
+            font-family: monospace;
+        }
+        .stock-badge {
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            flex-shrink: 0;
+        }
+        .stock-row {
+            font-size: 11px;
+            color: var(--text2);
+            margin-bottom: 5px;
+            line-height: 1.4;
+        }
+        .stock-row strong {
+            color: var(--text1);
+            font-weight: 600;
+        }
+
+        .info-3col {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+        }
+        .info-box {
+            background: var(--bg3);
+            border-radius: var(--radius-sm);
+            padding: 12px 14px;
+        }
+        .info-box-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text1);
+            margin-bottom: 6px;
+        }
+        .info-box-body {
+            font-size: 11px;
+            color: var(--text2);
+            line-height: 1.5;
+        }
+
+        .drill-specs {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+        .drill-spec {
+            background: var(--bg3);
+            border-radius: var(--radius-sm);
+            padding: 12px;
+            text-align: center;
+        }
+        .ds-platform {
+            font-size: 10px;
+            color: var(--text2);
+            margin-bottom: 6px;
+        }
+        .ds-price {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text1);
+        }
+        .ds-ar {
+            font-size: 10px;
+            color: var(--text2);
+            margin-top: 2px;
+        }
+        .ds-life {
+            font-size: 10px;
+            margin-top: 3px;
+        }
+
+        .risk-box {
+            background: rgba(218, 54, 51, 0.06);
+            border: 1px solid rgba(218, 54, 51, 0.2);
+            border-radius: var(--radius-sm);
+            padding: 14px 16px;
+            font-size: 11px;
+            color: var(--text2);
+            line-height: 1.7;
+        }
+
+        .comp-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .footer {
+            margin-top: 48px;
+            padding: 24px 0 32px;
+            border-top: 1px solid var(--border);
+            text-align: center;
+            font-size: 11px;
+            color: var(--text3);
+            line-height: 1.8;
+        }
+
+        /* ── PDF下载浮动按钮 ── */
+        .pdf-btn-wrapper {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+        }
+        .pdf-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 13px 22px;
+            background: linear-gradient(135deg, #1f6feb 0%, #388bfd 100%);
+            color: #fff;
+            border: none;
+            border-radius: 28px;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: var(--font);
+            cursor: pointer;
+            box-shadow: 0 6px 24px rgba(31, 111, 235, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
+            transition: all 0.25s ease;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
+            text-decoration: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .pdf-btn:hover {
+            background: linear-gradient(135deg, #388bfd 0%, #58a6ff 100%);
+            box-shadow: 0 8px 32px rgba(31, 111, 235, 0.55), 0 4px 12px rgba(0, 0, 0, 0.35);
+            transform: translateY(-2px);
+        }
+        .pdf-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 3px 12px rgba(31, 111, 235, 0.35), 0 1px 4px rgba(0, 0, 0, 0.3);
+        }
+        .pdf-btn-icon {
+            font-size: 18px;
+            line-height: 1;
+        }
+        .pdf-btn-hint {
+            font-size: 10px;
+            color: var(--text2);
+            background: var(--bg2);
+            padding: 6px 12px;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            opacity: 0;
+            transform: translateY(8px);
+            transition: all 0.3s ease;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+        .pdf-btn-hint.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ── Toast提示 ── */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-120px);
+            background: #1d9e75;
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 24px;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: var(--font);
+            z-index: 99999;
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
+            transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
+            white-space: nowrap;
+            letter-spacing: 0.2px;
+        }
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* ── 打印样式 ── */
+        @media print {
+            @page {
+                size: A4;
+                margin: 12mm 14mm 14mm 14mm;
+            }
+
+            html,
+            body {
+                background: #fff !important;
+                color: #1a1a1a !important;
+                font-size: 12px !important;
+                line-height: 1.5 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+
+            .pdf-btn-wrapper,
+            .toast,
+            .nav-wrap,
+            .verify-banner {
+                display: none !important;
+            }
+
+            .header {
+                background: #f8f9fa !important;
+                border-bottom: 2px solid #ddd !important;
+                padding: 20px 0 16px !important;
+            }
+            .header::before,
+            .header::after {
+                display: none !important;
+            }
+            .header-tag {
+                background: #e8f0fe !important;
+                border: 1px solid #b8d4fe !important;
+                color: #1a56db !important;
+            }
+            .header h1 {
+                color: #111 !important;
+                font-size: 22px !important;
+            }
+            .header h1 span {
+                color: #1a56db !important;
+            }
+            .header-meta {
+                color: #555 !important;
+            }
+
+            .section {
+                padding: 20px 0 0 !important;
+                scroll-margin-top: 0 !important;
+                page-break-inside: avoid;
+            }
+            .section-title {
+                color: #111 !important;
+                font-size: 15px !important;
+            }
+            .section-sub {
+                color: #555 !important;
+            }
+            .divider {
+                background: #ddd !important;
+                margin: 20px 0 0 !important;
+            }
+
+            .metric {
+                background: #fafafa !important;
+                border: 1px solid #e0e0e0 !important;
+            }
+            .metric .mlabel {
+                color: #555 !important;
+            }
+            .metric .mval {
+                color: #111 !important;
+            }
+            .mup {
+                color: #0d7d4a !important;
+            }
+            .mdn {
+                color: #b91c1c !important;
+            }
+
+            .chart-card,
+            .supply-card,
+            .tech-card,
+            .info-box,
+            .drill-spec,
+            .stock-card,
+            .risk-box {
+                background: #fafafa !important;
+                border: 1px solid #e0e0e0 !important;
+                page-break-inside: avoid;
+            }
+            .chart-card h3,
+            .supply-card h3,
+            .tech-card h3,
+            .stock-name {
+                color: #111 !important;
+            }
+            .chart-card .csub,
+            .supply-card .scsub,
+            .stock-row,
+            .bdesc,
+            .tl-text,
+            .info-box-body {
+                color: #444 !important;
+            }
+            .stock-row strong,
+            .tl-text strong,
+            .bname {
+                color: #111 !important;
+            }
+            .stock-code {
+                color: #777 !important;
+            }
+            .legend {
+                color: #555 !important;
+            }
+
+            .hbar-wrap {
+                background: #eee !important;
+            }
+            .price-wrap {
+                background: #eee !important;
+            }
+            .prog-bar {
+                background: #eee !important;
+            }
+
+            .bottleneck {
+                border-left-color: rgba(180, 30, 30, 0.5) !important;
+            }
+
+            .btag {
+                border-width: 1px !important;
+            }
+            .tag-red {
+                background: rgba(200, 40, 40, 0.08) !important;
+                color: #b91c1c !important;
+                border-color: rgba(200, 40, 40, 0.3) !important;
+            }
+            .tag-amber {
+                background: rgba(180, 140, 30, 0.08) !important;
+                color: #8a6d14 !important;
+                border-color: rgba(180, 140, 30, 0.3) !important;
+            }
+            .tag-teal {
+                background: rgba(20, 130, 90, 0.08) !important;
+                color: #0d7d4a !important;
+                border-color: rgba(20, 130, 90, 0.3) !important;
+            }
+            .tag-blue {
+                background: rgba(26, 86, 219, 0.08) !important;
+                color: #1a56db !important;
+                border-color: rgba(26, 86, 219, 0.3) !important;
+            }
+
+            .risk-box {
+                background: rgba(200, 40, 40, 0.04) !important;
+                border-color: rgba(200, 40, 40, 0.25) !important;
+            }
+
+            .footer {
+                color: #888 !important;
+                border-top-color: #ddd !important;
+                margin-top: 28px !important;
+                padding: 16px 0 20px !important;
+            }
+
+            .chart-row.col2 {
+                grid-template-columns: 1fr 1fr !important;
+            }
+            .chart-row.col3 {
+                grid-template-columns: 1fr 1fr !important;
+            }
+            .supply-grid,
+            .tech-grid,
+            .comp-grid {
+                grid-template-columns: 1fr 1fr !important;
+            }
+            .info-3col {
+                grid-template-columns: 1fr 1fr 1fr !important;
+            }
+            .drill-specs {
+                grid-template-columns: repeat(4, 1fr) !important;
+            }
+            .stock-grid {
+                grid-template-columns: repeat(3, 1fr) !important;
+            }
+
+            canvas {
+                max-width: 100% !important;
+                height: auto !important;
+            }
+
+            .hbar-val,
+            .price-fill span {
+                color: #fff !important;
+            }
+        }
+
+        @media (max-width: 700px) {
+            .chart-row.col2,
+            .chart-row.col3,
+            .supply-grid,
+            .tech-grid,
+            .comp-grid,
+            .info-3col {
+                grid-template-columns: 1fr;
+            }
+            .drill-specs {
+                grid-template-columns: 1fr 1fr;
+            }
+            .header h1 {
+                font-size: 20px;
+            }
+            .section-title {
+                font-size: 15px;
+            }
+            .pdf-btn {
+                padding: 11px 18px;
+                font-size: 13px;
+                border-radius: 24px;
+            }
+            .pdf-btn-wrapper {
+                bottom: 16px;
+                right: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Toast提示 -->
+    <div class="toast" id="toast">📋 请在弹出的打印对话框中选择「另存为PDF」即可下载</div>
+
+    <!-- PDF下载浮动按钮 -->
+    <div class="pdf-btn-wrapper" id="pdfBtnWrapper">
+        <span class="pdf-btn-hint" id="pdfBtnHint">点击后选择「另存为PDF」</span>
+        <button class="pdf-btn" id="pdfBtn" title="下载PDF报告">
+            <span class="pdf-btn-icon">📄</span> 下载PDF报告
+        </button>
+    </div>
+
+    <div class="header">
+        <div class="container">
+            <div class="header-inner">
+                <div class="header-tag">⚡ AI基础设施产业链研究报告</div>
+                <h1>光模块 <span>&</span> PCB钻针<br>投资研究报告 2026</h1>
+                <div class="header-meta">
+                    <span>📅 报告期：2026年</span>
+                    <span>🔬 来源：产业链调研 + 公开数据验证</span>
+                    <span>⚠️ 仅供研究参考，不构成投资建议</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="nav-wrap">
+        <div class="container">
+            <div class="nav">
+                <a href="#overview">📊 核心数据总览</a>
+                <a href="#demand">光模块需求</a>
+                <a href="#supply">供应链瓶颈</a>
+                <a href="#price">价格与毛利率</a>
+                <a href="#tech">技术路线</a>
+                <a href="#drill">PCB钻针</a>
+                <a href="#stocks">核心投资标的</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+
+        <div class="verify-banner">
+            <div class="vdot"></div>
+            <div>
+                <strong style="color:#2dcc97">数据核查通过：</strong>
+                关键数据已与第三方来源对比。光模块需求规模与 Lightcounting、招商证券、野村证券等机构预测区间吻合（2026年1.6T出货量预计2,000–3,000万只）；鼎泰高科产能规划与公司公告及东吴证券研报一致（2026年底月产能1.8亿支）；源杰科技CW光源扩产数据与公司季报一致。部分细节（如立讯精密具体订单量、各供应商份额拆分）源自产业链调研，存在一定不确定性，请以公司官方信息为准。
+            </div>
+        </div>
+
+        <!-- ─── 总览 ─── -->
+        <div id="overview" class="section s-blue">
+            <div class="section-header">
+                <div class="section-title">核心数据总览</div>
+                <div class="section-sub">光模块 + PCB钻针 关键指标汇总（2026年数据）</div>
+            </div>
+            <div class="metrics">
+                <div class="metric">
+                    <div class="mlabel">2026年800G累计订单</div>
+                    <div class="mval">4,500<span class="munit">万只</span></div>
+                    <div class="msub mup">↑ vs 2025年2,000万只，翻倍+</div>
+                </div>
+                <div class="metric">
+                    <div class="mlabel">2026年1.6T需求</div>
+                    <div class="mval">2,500<span class="munit">万只</span></div>
+                    <div class="msub" style="color:var(--text2)">NVIDIA 1,500 + Google 1,000</div>
+                </div>
+                <div class="metric">
+                    <div class="mlabel">2027年1.6T需求指引</div>
+                    <div class="mval">7,500<span class="munit">万只</span></div>
+                    <div class="msub mup">超越2027年800G需求6,000万只</div>
+                </div>
+                <div class="metric">
+                    <div class="mlabel">200G EML芯片涨价幅度</div>
+                    <div class="mval">+30<span class="munit">%</span></div>
+                    <div class="msub mdn">最核心供应链瓶颈</div>
+                </div>
+                <div class="metric">
+                    <div class="mlabel">鼎泰月出货量目标(2026E)</div>
+                    <div class="mval">2<span class="munit">亿只</span></div>
+                    <div class="msub mup">2026年底目标</div>
+                </div>
+                <div class="metric">
+                    <div class="mlabel">AI服务器钻针占比</div>
+                    <div class="mval">22<span class="munit">%</span></div>
+                    <div class="msub mup">3倍增长 vs 2025年5月</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- ─── 需求分析 ─── -->
+        <div id="demand" class="section s-blue">
+            <div class="section-header">
+                <div class="section-title">光模块市场需求分析</div>
+                <div class="section-sub">2025–2027年 800G / 1.6T 需求量拆解（万只）· 海外市场 + 国内市场结构</div>
+            </div>
+
+            <div class="chart-row col2">
+                <div class="chart-card" style="grid-column:1 / span 2">
+                    <h3>全球高速光模块需求量趋势（万只）</h3>
+                    <div class="csub">800G & 1.6T 年度出货量 / 需求预期对比 · 2027年1.6T需求超越800G</div>
+                    <div class="legend">
+                        <span class="leg-item"><span class="leg-dot" style="background:#388bfd"></span>800G</span>
+                        <span class="leg-item"><span class="leg-dot" style="background:#2dcc97"></span>1.6T</span>
+                    </div>
+                    <div style="position:relative;width:100%;height:280px">
+                        <canvas id="demandChart" role="img" aria-label="2025到2027年800G和1.6T光模块需求量柱状图">800G: 2025年2000万, 2026年4500万, 2027年6000万. 1.6T: 2025年约200万, 2026年2500万, 2027年7500万</canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-row col2">
+                <div class="chart-card">
+                    <h3>2026年1.6T客户结构</h3>
+                    <div class="csub">总需求2,500万只 · 英伟达+谷歌双驱动</div>
+                    <div class="legend">
+                        <span class="leg-item"><span class="leg-dot" style="background:#388bfd"></span>NVIDIA 1,500万（Blackwell/Rubin）</span>
+                        <span class="leg-item"><span class="leg-dot" style="background:#2dcc97"></span>Google 1,000万（TPU V8）</span>
+                    </div>
+                    <div style="position:relative;width:100%;height:200px">
+                        <canvas id="cust16Chart" role="img" aria-label="2026年1.6T光模块客户分布">NVIDIA 60%, Google 40%</canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3>2027年1.6T供应商格局</h3>
+                    <div class="csub">总目标3,000万只 · Coherent/新易盛/中际旭创第一梯队</div>
+                    <div class="legend">
+                        <span class="leg-item"><span class="leg-dot" style="background:#388bfd"></span>Coherent 1,300万</span>
+                        <span class="leg-item"><span class="leg-dot" style="background:#2dcc97"></span>新易盛 1,200万</span>
+                        <span class="leg-item"><span class="leg-dot" style="background:#e3b341"></span>中际旭创 ~200万</span>
+                        <span class="leg-item"><span class="leg-dot" style="background:#d85a30"></span>索尔思 300万</span>
+                    </div>
+                    <div style="position:relative;width:100%;height:200px">
+                        <canvas id="sup16Chart" role="img" aria-label="2027年1.6T光模块供应商分布">Coherent 1300万, 新易盛 1200万, 中际旭创 约200万, 索尔思 300万</canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-card" style="margin-bottom:14px">
+                <h3>2027年800G光模块供应商出货目标（万只）</h3>
+                <div class="csub">头部产能向1.6T倾斜 · 800G扩产规模有限 · 二线厂商有价格战风险</div>
+                <div id="bar800g"></div>
+            </div>
+
+            <div class="chart-card" style="margin-bottom:14px">
+                <h3>市场结构说明</h3>
+                <div class="csub">产品规格 × 地域分布 × 订单性质</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+                    <div class="info-box">
+                        <div class="info-box-title" style="color:#388bfd">海外市场</div>
+                        <div class="info-box-body">以800G和1.6T为主。800G订单4,500万只已NCNR锁定；1.6T由谷歌和英伟达主导采购，配合TPU V8、Blackwell B300及Rubin平台</div>
+                    </div>
+                    <div class="info-box">
+                        <div class="info-box-title" style="color:#2dcc97">国内市场</div>
+                        <div class="info-box-body">2026年仍以400G为主，预计下半年开始向800G升级。华工科技和光迅科技各准备200–250万只800G产能，主要面向国内客户</div>
+                    </div>
+                    <div class="info-box">
+                        <div class="info-box-title" style="color:#e3b341">订单性质</div>
+                        <div class="info-box-body">2026年全年订单已下发，为NCNR（不可取消不可退货）锁量锁价订单。2027年目前仅为需求指引，预计2026年下半年与客户商定价格</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- ─── 供应链瓶颈 ─── -->
+        <div id="supply" class="section s-red">
+            <div class="section-header">
+                <div class="section-title">供应链瓶颈深度分析</div>
+                <div class="section-sub">四大核心物料短缺 · 价格上涨 · 缓解时间窗口预判</div>
+            </div>
+
+            <div class="supply-grid">
+                <div class="supply-card">
+                    <h3>🔴 200G EML 光芯片</h3>
+                    <div class="scsub">最紧缺物料 · 供给端：Lumentum主导 · 价格大幅上涨</div>
+                    <div class="bottleneck">
+                        <div class="bname">Lumentum 现货涨价</div>
+                        <div class="bdesc">2026年5月起，100G EML涨15%，200G EML涨30%。供需缺口持续扩大，不排除进一步涨价。EML方案受Meta、谷歌青睐（传输稳定、距离远）</div>
+                    </div>
+                    <div class="bottleneck">
+                        <div class="bname">Coherent 自研扩产</div>
+                        <div class="bdesc">自研磷化铟EML产线，目前产能全部自供。计划2026年底翻倍，2027年底再翻倍，届时年产能达1亿颗。因不受外购涨价影响，竞争力增强</div>
+                    </div>
+                    <div class="bottleneck">
+                        <div class="bname">索尔思（Source Photonics）新力量</div>
+                        <div class="bdesc">目标2027年产能3亿颗/年（保守1.5亿颗），东山精密全力支持扩产。已进入Meta供应链，AWS/谷歌测试中。2027年多余产能7,000–8,000万颗可对外销售</div>
+                    </div>
+                    <div style="margin-top:4px">
+                        <span class="btag tag-red">持续短缺</span>
+                        <span class="btag tag-amber">2027年缓解</span>
+                        <span class="btag tag-blue">国产替代机遇</span>
+                    </div>
+                </div>
+
+                <div class="supply-card">
+                    <h3>🟡 硅光方案：CW光源 + 硅光调制器</h3>
+                    <div class="scsub">硅光路线两大核心物料 · 2027H1预计大幅缓解</div>
+                    <div class="bottleneck">
+                        <div class="bname">CW 光源（源杰科技领衔）</div>
+                        <div class="bdesc">源杰2026Q1环比+60%，毛利率~80%。产能规划：1,300万颗（2025）→7,000万颗（2026）→1.5亿颗（2027）。永鼎股份、长光华芯2026H2确定性放量</div>
+                    </div>
+                    <div class="bottleneck">
+                        <div class="bname">Tower Semi 硅光芯片代工</div>
+                        <div class="bdesc">占全球70%份额，客户含中际旭创/新易盛/Coherent。2026年投资10亿美元，目标年底产能×5。意法半导体、格罗方德、台积电、三星、联电均已进入该领域</div>
+                    </div>
+                    <div style="margin-top:4px">
+                        <span class="btag tag-amber">现阶段紧缺</span>
+                        <span class="btag tag-teal">2027H1大概率缓解</span>
+                        <span class="btag tag-blue">多家国内新进入者</span>
+                    </div>
+                </div>
+
+                <div class="supply-card">
+                    <h3>🟠 DSP 芯片</h3>
+                    <div class="scsub">博通+Marvell合计~90%全球供应 · 交期超一年</div>
+                    <div class="bottleneck">
+                        <div class="bname">台积电先进制程产能受限</div>
+                        <div class="bdesc">5nm（800G）和3nm（1.6T）DSP产能优先分配给GPU、ASIC和交换机芯片。博通和Marvell交期均已超过一年</div>
+                    </div>
+                    <div class="bottleneck">
+                        <div class="bname">备选方案：MaxLinear（三星流片）</div>
+                        <div class="bdesc">立讯精密、光迅等二线厂商将部分订单转向MaxLinear。向Marvell下千万级DSP订单仍未获足额物料，部分厂商以溢价20–30%在现货市场采购</div>
+                    </div>
+                    <div style="margin-top:4px">
+                        <span class="btag tag-red">严重短缺</span>
+                        <span class="btag tag-red">交期>12个月</span>
+                        <span class="btag tag-amber">二线厂商受影响更大</span>
+                    </div>
+                </div>
+
+                <div class="supply-card">
+                    <h3>🔵 法拉第旋光片</h3>
+                    <div class="scsub">稀土出口管制引发短缺 · 国产替代加速</div>
+                    <div class="bottleneck">
+                        <div class="bname">Granopt（住友子公司）减产</div>
+                        <div class="bdesc">曾占全球30%供应，受中国稀土出口管制影响已减产。Coherent也减少对外供应。EML方案每模块需8片，硅光需2–4片，总需求约4–5亿颗</div>
+                    </div>
+                    <div class="bottleneck">
+                        <div class="bname">国产替代加速扩产</div>
+                        <div class="bdesc">中际旭创/新易盛扶持福晶科技、成都飞锐特、厦门森一量子扩产。头部厂商已通过长协锁定供应，拥有自研物料的厂商（如索尔思）具备交付优势</div>
+                    </div>
+                    <div style="margin-top:4px">
+                        <span class="btag tag-red">地缘政治风险</span>
+                        <span class="btag tag-teal">国产化机遇</span>
+                        <span class="btag tag-blue">福晶科技受益</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <h3>EML芯片产能规划对比（2027年目标年产能，亿颗）</h3>
+                <div class="csub">三大供应商扩产路径 · 索尔思目标追平Lumentum，2028年或成最大供应商</div>
+                <div id="emlChart"></div>
+            </div>
+
+            <div style="margin-top:14px">
+                <div class="chart-card">
+                    <h3>Coherent EML芯片自研化进程</h3>
+                    <div class="csub">从外采依赖到自研主导 · 长期目标70%自研率</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px">
+                        <div>
+                            <div class="prog-item">
+                                <div class="prog-header"><span class="prog-label">100G EML 自研率（当前）</span><span class="prog-val">&gt;50%</span></div>
+                                <div class="prog-bar"><div class="prog-fill" style="width:55%;background:#388bfd"></div></div>
+                            </div>
+                            <div class="prog-item">
+                                <div class="prog-header"><span class="prog-label">100G EML 自研率（目标）</span><span class="prog-val">70%</span></div>
+                                <div class="prog-bar"><div class="prog-fill" style="width:70%;background:#2dcc97"></div></div>
+                            </div>
+                            <div class="prog-item">
+                                <div class="prog-header"><span class="prog-label">200G EML 自研率（当前）</span><span class="prog-val">0%</span></div>
+                                <div class="prog-bar"><div class="prog-fill" style="width:4%;background:#da3633"></div></div>
+                            </div>
+                            <div class="prog-item">
+                                <div class="prog-header"><span class="prog-label">200G EML 自研率（目标）</span><span class="prog-val">70%</span></div>
+                                <div class="prog-bar"><div class="prog-fill" style="width:70%;background:#e3b341"></div></div>
+                            </div>
+                        </div>
+                        <div style="font-size:11px;color:var(--text2);line-height:1.8">
+                            <div style="margin-bottom:6px">📌 <strong style="color:var(--text1)">800G中的100G EML：</strong>外采比例已降至50%以下，计划进一步控制在30%</div>
+                            <div style="margin-bottom:6px">📌 <strong style="color:var(--text1)">1.6T中的200G EML：</strong>自研芯片尚未完成，目前完全依赖外采，计划引入三菱芯片过渡</div>
+                            <div style="margin-bottom:6px">📌 <strong style="color:var(--text1)">供应链安全原则：</strong>任何芯片供应商至少要有三家，不追求100%自供</div>
+                            <div>📌 <strong style="color:var(--text1)">索尔思测试：</strong>Coherent正测试索尔思EML芯片作为备份，预计2026Q4做采购决定</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- ─── 价格与毛利率 ─── -->
+        <div id="price" class="section s-amber">
+            <div class="section-header">
+                <div class="section-title">价格走势 & 毛利率展望</div>
+                <div class="section-sub">产品价格年度下降 vs 成本优化 · 2026年NCNR锁价 · 2027年尚待商谈</div>
+            </div>
+
+            <div class="chart-row col2">
+                <div class="chart-card">
+                    <h3>800G 光模块价格走势</h3>
+                    <div class="csub">2026年NCNR锁价 · 2027年预计降10–15%</div>
+                    <div class="price-bar-row">
+                        <div class="price-label-c">2026</div>
+                        <div class="price-wrap">
+                            <div class="price-fill" style="width:85%;background:#185FA5">
+                                <span>$350 – $380</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="price-bar-row">
+                        <div class="price-label-c">2027E</div>
+                        <div class="price-wrap">
+                            <div class="price-fill" style="width:72%;background:#378ADD">
+                                <span>$300 – $320</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="font-size:11px;color:var(--text2);margin-top:10px;line-height:1.6">
+                        降幅约10–15%，15%已是极限。毛利率预计下降约5pct。索尔思光电（自研芯片成本优势）和立讯精密（可接受低毛利换份额）是最可能发动价格战的厂商。头部厂商（如Coherent）有明确毛利率目标，不参与价格战。
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <h3>1.6T 光模块价格走势</h3>
+                    <div class="csub">EML方案溢价 · 2027年降幅有限约$100</div>
+                    <div class="price-bar-row">
+                        <div class="price-label-c">硅光 2026</div>
+                        <div class="price-wrap">
+                            <div class="price-fill" style="width:78%;background:#0F6E56">
+                                <span>$900</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="price-bar-row">
+                        <div class="price-label-c">EML 2026</div>
+                        <div class="price-wrap">
+                            <div class="price-fill" style="width:100%;background:#1D9E75">
+                                <span>$1,100</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="price-bar-row">
+                        <div class="price-label-c">2027E</div>
+                        <div class="price-wrap">
+                            <div class="price-fill" style="width:88%;background:#2dcc97">
+                                <span style="color:#0F6E56">$800 – $1,000</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="font-size:11px;color:var(--text2);margin-top:10px;line-height:1.6">
+                        降幅仅约$100，毛利率预计维持稳定甚至提升。新产品良率和生产效率提升空间大，头部厂商通过长协锁定物料价格，降本空间充足。
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <h3>毛利率稳定/提升的三大支撑逻辑</h3>
+                <div class="csub">以中际旭创过去6–7个季度毛利率持续提升为例证，增长并非源于涨价</div>
+                <div class="info-3col" style="margin-top:8px">
+                    <div class="info-box">
+                        <div class="info-box-title" style="color:#388bfd">① 长协锁价</div>
+                        <div class="info-box-body">头部厂商通过签订长期协议，基本锁定2026年物料价格。受现货市场涨价影响较小，反而因此具备成本优势，与二线厂商形成差距</div>
+                    </div>
+                    <div class="info-box">
+                        <div class="info-box-title" style="color:#2dcc97">② 良率与效率提升</div>
+                        <div class="info-box-body">新产品（尤其是1.6T）良率和生产效率仍有较大提升空间。光模块包含40多种物料，并非全部涨价，综合成本可有效对冲</div>
+                    </div>
+                    <div class="info-box">
+                        <div class="info-box-title" style="color:#e3b341">③ 设计/工艺降本</div>
+                        <div class="info-box-body">通过优化设计研发、改进组装工艺、更换二供物料等手段降本。只要成本降幅>价格降幅，毛利率就能提升</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- ─── 技术路线 ─── -->
+        <div id="tech" class="section s-purple">
+            <div class="section-header">
+                <div class="section-title">技术路线与前沿布局</div>
+                <div class="section-sub">3.2T时间表 · CPO vs NPO vs 可插拔 · 薄膜铌酸锂生态 · 立讯精密进展</div>
+            </div>
+
+            <div class="tech-grid">
+                <div class="tech-card">
+                    <h3>3.2T 光模块路线图</h3>
+                    <div class="csub">两条技术路径并行推进</div>
+                    <div class="tl-item">
+                        <div class="tl-dot" style="background:#388bfd"></div>
+                        <div class="tl-text"><strong>EML方案（8×400G EML）</strong>：博通/Lumentum已推出差分驱动400G EML，博通也已推出支持400G光芯片的DSP。技术成熟度高，将率先量产</div>
+                    </div>
+                    <div class="tl-item">
+                        <div class="tl-dot" style="background:#2dcc97"></div>
+                        <div class="tl-text"><strong>薄膜铌酸锂方案（8×400G）</strong>：功耗更低、传输距离更远。国内：中际旭创自研芯片，天通股份供晶圆（年产20万片扩产中）。海外：HyperLight与联电代工协议，新易盛采用HyperLight芯片</div>
+                    </div>
+                    <div class="tl-item">
+                        <div class="tl-dot" style="background:#e3b341"></div>
+                        <div class="tl-text"><strong>2026年9月</strong>：中国光博会展出并向客户送样</div>
+                    </div>
+                    <div class="tl-item">
+                        <div class="tl-dot" style="background:#d85a30"></div>
+                        <div class="tl-text"><strong>2027年H2</strong>：小批量出货，早期采购方主要为英伟达和谷歌。2027年出货量预计不大</div>
+                    </div>
+                    <div class="tl-item">
+                        <div class="tl-dot" style="background:#8b5cf6"></div>
+                        <div class="tl-text"><strong>关键材料</strong>：天通股份的薄膜铌酸锂晶圆是核心原材料，可能涉足铌酸锂薄膜键合工艺</div>
+                    </div>
+                </div>
+
+                <div class="tech-card">
+                    <h3>CPO / NPO / 可插拔 三分格局</h3>
+                    <div class="csub">英伟达主推CPO · 谷歌偏向NPO · 三者应用场景不同</div>
+                    <div class="tl-item">
+                        <div class="tl-dot" style="background:#388bfd"></div>
+                        <div class="tl-text"><strong>CPO（光电共封装）</strong>：英伟达主导，Coherent获20亿美元投资纳入供应链。台积电2026年5月宣布可量产。英伟达出货指引：2026年2万台→2027年10万台→2028年40万台。性能极致但维护难度高</div>
+                    </div>
+                    <div class="tl-item">
+                        <div class="tl-dot" style="background:#2dcc97"></div>
+                        <div class="tl-text"><strong>NPO（近封装光学）</strong>：谷歌偏好，2026 OFC明确当前无CPO刚需。将交换机+GPU+光引擎放于同一PCB，供应链解耦，可维护性强。新易盛/中际旭创/Coherent均可参与，技术门槛相对较低</div>
+                    </div>
+                    <div class="tl-item">
+                        <div class="tl-dot" style="background:#888780"></div>
+                        <div class="tl-text"><strong>可插拔光模块</strong>：主要用于机柜间互联（scale-out）。CPO未来主要替代铜缆用于机柜内芯片互联（scale-up）。两者应用场景不同，当前不存在直接竞争关系</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-card" style="margin-bottom:14px">
+                <h3>立讯精密光模块业务进展追踪</h3>
+                <div class="csub">新进入者 · 制造能力强 · 物料短缺是主要挑战 · AI基础设施一站式综合优势</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px">
+                    <div>
+                        <div class="prog-item">
+                            <div class="prog-header"><span class="prog-label">800G产品交付能力</span><span class="prog-val">2026年为主</span></div>
+                            <div class="prog-bar"><div class="prog-fill" style="width:80%;background:#388bfd"></div></div>
+                        </div>
+                        <div class="prog-item">
+                            <div class="prog-header"><span class="prog-label">1.6T送样/小批量进度</span><span class="prog-val">几万只规模</span></div>
+                            <div class="prog-bar"><div class="prog-fill" style="width:25%;background:#e3b341"></div></div>
+                        </div>
+                        <div class="prog-item">
+                            <div class="prog-header"><span class="prog-label">DSP物料到位率</span><span class="prog-val">未足额供应</span></div>
+                            <div class="prog-bar"><div class="prog-fill" style="width:40%;background:#da3633"></div></div>
+                        </div>
+                        <div class="prog-item">
+                            <div class="prog-header"><span class="prog-label">谷歌订单验证进展</span><span class="prog-val">首批100万只验证</span></div>
+                            <div class="prog-bar"><div class="prog-fill" style="width:60%;background:#2dcc97"></div></div>
+                        </div>
+                    </div>
+                    <div style="font-size:11px;color:var(--text2);line-height:1.8">
+                        <div>📍 <strong style="color:var(--text1)">2026年底产能：</strong>深圳+昆山基地，年化约450万只</div>
+                        <div>📍 <strong style="color:var(--text1)">谷歌路径：</strong>100万只验证→500万只后续订单（2026年11月明确）</div>
+                        <div>📍 <strong style="color:var(--text1)">2027年目标：</strong>800G 500万 + 1.6T 100万（需进一步扩产）</div>
+                        <div>📍 <strong style="color:var(--text1)">物料挑战：</strong>Marvell DSP未获足额，部分转向MaxLinear，现货溢价20–30%</div>
+                        <div>📍 <strong style="color:var(--text1)">综合协同：</strong>铜缆/液冷/散热/CPO全链条，2027H2量产CPO可能带动光模块</div>
+                        <div>📍 <strong style="color:var(--text1)">下一目标客户：</strong>AWS / 英伟达</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- ─── PCB钻针 ─── -->
+        <div id="drill" class="section s-teal">
+            <div class="section-header">
+                <div class="section-title">PCB钻针：鼎泰高科深度分析</div>
+                <div class="section-sub">AI服务器拉动量价齐升 · 自研设备核心壁垒 · 产能扩张领先同行</div>
+            </div>
+
+            <div class="metrics">
+                <div class="metric">
+                    <div class="mlabel">2026年1月YoY增长</div>
+                    <div class="mval">+26<span class="munit">%</span></div>
+                    <div class="msub mup">vs 2025年1月不足9,000万只</div>
+                </div>
+                <div class="metric">
+                    <div class="mlabel">月度递增规模</div>
+                    <div class="mval">+500<span class="munit">万只</span></div>
+                    <div class="msub" style="color:var(--text2)">持续至2026年底</div>
+                </div>
+                <div class="metric">
+                    <div class="mlabel">AI服务器钻针占比</div>
+                    <div class="mval">22<span class="munit">%</span></div>
+                    <div class="msub mup">3倍增长 vs 2025年5月</div>
+                </div>
+                <div class="metric">
+                    <div class="mlabel">最大客户胜宏科技</div>
+                    <div class="mval">1,800<span class="munit">万/月</span></div>
+                    <div class="msub" style="color:var(--text2)">占总出货约18%</div>
+                </div>
+                <div class="metric">
+                    <div class="mlabel">自研设备占比</div>
+                    <div class="mval">~95<span class="munit">%</span></div>
+                    <div class="msub mup">核心竞争护城河</div>
+                </div>
+                <div class="metric">
+                    <div class="mlabel">鼎泰 vs 金洲 AI钻针</div>
+                    <div class="mval">50<span class="munit">vs 40%</span></div>
+                    <div class="msub" style="color:var(--text2)">以胜宏科技订单为例</div>
+                </div>
+            </div>
+
+            <div class="chart-row col2">
+                <div class="chart-card">
+                    <h3>月度产能扩张路径（万只）</h3>
+                    <div class="csub">2025年底→2026年6月→2026年底三个节点</div>
+                    <div style="position:relative;width:100%;height:220px">
+                        <canvas id="capacityChart" role="img" aria-label="鼎泰高科2026年月度产能扩张计划">2025年底1.2亿, 2026年6月1.5-1.6亿, 2026年底约2亿</canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3>AI服务器钻针客户出货构成（万只/月）</h3>
+                    <div class="csub">客户高度集中 · 胜宏科技最大单客户</div>
+                    <div id="drillCustomer" style="margin-top:8px"></div>
+                </div>
+            </div>
+
+            <div class="chart-card" style="margin-bottom:14px">
+                <h3>PCB材料升级 → 钻针量价齐升传导逻辑</h3>
+                <div class="csub">材料升级→板更厚→长径比更高→单价翻倍→消耗量几何级增加</div>
+                <div class="drill-specs" style="margin-top:10px">
+                    <div class="drill-spec">
+                        <div class="ds-platform">GB200（M7材料）</div>
+                        <div class="ds-price">¥3–4</div>
+                        <div class="ds-ar">长径比 30×</div>
+                        <div class="ds-life" style="color:#2dcc97">寿命1,500孔（翻磨2次）</div>
+                    </div>
+                    <div class="drill-spec">
+                        <div class="ds-platform">GB300（M8材料）</div>
+                        <div class="ds-price">¥6–8</div>
+                        <div class="ds-ar">长径比 40×</div>
+                        <div class="ds-life" style="color:#e3b341">寿命600孔（翻磨1次）</div>
+                    </div>
+                    <div class="drill-spec">
+                        <div class="ds-platform">Rubin（M9/Q布）</div>
+                        <div class="ds-price">¥11–17</div>
+                        <div class="ds-ar">长径比 50×</div>
+                        <div class="ds-life" style="color:#da3633">寿命200孔（不翻磨）</div>
+                    </div>
+                    <div class="drill-spec" style="background:rgba(31,111,235,0.08);border:1px solid rgba(31,111,235,0.2)">
+                        <div class="ds-platform" style="color:#388bfd">消耗量倍增效应</div>
+                        <div class="ds-price" style="color:#388bfd;font-size:16px">几何级</div>
+                        <div class="ds-ar">单孔成本 ×数十倍</div>
+                        <div class="ds-life" style="color:#2dcc97">量价同步大幅提升</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-card" style="margin-bottom:14px">
+                <h3>竞争格局 & 鼎泰核心壁垒</h3>
+                <div class="csub">鼎泰 vs 金洲精工 vs 其他 · 自研设备是关键差异化</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px">
+                    <div>
+                        <div style="font-size:11px;color:var(--text2);margin-bottom:10px">AI服务器钻针市场份额（以胜宏科技为例）</div>
+                        <div class="hbar-row"><div class="hbar-label">鼎泰高科</div><div class="hbar-wrap"><div class="hbar-fill" style="width:55%;background:#388bfd"><span class="hbar-val">~50%</span></div></div></div>
+                        <div class="hbar-row"><div class="hbar-label">金洲精工</div><div class="hbar-wrap"><div class="hbar-fill" style="width:42%;background:#2dcc97"><span class="hbar-val">~40%</span></div></div></div>
+                        <div class="hbar-row"><div class="hbar-label">其他</div><div class="hbar-wrap"><div class="hbar-fill" style="width:10%;background:#484f58"><span class="hbar-val">10%</span></div></div></div>
+                        <div style="font-size:11px;color:var(--text2);margin-top:10px">方正、景旺客户：鼎泰与金洲基本平分AI钻针需求</div>
+                    </div>
+                    <div style="font-size:11px;color:var(--text2);line-height:1.8">
+                        <div>🔵 <strong style="color:var(--text1)">鼎泰优势：</strong>95%自研设备，半年完成一轮扩产（设备交付+上线+调试）</div>
+                        <div>🟢 <strong style="color:var(--text1)">金洲劣势：</strong>从国外采购设备，整体周期约一年，当前扩产速度受限</div>
+                        <div>🔴 <strong style="color:var(--text1)">新进入者壁垒：</strong>产品与方案强绑定，验证阶段即锁定供应商，新进入者需重新经历漫长验证</div>
+                        <div>⚪ <strong style="color:var(--text1)">新玩家空间：</strong>仅限于中低端或孔径较大的国内普通服务器钻针市场</div>
+                        <div>🟡 <strong style="color:var(--text1)">德国MPK Kemmer：</strong>收购全球钻针鼻祖（欧日美高品牌影响力），目标2–3年扭亏为盈</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <h3>ASIC方案钻针机遇（2026年新增）</h3>
+                <div class="csub">生益科技 + 深南电路 ASIC方案 · 订单连续性有待观察</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:8px">
+                    <div class="info-box">
+                        <div class="info-box-title" style="color:#388bfd">技术规格</div>
+                        <div class="info-box-body">孔径0.225mm/0.25mm，较英伟达方案更大，板材更薄，无需开发新型钻针产品</div>
+                    </div>
+                    <div class="info-box">
+                        <div class="info-box-title" style="color:#2dcc97">当前增量</div>
+                        <div class="info-box-body">生益科技每月约400万只增量，深南电路规模相近，合计约800–900万只/月</div>
+                    </div>
+                    <div class="info-box">
+                        <div class="info-box-title" style="color:#e3b341">不确定性</div>
+                        <div class="info-box-body">2025年无此类订单，2026年新增，目前处于批量测试阶段，订单连续性尚不明朗，用量少于英伟达方案</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- ─── 核心标的 ─── -->
+        <div id="stocks" class="section s-teal">
+            <div class="section-header">
+                <div class="section-title">核心投资标的梳理</div>
+                <div class="section-sub">基于产业链调研信息整理 · 仅供研究参考 · 不构成投资建议</div>
+            </div>
+
+            <div style="font-size:11px;color:var(--text2);margin-bottom:16px;display:flex;gap:16px">
+                <span style="display:flex;align-items:center;gap:6px"><span style="display:inline-block;width:20px;height:3px;background:#388bfd;border-radius:2px"></span>第一梯队</span>
+                <span style="display:flex;align-items:center;gap:6px"><span style="display:inline-block;width:20px;height:3px;background:#2dcc97;border-radius:2px"></span>第二梯队</span>
+                <span style="display:flex;align-items:center;gap:6px"><span style="display:inline-block;width:20px;height:3px;background:#e3b341;border-radius:2px"></span>受益标的</span>
+            </div>
+
+            <div class="stock-grid">
+                <div class="stock-card">
+                    <div class="tier-bar tier1"></div>
+                    <div class="stock-header">
+                        <div><div class="stock-name">中际旭创</div><div class="stock-code">300308.SZ · 光模块</div></div>
+                        <span class="stock-badge tag-blue">第一梯队</span>
+                    </div>
+                    <div class="stock-row"><strong>1.6T：</strong>2027年第一梯队，与Coherent/新易盛并列</div>
+                    <div class="stock-row"><strong>800G：</strong>2027年目标约1,500万只出货</div>
+                    <div class="stock-row"><strong>技术：</strong>硅光全球市占率第一（约50%），自研薄膜铌酸锂芯片</div>
+                    <div class="stock-row"><strong>壁垒：</strong>长协锁供旋光片，过去6–7季度毛利率持续提升</div>
+                    <div class="stock-row"><strong>前沿：</strong>3.2T / NPO开发中，天通股份供晶圆</div>
+                </div>
+
+                <div class="stock-card">
+                    <div class="tier-bar tier1"></div>
+                    <div class="stock-header">
+                        <div><div class="stock-name">新易盛</div><div class="stock-code">300502.SZ · 光模块</div></div>
+                        <span class="stock-badge tag-blue">第一梯队</span>
+                    </div>
+                    <div class="stock-row"><strong>1.6T：</strong>2027年产能≥1,500万只，预计出货1,200万只</div>
+                    <div class="stock-row"><strong>800G：</strong>LPO进入Meta/AWS/谷歌，持续增长</div>
+                    <div class="stock-row"><strong>技术：</strong>HyperLight薄膜铌酸锂合作（3.2T布局）</div>
+                    <div class="stock-row"><strong>产品：</strong>LPO/NPO/CPO/XPO全形态覆盖</div>
+                    <div class="stock-row"><strong>催化：</strong>全球首款12.8T XPO已发布</div>
+                </div>
+
+                <div class="stock-card">
+                    <div class="tier-bar tier2"></div>
+                    <div class="stock-header">
+                        <div><div class="stock-name">索尔思光电</div><div class="stock-code">688536.SH · EML自研</div></div>
+                        <span class="stock-badge tag-teal">自研芯片</span>
+                    </div>
+                    <div class="stock-row"><strong>核心：</strong>自研EML芯片，目标2027年产能3亿颗/年</div>
+                    <div class="stock-row"><strong>客户：</strong>Meta（已入供）/ AWS/谷歌（测试中）</div>
+                    <div class="stock-row"><strong>1.6T：</strong>Meta验证高概率通过，2026Q4约6万只出货</div>
+                    <div class="stock-row"><strong>优势：</strong>成本低于外购芯片厂商，可能以价格换份额</div>
+                    <div class="stock-row"><strong>风险：</strong>谷歌/英伟达供应链尚未确认进入</div>
+                </div>
+
+                <div class="stock-card">
+                    <div class="tier-bar tier2"></div>
+                    <div class="stock-header">
+                        <div><div class="stock-name">天孚通信</div><div class="stock-code">300394.SZ · 无源器件</div></div>
+                        <span class="stock-badge tag-teal">配套受益</span>
+                    </div>
+                    <div class="stock-row"><strong>定位：</strong>高速光模块配套光无源器件龙头</div>
+                    <div class="stock-row"><strong>受益：</strong>800G/1.6T放量的直接配套受益方</div>
+                    <div class="stock-row"><strong>优势：</strong>头部光模块厂商的核心供应商地位</div>
+                    <div class="stock-row"><strong>催化：</strong>旋光片短缺环境下行业议价能力提升</div>
+                </div>
+
+                <div class="stock-card">
+                    <div class="tier-bar tier2"></div>
+                    <div class="stock-header">
+                        <div><div class="stock-name">源杰科技</div><div class="stock-code">688498.SH · CW光源</div></div>
+                        <span class="stock-badge tag-teal">硅光配套</span>
+                    </div>
+                    <div class="stock-row"><strong>地位：</strong>硅光方案CW光源国内领跑，毛利率~80%</div>
+                    <div class="stock-row"><strong>增速：</strong>2026Q1环比+60%，放量确定性高</div>
+                    <div class="stock-row"><strong>产能：</strong>1,300万→7,000万（2026）→1.5亿颗（2027）</div>
+                    <div class="stock-row"><strong>风险：</strong>2027年CW光源供给端竞争加剧（永鼎/长光华芯等入场），毛利率或承压</div>
+                </div>
+
+                <div class="stock-card">
+                    <div class="tier-bar tier2"></div>
+                    <div class="stock-header">
+                        <div><div class="stock-name">天通股份</div><div class="stock-code">600330.SH · 铌酸锂晶圆</div></div>
+                        <span class="stock-badge tag-teal">3.2T核心</span>
+                    </div>
+                    <div class="stock-row"><strong>定位：</strong>薄膜铌酸锂晶圆供应商，3.2T核心原材料</div>
+                    <div class="stock-row"><strong>绑定：</strong>2025年12月与中际旭创签订协议</div>
+                    <div class="stock-row"><strong>产能：</strong>按中际旭创要求扩产至年产20万片晶圆</div>
+                    <div class="stock-row"><strong>延伸：</strong>可能涉足铌酸锂薄膜键合工艺</div>
+                    <div class="stock-row"><strong>催化：</strong>3.2T小批量出货预计2027H2启动</div>
+                </div>
+
+                <div class="stock-card">
+                    <div class="tier-bar tier2"></div>
+                    <div class="stock-header">
+                        <div><div class="stock-name">鼎泰高科</div><div class="stock-code">301377.SZ · PCB钻针</div></div>
+                        <span class="stock-badge tag-teal">钻针龙头</span>
+                    </div>
+                    <div class="stock-row"><strong>地位：</strong>AI服务器PCB钻针龙头，AI钻针市占约50%</div>
+                    <div class="stock-row"><strong>壁垒：</strong>95%自研设备，半年扩产周期 vs 竞品一年</div>
+                    <div class="stock-row"><strong>增长：</strong>月出货量递增500万只，目标年底2亿只</div>
+                    <div class="stock-row"><strong>催化：</strong>Rubin系列单价¥11–17，毛利率高</div>
+                    <div class="stock-row"><strong>收购：</strong>德国MPK Kemmer，布局欧日美高端市场</div>
+                </div>
+
+                <div class="stock-card">
+                    <div class="tier-bar" style="background:var(--amber)"></div>
+                    <div class="stock-header">
+                        <div><div class="stock-name">福晶科技</div><div class="stock-code">002222.SZ · 旋光片</div></div>
+                        <span class="stock-badge tag-amber">稀土受益</span>
+                    </div>
+                    <div class="stock-row"><strong>定位：</strong>国产法拉第旋光片受益方</div>
+                    <div class="stock-row"><strong>背景：</strong>中际旭创/新易盛扶持扩产</div>
+                    <div class="stock-row"><strong>受益：</strong>Granopt减产后国产替代加速</div>
+                    <div class="stock-row"><strong>需求：</strong>高速光模块年需求4–5亿颗，EML方案每模块需8片</div>
+                    <div class="stock-row"><strong>催化：</strong>稀土出口管制持续，国产替代趋势确定</div>
+                </div>
+            </div>
+
+            <div class="risk-box">
+                <strong style="color:#ff7b7b">⚠️ 风险提示：</strong>以上信息来源于产业链调研及公开资料整理，仅供研究参考，不构成投资建议。主要风险包括：①需求指引与实际出货存在差异，受上游核心物料供应制约；②EML vs 硅光技术路线切换风险；③关税及地缘政治对美国采购商订单的潜在影响；④Rubin/GB300平台量产进度不及预期；⑤二线厂商发动价格战导致价格降幅超预期；⑥CPO技术加速渗透对可插拔光模块市场的长期影响（现阶段暂无直接竞争）。投资者须结合最新公司公告、业绩数据及市场环境独立研判，切勿以本报告作为唯一决策依据。
+            </div>
+        </div>
+
+        <div class="footer">
+            <div>光模块 & PCB钻针 AI基础设施产业链投资研究报告 · 2026</div>
+            <div>数据来源：产业链调研 + Lightcounting / 招商证券 / 东吴证券 / 野村证券等公开资料</div>
+            <div style="margin-top:4px">本报告由 AI 生成 · 仅供研究参考 · 不构成投资建议</div>
+        </div>
+
+    </div>
+
+    <script>
+        const gridColor = 'rgba(255,255,255,0.06)';
+        const labelColor = 'rgba(255,255,255,0.45)';
+
+        // 1. demand chart
+        new Chart(document.getElementById('demandChart'), {
+            type: 'bar',
+            data: {
+                labels: ['2025年（实际）', '2026年（已订单）', '2027年（需求指引）'],
+                datasets: [
+                    { label: '800G', data: [2000, 4500, 6000], backgroundColor: '#388bfd',
+                        borderRadius: 5 },
+                    { label: '1.6T', data: [200, 2500, 7500], backgroundColor: '#2dcc97',
+                        borderRadius: 5 }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y
+                                .toLocaleString() + '万只' } }
+                },
+                scales: {
+                    x: { grid: { color: gridColor }, ticks: { color: labelColor, font: { size: 11 } } },
+                    y: { grid: { color: gridColor }, ticks: { color: labelColor, font: { size: 11 },
+                            callback: v => v.toLocaleString() + '万' } }
+                }
+            }
+        });
+
+        // 2. 1.6T customer
+        new Chart(document.getElementById('cust16Chart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['NVIDIA (Blackwell B300/Rubin)', 'Google (TPU V8)'],
+                datasets: [{ data: [1500, 1000], backgroundColor: ['#388bfd', '#2dcc97'],
+                    borderWidth: 0 }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: ctx => ctx.label + ': ' + ctx.parsed + '万只 (' + Math
+                                .round(ctx.parsed / 2500 * 100) + '%)' } }
+                },
+                cutout: '62%'
+            }
+        });
+
+        // 3. 1.6T supplier
+        new Chart(document.getElementById('sup16Chart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Coherent', '新易盛', '中际旭创', '索尔思光电'],
+                datasets: [{ data: [1300, 1200, 200, 300], backgroundColor: ['#388bfd', '#2dcc97',
+                        '#e3b341', '#d85a30'
+                    ], borderWidth: 0 }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: ctx => ctx.label + ': ' + ctx.parsed + '万只' } }
+                },
+                cutout: '57%'
+            }
+        });
+
+        // 4. 800G hbar
+        const s800 = [
+            { name: '中际旭创', val: 1500, color: '#388bfd' },
+            { name: 'Coherent', val: 1100, color: '#60a5fa' },
+            { name: '索尔思光电', val: 1000, color: '#2dcc97' },
+            { name: '新易盛', val: 900, color: '#34d399' },
+            { name: '立讯精密', val: 500, color: '#e3b341' },
+            { name: '剑桥科技', val: 450, color: '#f59e0b' },
+            { name: '联特科技', val: 400, color: '#888780' },
+            { name: '华工/光迅', val: 250, color: '#484f58' },
+        ];
+        document.getElementById('bar800g').innerHTML = s800.map(s =>
+            `<div class="hbar-row"><div class="hbar-label">${s.name}</div><div class="hbar-wrap"><div class="hbar-fill" style="width:${Math.round(s.val/1500*100)}%;background:${s.color}"><span class="hbar-val">${s.val}万只</span></div></div></div>`
+        ).join('');
+
+        // 5. EML chart
+        const eml = [
+            { name: 'Lumentum', val: 150, color: '#388bfd' },
+            { name: '索尔思光电', val: 150, color: '#2dcc97' },
+            { name: 'Coherent', val: 100, color: '#e3b341' },
+        ];
+        document.getElementById('emlChart').innerHTML = eml.map(s =>
+            `<div class="hbar-row" style="margin-bottom:12px"><div class="hbar-label" style="width:90px">${s.name}</div><div class="hbar-wrap"><div class="hbar-fill" style="width:${Math.round(s.val/150*100)}%;background:${s.color}"><span class="hbar-val">${s.val}亿颗/年</span></div></div></div>`
+        ).join('');
+
+        // 6. capacity chart
+        new Chart(document.getElementById('capacityChart'), {
+            type: 'line',
+            data: {
+                labels: ['2025年底', '2026年6月', '2026年底E'],
+                datasets: [{
+                    label: '月产能（万只）',
+                    data: [12000, 15500, 20000],
+                    borderColor: '#2dcc97',
+                    backgroundColor: 'rgba(45,204,151,0.1)',
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: 6,
+                    pointBackgroundColor: '#2dcc97',
+                    pointBorderColor: '#0d1117',
+                    pointBorderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: ctx => '月产能: ' + (ctx.parsed.y / 10000).toFixed(
+                                2) + '亿只' } }
+                },
+                scales: {
+                    x: { grid: { color: gridColor }, ticks: { color: labelColor, font: { size: 11 } } },
+                    y: { grid: { color: gridColor }, ticks: { color: labelColor, font: { size: 11 },
+                            callback: v => (v / 10000).toFixed(1) + '亿' }, min: 8000, max: 22000 }
+                }
+            }
+        });
+
+        // 7. drill customer hbar
+        const custs = [
+            { name: '胜宏科技', val: 1800, color: '#388bfd' },
+            { name: '生益/深南ASIC', val: 900, color: '#2dcc97' },
+            { name: '景旺电子', val: 600, color: '#e3b341' },
+            { name: '方正科技', val: 500, color: '#d85a30' },
+            { name: '广州美维', val: 200, color: '#888780' },
+            { name: '台湾鹏鼎', val: 180, color: '#484f58' },
+        ];
+        document.getElementById('drillCustomer').innerHTML = custs.map(s =>
+            `<div class="hbar-row"><div class="hbar-label" style="width:90px;font-size:11px">${s.name}</div><div class="hbar-wrap"><div class="hbar-fill" style="width:${Math.round(s.val/1800*100)}%;background:${s.color}"><span class="hbar-val">${s.val}万/月</span></div></div></div>`
+        ).join('');
+
+        // ── PDF下载按钮逻辑 ──
+        const pdfBtn = document.getElementById('pdfBtn');
+        const pdfBtnHint = document.getElementById('pdfBtnHint');
+        const toast = document.getElementById('toast');
+        let hintTimer = null;
+
+        // 初始显示提示，几秒后自动隐藏
+        function showHint() {
+            pdfBtnHint.classList.add('show');
+            if (hintTimer) clearTimeout(hintTimer);
+            hintTimer = setTimeout(() => {
+                pdfBtnHint.classList.remove('show');
+            }, 5000);
+        }
+        showHint();
+
+        // 鼠标悬停时重新显示提示
+        pdfBtn.addEventListener('mouseenter', () => {
+            pdfBtnHint.classList.add('show');
+            if (hintTimer) clearTimeout(hintTimer);
+        });
+        pdfBtn.addEventListener('mouseleave', () => {
+            hintTimer = setTimeout(() => {
+                pdfBtnHint.classList.remove('show');
+            }, 1500);
+        });
+
+        // 显示Toast
+        function showToast(msg, duration = 3500) {
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, duration);
+        }
+
+        // 点击下载PDF
+        pdfBtn.addEventListener('click', () => {
+            // 显示操作提示
+            showToast('📋 请在弹出的打印对话框中选择「另存为PDF」即可下载', 4000);
+            // 短暂延迟让用户看到提示
+            setTimeout(() => {
+                window.print();
+            }, 600);
+        });
+
+        // 键盘快捷键 Ctrl+P / Cmd+P 也触发提示
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+                // 用户使用快捷键，也显示提示
+                showToast('📋 请在弹出的打印对话框中选择「另存为PDF」即可下载', 3500);
+            }
+        });
+
+        console.log('✅ 光模块 & PCB钻针 投资研究报告 2026 已就绪');
+        console.log('📄 点击右下角按钮或按 Ctrl+P / Cmd+P 即可下载PDF报告');
+        console.log('💡 在打印对话框中选择「另存为PDF」作为目标打印机');
+    </script>
+</body>
+</html>
