@@ -193,6 +193,9 @@ DEFAULT_FUNDAMENTAL_RULES = {
     "max_debt_ratio": 85.0,    # 资产负债率 < 85%
     "exclude_negative_pe": False,
     "max_pe": 200,
+    "max_peg": 3.0,            # PEG > 3 硬排除（估值严重不匹配增长）
+    "peg_warning": 2.0,        # PEG > 2 降权 × 0.7
+    "peg_good": 1.0,           # PEG < 1 标记为合理
 }
 
 # ============================================================================
@@ -251,6 +254,7 @@ def check_single_stock(
     debt_ratio: Optional[float] = None,
     revenue_yoy: Optional[float] = None,
     net_margin: Optional[float] = None,
+    net_profit_yoy: Optional[float] = None,
     rules: dict = None,
 ) -> tuple[bool, list[str], float]:
     """
@@ -283,6 +287,16 @@ def check_single_stock(
         position_mult *= 0.7  # 降权但不排除
     elif pe > rules.get("max_pe", 200):
         failures.append(f"PE过高({pe:.0f})")
+
+    # === PEG 检查（PE / 净利增速） ===
+    if pe > 0 and net_profit_yoy is not None and net_profit_yoy > 0:
+        peg = pe / net_profit_yoy
+        max_peg = rules.get("max_peg", 3.0)
+        peg_warn = rules.get("peg_warning", 2.0)
+        if peg > max_peg:
+            failures.append(f"PEG过高({peg:.1f})")
+        elif peg > peg_warn:
+            position_mult *= 0.7  # 降权但非硬排除
 
     # === ROE 检查（仅对盈利股，分两档） ===
     if pe > 0 and roe is not None:
@@ -362,9 +376,10 @@ def apply_fundamental_filter(
         "cf_ratio": "现金流比",
         "debt_ratio": "负债率",
         "revenue_yoy": "营收增速",
+        "net_profit_yoy": "净利增速",
     })
 
-    merge_cols = ["代码", "ROE", "毛利率", "净利率", "现金流比", "负债率", "营收增速"]
+    merge_cols = ["代码", "ROE", "毛利率", "净利率", "现金流比", "负债率", "营收增速", "净利增速"]
     avail_cols = [c for c in merge_cols if c in fin_df.columns]
     df = df.merge(fin_df[avail_cols], on="代码", how="left")
 
@@ -379,6 +394,7 @@ def apply_fundamental_filter(
             debt_ratio=row.get("负债率") if "负债率" in df.columns else None,
             revenue_yoy=row.get("营收增速") if "营收增速" in df.columns else None,
             net_margin=row.get("净利率") if "净利率" in df.columns else None,
+            net_profit_yoy=row.get("净利增速") if "净利增速" in df.columns else None,
             rules=rules,
         )
         # 确定过滤原因
@@ -402,10 +418,15 @@ def apply_fundamental_filter(
                 roe_v = row.get("ROE")
                 cf_v = row.get("现金流比")
                 pe_v = row.get("PE_TTM", 0)
+                np_yoy = row.get("净利增速")
                 if roe_v is not None and pe_v > 0 and roe_v < rules.get("min_roe", 5.0):
                     warnings.append(f"ROE{roe_v:.1f}%")
                 if cf_v is not None and pe_v > 0 and cf_v < 0:
                     warnings.append(f"CF负{cf_v:.1f}")
+                if pe_v > 0 and np_yoy is not None and np_yoy > 0:
+                    peg = pe_v / np_yoy
+                    if peg > rules.get("peg_warning", 2.0):
+                        warnings.append(f"PEG{peg:.1f}")
                 if warnings:
                     reason = f"⚠️ 降权({','.join(warnings)}) 仓位×{pos_mult:.1f}"
                 else:
