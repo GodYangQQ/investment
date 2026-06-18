@@ -18,3 +18,18 @@ data/all_stocks_score_intermediate.csv
 Thumbs.db
 .venv
 THSAutoTrader
+
+# Stock Game - binary/dist
+stock_game/dist/
+stock_game/build/
+stock_game/*.spec
+stock_game/*.exe
+stock_game/output/
+stock_game/__pycache__/
+stock_game/*.pyc
+stock_game/templates/__pycache__/
+stock_game/strategies_backup/__pycache__/
+
+# JSON outputs
+stock_game/output/
+*.json.bak

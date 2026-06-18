@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI算力产业链深度研究报告 — 第一部分:产业链全景认知</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0e14;
+  --bg-card: #131820;
+  --bg-card-hover: #1a212c;
+  --border: #2a323f;
+  --border-bright: #3d4a5c;
+  --text: #e8eaed;
+  --text-dim: #9aa3b2;
+  --text-faint: #6b7384;
+  --accent: #d4a574;
+  --accent-bright: #f5c896;
+  --gold: #c9a961;
+  --red: #d4644a;
+  --green: #6da479;
+  --blue: #6a8cb5;
+  --purple: #9c7eb0;
+  --serif: 'Noto Serif SC', 'Cormorant Garamond', Georgia, serif;
+  --display: 'Cormorant Garamond', 'Noto Serif SC', serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--serif);
+  font-weight: 400;
+  line-height: 1.75;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  background-image: 
+    radial-gradient(ellipse at 20% 0%, rgba(212, 165, 116, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 100%, rgba(106, 140, 181, 0.04) 0%, transparent 50%);
+  background-attachment: fixed;
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 40px;
+}
+
+/* ====== 封面 ====== */
+.cover {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 80px 40px;
+  position: relative;
+  border-bottom: 1px solid var(--border);
+}
+.cover::before {
+  content: '';
+  position: absolute;
+  top: 40px; right: 40px; bottom: 40px; left: 40px;
+  border: 1px solid var(--border);
+  pointer-events: none;
+}
+.cover-tag {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 60px;
+  padding-left: 20px;
+  border-left: 2px solid var(--accent);
+}
+.cover-title {
+  font-family: var(--display);
+  font-size: clamp(48px, 8vw, 92px);
+  font-weight: 300;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  margin-bottom: 20px;
+  color: var(--text);
+}
+.cover-title .em {
+  font-style: italic;
+  color: var(--accent);
+}
+.cover-subtitle {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 300;
+  color: var(--text-dim);
+  margin-bottom: 80px;
+  max-width: 700px;
+  line-height: 1.6;
+}
+.cover-meta {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 40px;
+  padding-top: 40px;
+  border-top: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+.cover-meta .label {
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin-bottom: 8px;
+}
+.cover-meta .value {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* ====== 章节 ====== */
+.chapter {
+  padding: 120px 0 80px;
+  border-bottom: 1px solid var(--border);
+}
+.chapter-num {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.3em;
+  color: var(--accent);
+  margin-bottom: 20px;
+  text-transform: uppercase;
+}
+.chapter-title {
+  font-family: var(--display);
+  font-size: clamp(40px, 5vw, 64px);
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  margin-bottom: 24px;
+}
+.chapter-title .em {
+  font-style: italic;
+  color: var(--accent);
+}
+.chapter-lead {
+  font-size: 19px;
+  color: var(--text-dim);
+  max-width: 800px;
+  margin-bottom: 60px;
+  line-height: 1.7;
+  font-weight: 300;
+}
+
+h3.section-title {
+  font-family: var(--serif);
+  font-size: 28px;
+  font-weight: 500;
+  margin: 60px 0 24px;
+  color: var(--text);
+  position: relative;
+  padding-left: 24px;
+}
+h3.section-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 14px;
+  width: 12px;
+  height: 1px;
+  background: var(--accent);
+}
+
+h4.sub-title {
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 500;
+  margin: 40px 0 16px;
+  color: var(--accent-bright);
+}
+
+p {
+  margin-bottom: 18px;
+  color: var(--text);
+}
+p.dim { color: var(--text-dim); }
+strong, b { color: var(--accent-bright); font-weight: 600; }
+
+.lead {
+  font-size: 18px;
+  color: var(--text-dim);
+  margin-bottom: 24px;
+  line-height: 1.75;
+}
+
+/* ====== 高亮卡片 ====== */
+.highlight-box {
+  background: linear-gradient(135deg, rgba(212,165,116,0.08), rgba(212,165,116,0.02));
+  border-left: 3px solid var(--accent);
+  padding: 28px 32px;
+  margin: 32px 0;
+  border-radius: 0 4px 4px 0;
+}
+.highlight-box .tag {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.highlight-box p:last-child { margin-bottom: 0; }
+
+.warning-box {
+  background: linear-gradient(135deg, rgba(212,100,74,0.08), rgba(212,100,74,0.02));
+  border-left: 3px solid var(--red);
+  padding: 28px 32px;
+  margin: 32px 0;
+  border-radius: 0 4px 4px 0;
+}
+.warning-box .tag {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--red);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.analogy-box {
+  background: rgba(106,140,181,0.06);
+  border: 1px solid rgba(106,140,181,0.2);
+  padding: 24px 28px;
+  margin: 24px 0;
+  border-radius: 4px;
+}
+.analogy-box .tag {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--blue);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.analogy-box h5 {
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--accent-bright);
+  margin-bottom: 8px;
+}
+
+/* ====== 数据卡片 ====== */
+.data-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+  margin: 32px 0;
+}
+.data-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 24px 22px;
+  border-radius: 4px;
+  transition: all 0.3s;
+}
+.data-card:hover {
+  border-color: var(--border-bright);
+  transform: translateY(-2px);
+}
+.data-card .label {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.data-card .value {
+  font-family: var(--display);
+  font-size: 38px;
+  font-weight: 500;
+  color: var(--accent);
+  line-height: 1.1;
+  margin-bottom: 8px;
+}
+.data-card .value .unit {
+  font-size: 16px;
+  color: var(--text-dim);
+  margin-left: 4px;
+}
+.data-card .desc {
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+/* ====== 表格 ====== */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 24px 0;
+  font-size: 14px;
+}
+table thead {
+  background: var(--bg-card);
+  border-top: 1px solid var(--border-bright);
+  border-bottom: 1px solid var(--border-bright);
+}
+table th {
+  padding: 14px 16px;
+  text-align: left;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  color: var(--accent);
+  text-transform: uppercase;
+  font-weight: 500;
+}
+table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+table tr:hover td { background: rgba(255,255,255,0.02); }
+.num { font-family: var(--mono); color: var(--accent-bright); font-weight: 500; }
+.num.red { color: var(--red); }
+.num.green { color: var(--green); }
+.num.blue { color: var(--blue); }
+
+/* ====== SVG 容器 ====== */
+.figure {
+  margin: 48px 0;
+  padding: 32px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+.figure-title {
+  font-family: var(--display);
+  font-size: 24px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 8px;
+  text-align: center;
+}
+.figure-subtitle {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  text-align: center;
+  margin-bottom: 32px;
+}
+.figure svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.figure-caption {
+  margin-top: 24px;
+  font-size: 13px;
+  color: var(--text-dim);
+  text-align: center;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+/* ====== 5条逻辑卡片 ====== */
+.logic-card {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 32px;
+  padding: 32px 0;
+  border-bottom: 1px solid var(--border);
+}
+.logic-card:last-child { border-bottom: none; }
+.logic-card .num-big {
+  font-family: var(--display);
+  font-size: 64px;
+  font-weight: 300;
+  color: var(--accent);
+  line-height: 1;
+  font-style: italic;
+}
+.logic-card h4 {
+  font-family: var(--serif);
+  font-size: 24px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+.logic-card p { color: var(--text-dim); }
+
+/* ====== 引用 ====== */
+.quote {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 24px;
+  line-height: 1.5;
+  color: var(--text);
+  padding: 32px 0 32px 32px;
+  border-left: 2px solid var(--accent);
+  margin: 40px 0;
+  max-width: 800px;
+}
+.quote .source {
+  font-family: var(--mono);
+  font-style: normal;
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  margin-top: 16px;
+  display: block;
+}
+
+/* ====== 目录 ====== */
+.toc {
+  padding: 80px 0;
+  border-bottom: 1px solid var(--border);
+}
+.toc-title {
+  font-family: var(--display);
+  font-size: 32px;
+  font-weight: 400;
+  color: var(--accent);
+  margin-bottom: 40px;
+  font-style: italic;
+}
+.toc-list {
+  list-style: none;
+}
+.toc-item {
+  display: grid;
+  grid-template-columns: 60px 1fr 80px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+  font-size: 16px;
+}
+.toc-item .num {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--accent);
+}
+.toc-item .name { color: var(--text); }
+.toc-item .name .desc {
+  display: block;
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+.toc-item .status {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  color: var(--text-faint);
+  text-align: right;
+}
+.toc-item .status.done { color: var(--green); }
+.toc-item .status.pending { color: var(--text-faint); }
+
+/* ====== 类比对照 ====== */
+.analogy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin: 32px 0;
+}
+.analogy-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.analogy-card-tech {
+  padding: 20px 22px;
+  background: rgba(212,165,116,0.06);
+  border-bottom: 1px solid var(--border);
+}
+.analogy-card-tech .label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.analogy-card-tech .term {
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--text);
+}
+.analogy-card-life {
+  padding: 20px 22px;
+}
+.analogy-card-life .label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--blue);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.analogy-card-life .term {
+  font-family: var(--serif);
+  font-size: 16px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+/* ====== Footer ====== */
+.footer {
+  padding: 60px 0 80px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--text-faint);
+  text-transform: uppercase;
+}
+.footer .ornament {
+  width: 40px;
+  height: 1px;
+  background: var(--accent);
+  margin: 0 auto 24px;
+}
+
+/* ====== 响应式 ====== */
+@media (max-width: 768px) {
+  .container { padding: 0 20px; }
+  .cover-meta { grid-template-columns: repeat(2, 1fr); gap: 24px; }
+  .data-grid { grid-template-columns: 1fr; }
+  .logic-card { grid-template-columns: 1fr; gap: 12px; }
+  .figure { padding: 16px; }
+}
+
+/* SVG 样式 */
+.svg-text { font-family: var(--mono); fill: var(--text); }
+.svg-text-dim { font-family: var(--mono); fill: var(--text-dim); }
+.svg-text-accent { font-family: var(--serif); fill: var(--accent); font-weight: 500; }
+.svg-line { stroke: var(--border-bright); stroke-width: 1; fill: none; }
+.svg-line-accent { stroke: var(--accent); stroke-width: 1.5; fill: none; }
+</style>
+</head>
+<body>
+
+<!-- ====== 封面 ====== -->
+<section class="cover">
+  <div class="cover-tag">PART I · INDUSTRY OVERVIEW</div>
+  <h1 class="cover-title">AI算力<span class="em">产业链</span><br>深度研究报告</h1>
+  <p class="cover-subtitle">从光通信到PCB,从CPU到MLCC,六条产业链如何共同支撑起Rubin时代的算力底座。本报告基于4个月深度调研、33家公司完整数据、19个市场认知偏差的系统性梳理。</p>
+  <div class="cover-meta">
+    <div>
+      <div class="label">报告版本</div>
+      <div class="value">V3.0 · 第一部分</div>
+    </div>
+    <div>
+      <div class="label">数据时点</div>
+      <div class="value">2026.05.22</div>
+    </div>
+    <div>
+      <div class="label">覆盖标的</div>
+      <div class="value">33家A股+1家港股</div>
+    </div>
+    <div>
+      <div class="label">调研深度</div>
+      <div class="value">大摩 / 高盛 / 汇丰核查</div>
+    </div>
+  </div>
+</section>
+
+<!-- ====== 目录 ====== -->
+<div class="container">
+<section class="toc">
+  <h2 class="toc-title">Table of Contents</h2>
+  <ul class="toc-list">
+    
+    <li class="toc-item" style="padding-top: 24px; opacity: 0.5;"><div class="num" style="color: var(--text-faint);">PART I</div><div class="name" style="color: var(--text-dim); font-style: italic;">产业链全景认知</div><div class="status done">CURRENT</div></li>
+    
+    <li class="toc-item"><div class="num">01</div><div class="name">AI算力时代的产业链全景<span class="desc">六条产业链的整体图谱与卡位龙头</span></div><div class="status done">DONE</div></li>
+    <li class="toc-item"><div class="num">02</div><div class="name">核心数据的硬指标<span class="desc">大摩拆机、汇丰ABF、AAOI产能、高盛覆盖的源头数据</span></div><div class="status done">DONE</div></li>
+    <li class="toc-item"><div class="num">03</div><div class="name">产业核心结论的5条逻辑<span class="desc">为什么是这些标的、为什么是现在、为什么这样布局</span></div><div class="status done">DONE</div></li>
+    
+    <li class="toc-item" style="padding-top: 32px; opacity: 0.5;"><div class="num" style="color: var(--text-faint);">PART II</div><div class="name" style="color: var(--text-dim); font-style: italic;">六条产业链深度拆解</div><div class="status pending">NEXT</div></li>
+    
+    <li class="toc-item" style="opacity: 0.5;"><div class="num" style="color: var(--text-faint);">04</div><div class="name" style="color: var(--text-dim);">光通信产业链<span class="desc">从光模块到激光器到设备的完整链条</span></div><div class="status pending">P2</div></li>
+    <li class="toc-item" style="opacity: 0.5;"><div class="num" style="color: var(--text-faint);">05</div><div class="name" style="color: var(--text-dim);">PCB主板与覆铜板<span class="desc">M7→M8→M9的材料升级革命</span></div><div class="status pending">P2</div></li>
+    <li class="toc-item" style="opacity: 0.5;"><div class="num" style="color: var(--text-faint);">06</div><div class="name" style="color: var(--text-dim);">PCB上游材料<span class="desc">玻纤布、树脂、铜箔的三大卡脖子环节</span></div><div class="status pending">P2</div></li>
+    <li class="toc-item" style="opacity: 0.5;"><div class="num" style="color: var(--text-faint);">07</div><div class="name" style="color: var(--text-dim);">ABF载板与封装基板<span class="desc">味之素垄断与国产替代的窗口</span></div><div class="status pending">P2</div></li>
+    <li class="toc-item" style="opacity: 0.5;"><div class="num" style="color: var(--text-faint);">08</div><div class="name" style="color: var(--text-dim);">CPU产业链<span class="desc">内存接口、连接器、电感的隐形战场</span></div><div class="status pending">P2</div></li>
+    <li class="toc-item" style="opacity: 0.5;"><div class="num" style="color: var(--text-faint);">09</div><div class="name" style="color: var(--text-dim);">MLCC<span class="desc">电子工业的大米,单台Rubin需30万颗</span></div><div class="status pending">P2</div></li>
+    
+    <li class="toc-item" style="padding-top: 32px; opacity: 0.5;"><div class="num" style="color: var(--text-faint);">PART III·IV</div><div class="name" style="color: var(--text-dim); font-style: italic;">方法论 · 风险地图 · 数据源</div><div class="status pending">P3</div></li>
+    
+    <li class="toc-item" style="opacity: 0.5;"><div class="num" style="color: var(--text-faint);">10-15</div><div class="name" style="color: var(--text-dim);">6维度方法论 / 33家打分 / 19个认知偏差 / 风险地图 / 时间节点 / 数据源</div><div class="status pending">P3</div></li>
+  </ul>
+</section>
+</div>
+
+<!-- ====== 第1章 ====== -->
+<div class="container">
+<section class="chapter" id="ch1">
+  <div class="chapter-num">CHAPTER 01</div>
+  <h2 class="chapter-title">AI算力时代的<span class="em">产业链全景</span></h2>
+  <p class="chapter-lead">英伟达Rubin机柜的780万美元成本里,只有51%来自GPU——剩下的49%分散在PCB、内存、ABF载板、MLCC、电源、液冷六大环节。理解这场"全组件价值重估",是理解AI算力投资的起点。</p>
+
+  <h3 class="section-title">从GPU独舞到全组件狂欢</h3>
+  
+  <p class="lead">摩根士丹利在2026年5月22日发布的Rubin VR200 NVL72机柜BOM拆解报告里,揭示了一个被市场长期忽视的事实——<strong>AI算力的成本结构正在被彻底重写</strong>。</p>
+  
+  <p>在前一代GB300机柜里,GPU成本占比63%;到了Rubin时代,这个比例降到了51%。但这<strong>不是因为GPU降价了</strong>——单颗Rubin GPU的价格从GB300的约3.5万美元涨到了5.5万美元。下降的是占比,因为<strong>其他组件涨得比GPU更快</strong>:</p>
+  
+  <div class="data-grid">
+    <div class="data-card">
+      <div class="label">HBM内存</div>
+      <div class="value">+435<span class="unit">%</span></div>
+      <div class="desc">价值量增幅全链路最高,HBM4容量翻倍叠加颗数翻倍</div>
+    </div>
+    <div class="data-card">
+      <div class="label">PCB主板</div>
+      <div class="value">+233<span class="unit">%</span></div>
+      <div class="desc">从22层升26层、CCL升M8,新增44层中板</div>
+    </div>
+    <div class="data-card">
+      <div class="label">MLCC电容</div>
+      <div class="value">+182<span class="unit">%</span></div>
+      <div class="desc">单板用量从25美元升90美元,新增模组贡献</div>
+    </div>
+    <div class="data-card">
+      <div class="label">ABF载板</div>
+      <div class="value">+82<span class="unit">%</span></div>
+      <div class="desc">NVSwitch ASIC翻倍+ConnectX翻倍</div>
+    </div>
+  </div>
+
+  <div class="highlight-box">
+    <div class="tag">核心认知</div>
+    <p>所谓"AI算力投资",在2026年之前主要是"买英伟达"。但Rubin时代真正稀缺的不是GPU本身——黄仁勋已经向Anthropic、Meta签了百亿美元订单。<strong>真正稀缺的是产业链上游各个环节的产能</strong>:M9级覆铜板、Q布、HVLP铜箔、ABF载板、CW激光器、DDR5接口芯片。</p>
+    <p>这是A股投资者最大的机会——光模块、PCB、上游材料的国产替代窗口被英伟达自己打开了。</p>
+  </div>
+
+  <h3 class="section-title">六条产业链的全景拓扑</h3>
+  
+  <p>把"AI服务器"拆开,会看到六条互相独立又紧密咬合的产业链。每一条都有自己的卡脖子环节、自己的国产龙头、自己的爆发节奏。我们的33家研究池标的,精准分布在这六条线上。</p>
+
+  <div class="figure">
+    <div class="figure-title">AI算力产业链全景图</div>
+    <div class="figure-subtitle">FROM RAW MATERIALS TO RACK · 33 COMPANIES MAPPED</div>
+    
+    <svg viewBox="0 0 1000 720" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="g1" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#d4a574" stop-opacity="0.3"/>
+          <stop offset="100%" stop-color="#d4a574" stop-opacity="0.05"/>
+        </linearGradient>
+        <linearGradient id="g2" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#6a8cb5" stop-opacity="0.3"/>
+          <stop offset="100%" stop-color="#6a8cb5" stop-opacity="0.05"/>
+        </linearGradient>
+        <linearGradient id="g3" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#9c7eb0" stop-opacity="0.3"/>
+          <stop offset="100%" stop-color="#9c7eb0" stop-opacity="0.05"/>
+        </linearGradient>
+        <linearGradient id="g4" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#6da479" stop-opacity="0.3"/>
+          <stop offset="100%" stop-color="#6da479" stop-opacity="0.05"/>
+        </linearGradient>
+      </defs>
+      
+      <!-- 标题轴 -->
+      <text x="20" y="30" class="svg-text-accent" font-size="14">上游原材料</text>
+      <text x="380" y="30" class="svg-text-accent" font-size="14">中游元器件</text>
+      <text x="720" y="30" class="svg-text-accent" font-size="14">下游系统</text>
+      <text x="900" y="30" class="svg-text-accent" font-size="14">终端</text>
+      
+      <line x1="20" y1="42" x2="980" y2="42" stroke="#2a323f" stroke-dasharray="2,3"/>
+      
+      <!-- 第1条:光通信 -->
+      <g transform="translate(0, 60)">
+        <rect x="0" y="0" width="1000" height="90" fill="url(#g1)" rx="2"/>
+        <text x="20" y="22" class="svg-text-accent" font-size="13" font-weight="600">光通信产业链</text>
+        <text x="20" y="38" class="svg-text-dim" font-size="10">光模块 · CPO · 激光器</text>
+        
+        <!-- 上游 -->
+        <rect x="160" y="50" width="100" height="28" fill="#1a212c" stroke="#3d4a5c" rx="2"/>
+        <text x="210" y="68" class="svg-text" font-size="10" text-anchor="middle">蓝特光学·腾景</text>
+        
+        <!-- 中游 -->
+        <rect x="290" y="50" width="100" height="28" fill="#1a212c" stroke="#3d4a5c" rx="2"/>
+        <text x="340" y="68" class="svg-text" font-size="10" text-anchor="middle">源杰·天孚·鼎通</text>
+        
+        <!-- 下游 -->
+        <rect x="430" y="50" width="100" height="28" fill="#1a212c" stroke="#d4a574" rx="2"/>
+        <text x="480" y="68" class="svg-text" font-size="10" text-anchor="middle" fill="#f5c896">中际旭创★</text>
+        <rect x="540" y="50" width="100" height="28" fill="#1a212c" stroke="#d4a574" rx="2"/>
+        <text x="590" y="68" class="svg-text" font-size="10" text-anchor="middle" fill="#f5c896">新易盛★</text>
+        <rect x="650" y="50" width="100" height="28" fill="#1a212c" stroke="#d4a574" rx="2"/>
+        <text x="700" y="68" class="svg-text" font-size="10" text-anchor="middle" fill="#f5c896">东山精密★</text>
+        
+        <!-- 二线 -->
+        <rect x="760" y="50" width="220" height="28" fill="#13181f" stroke="#2a323f" rx="2"/>
+        <text x="870" y="68" class="svg-text-dim" font-size="9" text-anchor="middle">光迅·长飞·德科立·联特·剑桥·汇绿·罗博特科</text>
+      </g>
+      
+      <!-- 第2条:PCB与覆铜板 -->
+      <g transform="translate(0, 165)">
+        <rect x="0" y="0" width="1000" height="90" fill="url(#g3)" rx="2"/>
+        <text x="20" y="22" class="svg-text-accent" font-size="13" font-weight="600">PCB与覆铜板</text>
+        <text x="20" y="38" class="svg-text-dim" font-size="10">主板 · 覆铜板 · CCL</text>
+        
+        <!-- 上游 → 见第3条 -->
+        <text x="160" y="68" class="svg-text-dim" font-size="9" text-anchor="middle">→ 上游材料</text>
+        
+        <!-- 中游 -->
+        <rect x="290" y="50" width="100" height="28" fill="#1a212c" stroke="#d4a574" rx="2"/>
+        <text x="340" y="68" class="svg-text" font-size="10" text-anchor="middle" fill="#f5c896">生益科技★</text>
+        
+        <!-- 下游 -->
+        <rect x="430" y="50" width="100" height="28" fill="#1a212c" stroke="#d4a574" rx="2"/>
+        <text x="480" y="68" class="svg-text" font-size="10" text-anchor="middle" fill="#f5c896">胜宏科技★</text>
+        <rect x="540" y="50" width="100" height="28" fill="#1a212c" stroke="#d4a574" rx="2"/>
+        <text x="590" y="68" class="svg-text" font-size="10" text-anchor="middle" fill="#f5c896">沪电股份★</text>
+        <rect x="650" y="50" width="100" height="28" fill="#1a212c" stroke="#3d4a5c" rx="2"/>
+        <text x="700" y="68" class="svg-text" font-size="10" text-anchor="middle">深南电路</text>
+        
+        <rect x="760" y="50" width="220" height="28" fill="#13181f" stroke="#2a323f" rx="2"/>
+        <text x="870" y="68" class="svg-text-dim" font-size="9" text-anchor="middle">华正新材·南亚新材·兴森科技</text>
+      </g>
+      
+      <!-- 第3条:上游材料 -->
+      <g transform="translate(0, 270)">
+        <rect x="0" y="0" width="1000" height="90" fill="url(#g2)" rx="2"/>
+        <text x="20" y="22" class="svg-text-accent" font-size="13" font-weight="600">PCB上游材料</text>
+        <text x="20" y="38" class="svg-text-dim" font-size="10">玻纤布 · 树脂 · 铜箔</text>
+        
+        <rect x="160" y="50" width="100" height="28" fill="#1a212c" stroke="#d4a574" rx="2"/>
+        <text x="210" y="68" class="svg-text" font-size="10" text-anchor="middle" fill="#f5c896">菲利华★</text>
+        <rect x="290" y="50" width="100" height="28" fill="#1a212c" stroke="#d4a574" rx="2"/>
+        <text x="340" y="68" class="svg-text" font-size="10" text-anchor="middle" fill="#f5c896">宏和科技★</text>
+        <rect x="430" y="50" width="100" height="28" fill="#1a212c" stroke="#3d4a5c" rx="2"/>
+        <text x="480" y="68" class="svg-text" font-size="10" text-anchor="middle">中国巨石</text>
+        <rect x="540" y="50" width="100" height="28" fill="#1a212c" stroke="#3d4a5c" rx="2"/>
+        <text x="590" y="68" class="svg-text" font-size="10" text-anchor="middle">圣泉·东材</text>
+        <rect x="650" y="50" width="120" height="28" fill="#1a212c" stroke="#3d4a5c" rx="2"/>
+        <text x="710" y="68" class="svg-text" font-size="10" text-anchor="middle">德福·铜冠铜箔</text>
+        
+        <rect x="780" y="50" width="200" height="28" fill="#13181f" stroke="#2a323f" rx="2"/>
+        <text x="880" y="68" class="svg-text-dim" font-size="9" text-anchor="middle">中材·国际复材·联瑞·国瓷</text>
+      </g>
+      
+      <!-- 第4条:ABF -->
+      <g transform="translate(0, 375)">
+        <rect x="0" y="0" width="1000" height="60" fill="url(#g4)" rx="2"/>
+        <text x="20" y="22" class="svg-text-accent" font-size="13" font-weight="600">ABF载板与封装基板</text>
+        <text x="20" y="38" class="svg-text-dim" font-size="10">芯片与PCB之间的"翻译官"</text>
+        
+        <rect x="430" y="22" width="100" height="28" fill="#1a212c" stroke="#3d4a5c" rx="2"/>
+        <text x="480" y="40" class="svg-text" font-size="10" text-anchor="middle">深南电路</text>
+        <rect x="540" y="22" width="100" height="28" fill="#1a212c" stroke="#3d4a5c" rx="2"/>
+        <text x="590" y="40" class="svg-text" font-size="10" text-anchor="middle">兴森科技</text>
+        <rect x="650" y="22" width="120" height="28" fill="#13181f" stroke="#2a323f" rx="2"/>
+        <text x="710" y="40" class="svg-text-dim" font-size="9" text-anchor="middle">华正新材·方邦股份</text>
+      </g>
+      
+      <!-- 第5条:CPU产业链 -->
+      <g transform="translate(0, 450)">
+        <rect x="0" y="0" width="1000" height="90" fill="url(#g1)" rx="2"/>
+        <text x="20" y="22" class="svg-text-accent" font-size="13" font-weight="600">CPU产业链</text>
+        <text x="20" y="38" class="svg-text-dim" font-size="10">内存接口 · 连接器 · 电感</text>
+        
+        <rect x="290" y="50" width="100" height="28" fill="#1a212c" stroke="#d4a574" rx="2"/>
+        <text x="340" y="68" class="svg-text" font-size="10" text-anchor="middle" fill="#f5c896">澜起科技★</text>
+        <rect x="430" y="50" width="100" height="28" fill="#1a212c" stroke="#3d4a5c" rx="2"/>
+        <text x="480" y="68" class="svg-text" font-size="10" text-anchor="middle">华丰科技</text>
+        <rect x="540" y="50" width="100" height="28" fill="#1a212c" stroke="#3d4a5c" rx="2"/>
+        <text x="590" y="68" class="svg-text" font-size="10" text-anchor="middle">铂科新材</text>
+        <rect x="650" y="50" width="100" height="28" fill="#1a212c" stroke="#3d4a5c" rx="2"/>
+        <text x="700" y="68" class="svg-text" font-size="10" text-anchor="middle">洁美科技</text>
+      </g>
+      
+      <!-- 第6条:MLCC -->
+      <g transform="translate(0, 555)">
+        <rect x="0" y="0" width="1000" height="60" fill="url(#g3)" rx="2"/>
+        <text x="20" y="22" class="svg-text-accent" font-size="13" font-weight="600">MLCC方向</text>
+        <text x="20" y="38" class="svg-text-dim" font-size="10">单台Rubin需30万颗,价值量+182%</text>
+        
+        <rect x="290" y="22" width="100" height="28" fill="#1a212c" stroke="#3d4a5c" rx="2"/>
+        <text x="340" y="40" class="svg-text" font-size="10" text-anchor="middle">三环集团</text>
+        <rect x="430" y="22" width="100" height="28" fill="#1a212c" stroke="#3d4a5c" rx="2"/>
+        <text x="480" y="40" class="svg-text" font-size="10" text-anchor="middle">风华高科</text>
+        <rect x="540" y="22" width="100" height="28" fill="#1a212c" stroke="#3d4a5c" rx="2"/>
+        <text x="590" y="40" class="svg-text" font-size="10" text-anchor="middle">博迁新材</text>
+      </g>
+      
+      <!-- 终端汇聚 -->
+      <g transform="translate(890, 60)">
+        <rect x="0" y="50" width="100" height="555" fill="#1a212c" stroke="#d4a574" stroke-width="1.5" rx="2"/>
+        <text x="50" y="320" class="svg-text-accent" font-size="14" text-anchor="middle" font-weight="600">英伟达</text>
+        <text x="50" y="340" class="svg-text-accent" font-size="14" text-anchor="middle" font-weight="600">Rubin</text>
+        <text x="50" y="360" class="svg-text-accent" font-size="14" text-anchor="middle" font-weight="600">VR200</text>
+        <text x="50" y="395" class="svg-text-dim" font-size="10" text-anchor="middle">$7.8M / 柜</text>
+        <text x="50" y="412" class="svg-text-dim" font-size="9" text-anchor="middle">2026 H2</text>
+      </g>
+      
+      <!-- 流向箭头 -->
+      <g stroke="#3d4a5c" stroke-width="0.5" opacity="0.4">
+        <line x1="770" y1="100" x2="880" y2="280"/>
+        <line x1="750" y1="205" x2="880" y2="320"/>
+        <line x1="770" y1="310" x2="880" y2="340"/>
+        <line x1="770" y1="405" x2="880" y2="370"/>
+        <line x1="750" y1="490" x2="880" y2="390"/>
+        <line x1="640" y1="575" x2="880" y2="420"/>
+      </g>
+      
+      <!-- 图例 -->
+      <g transform="translate(20, 660)">
+        <text x="0" y="0" class="svg-text-dim" font-size="11">★ = 我们打分进入核心档(综合分≥4.2)</text>
+        <text x="380" y="0" class="svg-text-dim" font-size="11">琥珀色描边 = 核心标的</text>
+        <text x="680" y="0" class="svg-text-dim" font-size="11">灰色描边 = 研究池/卫星档</text>
+      </g>
+    </svg>
+    <div class="figure-caption">这张图是整个研究的"骨架"。理解了这六条线的咬合关系,就理解了为什么我们的核心档9只标的不是简单"看好AI"——而是精准卡在六条线的关键瓶颈位置。</div>
+  </div>
+
+  <h3 class="section-title">为什么是这六条产业链</h3>
+  
+  <p>不是因为它们"听起来高大上",而是因为它们都满足三个条件:</p>
+  
+  <div class="logic-card">
+    <div class="num-big">01</div>
+    <div>
+      <h4>需求由真实硬件订单驱动,不是叙事</h4>
+      <p>英伟达2025-2027年累计承诺1万亿美元的Blackwell/Blackwell Ultra/Rubin收入,这是<strong>对供应链的真金白银采购</strong>。每一台Rubin机柜的780万美元里,需要消耗的PCB、ABF、内存接口、MLCC、电感是物理事实,不可被"AI叙事降温"逆转。</p>
+    </div>
+  </div>
+  
+  <div class="logic-card">
+    <div class="num-big">02</div>
+    <div>
+      <h4>存在国产替代窗口期</h4>
+      <p>这六条线中,<strong>有四条的最上游被海外巨头垄断</strong>:玻纤布(日东纺、日本电气硝子)、ABF树脂(味之素)、高端覆铜板(松下、台光、斗山)、MLCC粉体(村田、TDK)。国产替代正在窗口期内加速——菲利华Q布、宏和T布、生益M8/M9、三环MLCC,都是真实的产能突破。</p>
+    </div>
+  </div>
+  
+  <div class="logic-card">
+    <div class="num-big">03</div>
+    <div>
+      <h4>A股有具体可买的标的</h4>
+      <p>很多产业线"听上去重要,但A股没有龙头"。CPU设计层(ARM、英特尔、AMD)、HBM(海力士、三星、美光)、GPU(英伟达、AMD)——这些领域A股要么是平台型公司(海光),要么完全没有(ARM)。<strong>我们只选A股能买到、且能真正受益的环节</strong>。</p>
+    </div>
+  </div>
+
+</section>
+</div>
+
+
+<!-- ====== 第2章 ====== -->
+<div class="container">
+<section class="chapter" id="ch2">
+  <div class="chapter-num">CHAPTER 02</div>
+  <h2 class="chapter-title">核心数据的<span class="em">硬指标</span></h2>
+  <p class="chapter-lead">在这份报告里,我们不引用雪球大V的判断、不引用直播分享的预测、不引用国内自媒体的转述。所有核心数字都来自:摩根士丹利、高盛、汇丰、伯恩斯坦的官方研报,以及上市公司公开年报、季报、调研纪要。这些是"硬指标"——可核查、可证伪、可信赖。</p>
+
+  <h3 class="section-title">硬指标一:大摩Rubin机柜BOM拆解</h3>
+  
+  <p class="lead">2026年5月22日,摩根士丹利发布了《Nvidia Vera Rubin NVL72 - The Component-Level Bull Case》研究报告。这是<strong>整个2026年AI硬件投资最重要的一份产业研报</strong>——大摩团队亲自跑到英伟达供应链做BOM(物料清单)拆解,把单台Rubin机柜的780万美元成本拆到每一颗芯片、每一片PCB、每一颗MLCC。</p>
+
+  <div class="figure">
+    <div class="figure-title">Rubin机柜 vs GB300 价值量对比</div>
+    <div class="figure-subtitle">MORGAN STANLEY · 2026.05.22 · BOM TEARDOWN</div>
+    
+    <svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg">
+      <!-- 标题 -->
+      <text x="180" y="30" class="svg-text-accent" font-size="14" text-anchor="middle">GB300机柜</text>
+      <text x="180" y="48" class="svg-text-dim" font-size="11" text-anchor="middle">$3.99M / 柜</text>
+      
+      <text x="820" y="30" class="svg-text-accent" font-size="14" text-anchor="middle">Rubin VR200机柜</text>
+      <text x="820" y="48" class="svg-text-dim" font-size="11" text-anchor="middle">$7.80M / 柜 · +95%</text>
+      
+      <text x="500" y="40" class="svg-text-accent" font-size="13" text-anchor="middle" font-weight="600">价值量变化</text>
+      
+      <!-- HBM -->
+      <g transform="translate(0, 70)">
+        <text x="20" y="14" class="svg-text" font-size="12" font-weight="600">HBM内存</text>
+        <text x="20" y="30" class="svg-text-dim" font-size="10">HBM4 · 容量+50% · 颗数翻3倍</text>
+        
+        <rect x="180" y="0" width="30" height="40" fill="#3d4a5c" rx="2"/>
+        <text x="195" y="56" class="svg-text-dim" font-size="10" text-anchor="middle">$0.37M</text>
+        
+        <rect x="640" y="0" width="160" height="40" fill="#d4a574" rx="2"/>
+        <text x="720" y="56" class="svg-text-dim" font-size="10" text-anchor="middle">$2.00M</text>
+        
+        <text x="500" y="26" class="svg-text-accent" font-size="22" text-anchor="middle" font-weight="600">+435%</text>
+      </g>
+      
+      <!-- GPU -->
+      <g transform="translate(0, 145)">
+        <text x="20" y="14" class="svg-text" font-size="12" font-weight="600">GPU芯片</text>
+        <text x="20" y="30" class="svg-text-dim" font-size="10">单颗$55K · 仍是最大单一组件</text>
+        
+        <rect x="120" y="0" width="90" height="40" fill="#3d4a5c" rx="2"/>
+        <text x="165" y="56" class="svg-text-dim" font-size="10" text-anchor="middle">$2.52M</text>
+        
+        <rect x="660" y="0" width="140" height="40" fill="#9c7eb0" opacity="0.7" rx="2"/>
+        <text x="730" y="56" class="svg-text-dim" font-size="10" text-anchor="middle">$3.96M</text>
+        
+        <text x="500" y="26" class="svg-text" font-size="20" text-anchor="middle">+57%</text>
+      </g>
+      
+      <!-- PCB -->
+      <g transform="translate(0, 220)">
+        <text x="20" y="14" class="svg-text" font-size="12" font-weight="600">PCB主板</text>
+        <text x="20" y="30" class="svg-text-dim" font-size="10">22→26层 · M7→M8 · 新增44层中板</text>
+        
+        <rect x="200" y="0" width="10" height="40" fill="#3d4a5c" rx="2"/>
+        <text x="205" y="56" class="svg-text-dim" font-size="10" text-anchor="middle">$0.04M</text>
+        
+        <rect x="780" y="0" width="20" height="40" fill="#d4a574" rx="2"/>
+        <text x="790" y="56" class="svg-text-dim" font-size="10" text-anchor="middle">$0.12M</text>
+        
+        <text x="500" y="26" class="svg-text-accent" font-size="22" text-anchor="middle" font-weight="600">+233%</text>
+      </g>
+      
+      <!-- MLCC -->
+      <g transform="translate(0, 295)">
+        <text x="20" y="14" class="svg-text" font-size="12" font-weight="600">MLCC电容</text>
+        <text x="20" y="30" class="svg-text-dim" font-size="10">单板用量从25美元升90美元</text>
+        
+        <rect x="208" y="0" width="2" height="40" fill="#3d4a5c" rx="1"/>
+        <text x="208" y="56" class="svg-text-dim" font-size="10" text-anchor="middle">$1.5K</text>
+        
+        <rect x="795" y="0" width="5" height="40" fill="#d4a574" rx="1"/>
+        <text x="795" y="56" class="svg-text-dim" font-size="10" text-anchor="middle">$4.3K</text>
+        
+        <text x="500" y="26" class="svg-text-accent" font-size="22" text-anchor="middle" font-weight="600">+182%</text>
+      </g>
+      
+      <!-- ABF -->
+      <g transform="translate(0, 370)">
+        <text x="20" y="14" class="svg-text" font-size="12" font-weight="600">ABF载板</text>
+        <text x="20" y="30" class="svg-text-dim" font-size="10">NVSwitch ASIC翻倍·ConnectX翻倍</text>
+        
+        <rect x="206" y="0" width="4" height="40" fill="#3d4a5c" rx="1"/>
+        <text x="208" y="56" class="svg-text-dim" font-size="10" text-anchor="middle">$0.011M</text>
+        
+        <rect x="794" y="0" width="6" height="40" fill="#d4a574" rx="1"/>
+        <text x="797" y="56" class="svg-text-dim" font-size="10" text-anchor="middle">$0.020M</text>
+        
+        <text x="500" y="26" class="svg-text-accent" font-size="22" text-anchor="middle" font-weight="600">+82%</text>
+      </g>
+      
+      <!-- 底部备注 -->
+      <line x1="20" y1="450" x2="980" y2="450" stroke="#2a323f"/>
+      <text x="500" y="475" class="svg-text-dim" font-size="11" text-anchor="middle">来源:Morgan Stanley · 2026年5月22日《Vera Rubin NVL72 BOM Teardown》</text>
+    </svg>
+    <div class="figure-caption">这五个数字是2026年所有AI算力研究的"硬骨架"。后面所有的标的分析、所有的卡位判断、所有的产业链推演,都建立在这些价值量变化之上。</div>
+  </div>
+
+  <p>大摩的报告里还有一个被市场忽视的细节——<strong>ODM(代工厂)增值部分也将上升35-40%</strong>。市场之前普遍认为Rubin系统的标准化会压缩ODM附加值,但实际拆解显示恰恰相反。这意味着<strong>整个产业链都在涨,不是单一环节</strong>。</p>
+
+  <h3 class="section-title">硬指标二:汇丰ABF载板超级周期</h3>
+  
+  <p>2026年4月28日,汇丰发布了一份让台湾载板三雄(欣兴电子、景硕、南亚电路板)股价集体跳升的研报:<strong>ABF载板2026年涨价31%、2027年涨价28%,2027年供需缺口扩大到-27%,2028年扩大到-35%</strong>。</p>
+  
+  <p>这个判断比市场共识激进很多——市场之前预测的是涨价18-19%、缺口10-15%。汇丰的依据是:</p>
+
+  <div class="data-grid">
+    <div class="data-card">
+      <div class="label">需求CAGR</div>
+      <div class="value">36<span class="unit">%</span></div>
+      <div class="desc">2025-2028年AI驱动的ABF需求复合增速</div>
+    </div>
+    <div class="data-card">
+      <div class="label">供给CAGR</div>
+      <div class="value">16<span class="unit">%</span></div>
+      <div class="desc">扩产受制于上游T-glass玻纤布、HVLP铜箔</div>
+    </div>
+    <div class="data-card">
+      <div class="label">2026价格涨幅</div>
+      <div class="value">+31<span class="unit">%</span></div>
+      <div class="desc">从市场共识18%大幅上修</div>
+    </div>
+    <div class="data-card">
+      <div class="label">2028缺口</div>
+      <div class="value">-35<span class="unit">%</span></div>
+      <div class="desc">需求是供给的1.5倍以上</div>
+    </div>
+  </div>
+
+  <div class="highlight-box">
+    <div class="tag">交叉验证</div>
+    <p>同一周内,<strong>大摩、高盛、伯恩斯坦三家投行同步上调了ABF赛道预期</strong>。伯恩斯坦5月22日的报告甚至更激进——预计2026 Q1 ABF载板ASP环比涨5%,后续季度涨7-10%,目标价欣兴电子990新台币。三家美系投行+一家欧系投行的判断高度一致,信号极强。</p>
+    <p>A股的对应受益标的:深南电路、兴森科技(国产ABF载板)、菲利华、宏和科技(T-glass上游)、铜冠铜箔、德福科技(HVLP铜箔上游)。</p>
+  </div>
+
+  <h3 class="section-title">硬指标三:AAOI产能与CW供应紧缺</h3>
+  
+  <p>AAOI(Applied Optoelectronics)是美国上市的二线光模块厂商。2026年Q1法说会(FY26 Q1 Earnings Call)管理层披露了几个让整个行业产业链信心爆棚的数据。需要注意,以下数据全部来自<strong>AAOI管理层在法说会上的口头披露</strong>,部分数据(如CW价格涨幅、产能售罄程度)在其他独立渠道核查中没有完全交叉验证,因此仅作为<strong>产业方向性参考</strong>,不作为精确数字使用:</p>
+
+  <ul style="list-style: none; padding-left: 0; margin: 24px 0;">
+    <li style="padding: 16px 0; border-bottom: 1px solid var(--border);">
+      <strong style="color: var(--accent-bright);">800G产能:</strong> <span style="color: var(--text-dim);">2026年Q1营收460万美元(已在SEC文件公开),Q2出货量预计增长4倍,Q3起非线性爆发</span>
+    </li>
+    <li style="padding: 16px 0; border-bottom: 1px solid var(--border);">
+      <strong style="color: var(--accent-bright);">1.6T订单:</strong> <span style="color: var(--text-dim);">已锁定长期大客户首笔量产订单,2027年进入爆发期</span>
+    </li>
+    <li style="padding: 16px 0; border-bottom: 1px solid var(--border);">
+      <strong style="color: var(--accent-bright);">产能紧张程度:</strong> <span style="color: var(--text-dim);">管理层表述2027年上半年产能已大量预定,新客户拿货周期拉长(具体程度需观察后续季报)</span>
+    </li>
+    <li style="padding: 16px 0; border-bottom: 1px solid var(--border);">
+      <strong style="color: var(--accent-bright);">最紧缺物料:</strong> <span style="color: var(--text-dim);">CW激光器是核心瓶颈,日本住友是主要供应商之一,管理层表述CW价格涨幅显著(具体30-80%幅度需第三方验证)</span>
+    </li>
+    <li style="padding: 16px 0;">
+      <strong style="color: var(--accent-bright);">CPO替代时点:</strong> <span style="color: var(--text-dim);">2028年前光模块业绩不用担心,2029年CPO渗透率超30%时开始大规模替代</span>
+    </li>
+  </ul>
+
+  <p>这些信息有什么用?<strong>它们独立验证了中际旭创、新易盛、东山精密的产业α</strong>。AAOI是二线厂商,它都拿到了爆款订单,说明一线厂商(中际、新易盛)的状态<strong>更紧张</strong>。中际旭创Q1预付款激增10倍到14.88亿,新易盛Q1预付款增40倍到6.82亿——这正是"用真金白银锁定上游产能"的硬证据。</p>
+
+  <h3 class="section-title">硬指标四:高盛覆盖罗博特科与CPO耦合设备</h3>
+  
+  <p>2026年4月17日,高盛首次覆盖罗博特科(300757),给"买入"评级,目标价688元,基于2031年预期PE 50倍折现到2027年。这是<strong>A股近年来罕见的"用2031年估值定价"的研报</strong>——意味着高盛认为罗博特科有持续7年以上的高增长。</p>
+  
+  <div class="data-grid">
+    <div class="data-card">
+      <div class="label">2026-28E净利润CAGR</div>
+      <div class="value">153<span class="unit">%</span></div>
+      <div class="desc">A股极其罕见的成长曲线</div>
+    </div>
+    <div class="data-card">
+      <div class="label">ficonTEC订单</div>
+      <div class="value">$5,900<span class="unit">万</span></div>
+      <div class="desc">2026年5月签约两笔大单</div>
+    </div>
+    <div class="data-card">
+      <div class="label">客户名单</div>
+      <div class="value">5<span class="unit">家</span></div>
+      <div class="desc">英伟达·台积电·英特尔·博通·思科</div>
+    </div>
+    <div class="data-card">
+      <div class="label">CPO设备覆盖率</div>
+      <div class="value">50<span class="unit">%+</span></div>
+      <div class="desc">存量CPO耦合测试设备份额</div>
+    </div>
+  </div>
+
+  <div class="warning-box">
+    <div class="tag">风险提示</div>
+    <p>高盛的乐观目标价688元建立在两个假设上:CPO在2027-2028年大规模量产、罗博特科保持50%以上份额。<strong>这两个假设都存在不确定性</strong>。同时,公司2025年仍亏损6.59亿元,2026E仅0.5亿、2027E 1.0亿——<strong>典型的"强预期+弱现实"标的</strong>。</p>
+    <p>这并不意味着罗博特科不能投资,只意味着它的风险等级与中际旭创、菲利华这种"业绩已经兑现"的标的<strong>完全不同</strong>。在后续仓位讨论中,会单独处理这一类标的。</p>
+  </div>
+
+  <h3 class="section-title">硬指标五:核心档6只的Q1业绩兑现</h3>
+  
+  <p>所有的"产业逻辑"最终都必须落地到"业绩兑现"。我们核心档6只标的的2026年Q1实际业绩,验证了产业α的真实性:</p>
+  
+  <table>
+    <thead>
+      <tr>
+        <th>标的</th>
+        <th>Q1营收同比</th>
+        <th>Q1净利同比</th>
+        <th>预付款激增</th>
+        <th>核心信号</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>中际旭创</strong></td>
+        <td class="num green">+192%</td>
+        <td class="num green">+262%</td>
+        <td class="num">14.88亿 / +1009%</td>
+        <td>订单排至2027,大规模锁定CW、DSP</td>
+      </tr>
+      <tr>
+        <td><strong>新易盛</strong></td>
+        <td class="num green">+106%</td>
+        <td class="num green">+77%</td>
+        <td class="num">6.82亿 / +40倍</td>
+        <td>1.6T卡料但订单饱满,汇兑损失拖累净利</td>
+      </tr>
+      <tr>
+        <td><strong>胜宏科技</strong></td>
+        <td class="num green">+80%</td>
+        <td class="num green">+339%</td>
+        <td class="num">2026固定资产投资180亿</td>
+        <td>英伟达Tier1供应商,AI订单占比60%+</td>
+      </tr>
+      <tr>
+        <td><strong>沪电股份</strong></td>
+        <td class="num green">+143%</td>
+        <td class="num green">+136%</td>
+        <td class="num">2026年累计扩产170亿+</td>
+        <td>昆山+常州+3亿美元高密度光电集成线路板</td>
+      </tr>
+      <tr>
+        <td><strong>东山精密</strong></td>
+        <td class="num green">+38%</td>
+        <td class="num green">+143%</td>
+        <td class="num">索尔思整合协同效应</td>
+        <td>CW良率90%,Meta CPO高功率CW独家</td>
+      </tr>
+      <tr>
+        <td><strong>生益科技</strong></td>
+        <td class="num green">+44%</td>
+        <td class="num green">+78%</td>
+        <td class="num">订单排到2026Q4</td>
+        <td>大陆唯一英伟达M9认证覆铜板</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="quote">
+    "这不是Q1占比、不是机构预测、不是估值模型——这是真实的、可审计的、监管层公开披露的业绩兑现。当六家公司同时给出超50%以上的净利同比、同时给出预付款激增的硬证据时,产业α就不再是假设,而是事实。"
+    <span class="source">本研究 · 任务二结论</span>
+  </div>
+
+</section>
+</div>
+
+<!-- ====== 第3章 ====== -->
+<div class="container">
+<section class="chapter" id="ch3">
+  <div class="chapter-num">CHAPTER 03</div>
+  <h2 class="chapter-title">产业核心结论的<span class="em">5条逻辑</span></h2>
+  <p class="chapter-lead">把前两章的大摩、汇丰、AAOI、高盛、Q1业绩串起来,会浮现出五条彼此印证的产业逻辑。这五条逻辑,是这份报告所有标的选择、所有档位调整、所有仓位决策的最底层依据。</p>
+
+  <div class="logic-card">
+    <div class="num-big">1</div>
+    <div>
+      <h4>"思考→行动"的时代切换 —— GPU bottleneck转移到CPU</h4>
+      <p>2024年以前的AI是"问答式":你问GPT一个问题,它回答你。这种AI主要消耗GPU算力,CPU只是数据搬运工。</p>
+      <p>2026年以来的AI是"代理式"(Agentic AI):你说"帮我订下周去巴黎的机票",AI需要拆解成几十个子任务、调用多个工具、并行处理、协调结果。这种AI<strong>对CPU的需求是数量级提升</strong>——CPU负责"调度"(orchestration),GPU负责"思考"(reasoning)。</p>
+      <p>摩根士丹利2026年4月发布的《The Rise of AI Agents》专题报告,把这个转变称为"系统瓶颈从GPU转向CPU"。预测2030年数据中心CPU市场TAM达到825亿-1100亿美元,其中Agentic AI直接贡献325-600亿美元增量。</p>
+      <div class="analogy-box">
+        <div class="tag">类比讲解</div>
+        <h5>GPU = 极聪明的策略顾问 · CPU = 跑腿的执行手脚</h5>
+        <p>问答时代你只需要一个策略顾问就够了。代理时代你需要的是"一个策略顾问 + 十几个执行手脚"——AI不只要"想",还要"做"。<strong>每多一个执行任务,就需要多一颗CPU</strong>。</p>
+      </div>
+      <p><strong>对A股投资者的意义</strong>:CPU产业链上,A股有澜起科技(内存接口芯片)、华丰科技(高速连接器)、铂科新材(电感)等真正受益的标的。其中<strong>澜起科技MRCD/MDB全球40%份额、合同负债+18.6%、Q1占比25.4%</strong>,是最确定的卡位。</p>
+    </div>
+  </div>
+  
+  <div class="logic-card">
+    <div class="num-big">2</div>
+    <div>
+      <h4>多条产业链同步爆发 —— 不是"此消彼长"而是"齐头并进"</h4>
+      <p>市场对AI算力投资有一个常见误区:把光通信、PCB、CPU、内存、ABF这些当作"互相替代"的赛道,纠结"该买光模块还是PCB"。<strong>这是错误的认知框架</strong>。</p>
+      <p>真实情况是:这些产业链<strong>在物理上是互补的,在需求上是同步爆发的</strong>。一台Rubin机柜里,光通信(机柜之间互联)、PCB(主板)、ABF载板(芯片封装)、内存接口芯片(CPU与内存)、连接器(芯片之间)、MLCC(电源稳压)、电感(供电)——这些环节缺一不可,而且全都在升级。</p>
+      <p>AAOI法说会明确指出:<strong>2028年以前光模块业绩无需担心,2028年以后CPO渗透率超30%时开始大规模替代</strong>。这意味着光模块至少有2-3年的黄金窗口,即使CPO替代部分光模块,<strong>对PCB、ABF、MLCC、连接器没有任何冲击</strong>——反而,CPO本身的量产同样需要CW激光器(源杰、东山的索尔思)、耦合设备(罗博特科)、连接器(华丰)、电感(铂科)。</p>
+      <div class="analogy-box">
+        <div class="tag">类比讲解</div>
+        <h5>AI服务器 = 一座现代化工厂</h5>
+        <p>工厂里有<strong>厂房骨架</strong>(PCB)、<strong>生产线</strong>(GPU/CPU芯片)、<strong>仓库</strong>(内存)、<strong>厂区道路</strong>(连接器、ABF载板)、<strong>跨城运输</strong>(光通信)、<strong>供电系统</strong>(电源/电感/MLCC)。每个环节都是工厂正常运转的必需品,扩大工厂规模时<strong>所有环节都要同步扩张</strong>,不存在"骨架变多就不要仓库"的逻辑。</p>
+      </div>
+      <p>这就是为什么我们的核心档同时配置了光模块龙头(中际旭创、新易盛、东山精密)、PCB龙头(胜宏、沪电)、覆铜板龙头(生益)、Q布龙头(菲利华、宏和)、内存接口龙头(澜起科技)——<strong>不是"分散下注",而是因为它们都是AI算力底座的独立支柱,缺一不可</strong>。</p>
+    </div>
+  </div>
+  
+  <div class="logic-card">
+    <div class="num-big">3</div>
+    <div>
+      <h4>四大材料卡脖子 —— 真正的"硬技术国产替代"</h4>
+      <p>很多"国产替代"是叙事(便宜版海外货),但<strong>下面这四个材料的国产替代是真实硬技术突破</strong>:</p>
+      <ul style="list-style: none; padding-left: 0; margin: 16px 0;">
+        <li style="padding: 12px 0; border-bottom: 1px dashed var(--border);">
+          <strong style="color: var(--accent-bright);">Q布(电子玻纤布):</strong> <span style="color: var(--text-dim);">菲利华全球三家之一,英伟达国产唯一M9级供应商,2026年5月价格450-550元/米且有价无货</span>
+        </li>
+        <li style="padding: 12px 0; border-bottom: 1px dashed var(--border);">
+          <strong style="color: var(--accent-bright);">T布/超薄布:</strong> <span style="color: var(--text-dim);">宏和科技4μm极薄布全球唯一量产,12μm超薄布全球50%份额,Low-CTE已进封装基板供应链</span>
+        </li>
+        <li style="padding: 12px 0; border-bottom: 1px dashed var(--border);">
+          <strong style="color: var(--accent-bright);">HVLP铜箔:</strong> <span style="color: var(--text-dim);">铜冠铜箔(HVLP4客户认证中)、德福科技(收购卢森堡铜箔获HVLP4/5技术储备)</span>
+        </li>
+        <li style="padding: 12px 0;">
+          <strong style="color: var(--accent-bright);">PPO树脂:</strong> <span style="color: var(--text-dim);">圣泉集团国内唯一量产电子级PPO树脂,M9覆铜板上游</span>
+        </li>
+      </ul>
+      <p>这四个标的的共同特征是:<strong>不是"中国版海外货",而是真正的全球前三或独家国产</strong>。在ABF载板、M9级覆铜板供需缺口的时代,它们的议价能力极强。</p>
+    </div>
+  </div>
+  
+  <div class="logic-card">
+    <div class="num-big">4</div>
+    <div>
+      <h4>业绩兑现的三个硬信号</h4>
+      <p>不是所有"AI概念股"都会爆发。<strong>真正的产业α会留下三个硬信号,可以从年报、季报、公告里直接看到</strong>:</p>
+      <ul style="list-style: none; padding-left: 0; margin: 16px 0;">
+        <li style="padding: 12px 0; border-bottom: 1px dashed var(--border);">
+          <strong style="color: var(--accent-bright);">硬信号一 · 预付款激增:</strong> <span style="color: var(--text-dim);">公司在2026Q1大量预付原材料款,说明对Q2-Q4出货有极强预期。中际旭创+1009%,新易盛+40倍,华丰+229%</span>
+        </li>
+        <li style="padding: 12px 0; border-bottom: 1px dashed var(--border);">
+          <strong style="color: var(--accent-bright);">硬信号二 · 合同负债增长:</strong> <span style="color: var(--text-dim);">客户预付货款给公司,说明订单饱满到客户愿意提前付款锁产能。菲利华+42.1%(最强),澜起+18.6%</span>
+        </li>
+        <li style="padding: 12px 0;">
+          <strong style="color: var(--accent-bright);">硬信号三 · 资本开支加速:</strong> <span style="color: var(--text-dim);">公司大手笔扩产,管理层有"内部信息优势"。胜宏180亿固定资产投资、沪电170亿+扩产、菲利华Q布10倍扩产、三环37.5亿定增</span>
+        </li>
+      </ul>
+      <p>这三个信号是我们6维度评估体系中"订单/扩产维度"(权重18%)的依据。任何一只标的同时具备这三个信号,基本可以确认它的产业α真实。</p>
+    </div>
+  </div>
+  
+  <div class="logic-card">
+    <div class="num-big">5</div>
+    <div>
+      <h4>识别"PEG便宜陷阱" —— 避免估值错配</h4>
+      <p>整个市场最大的陷阱之一,是<strong>"PEG便宜但Q1占比极低"的标的</strong>。这类标的看起来便宜(PEG 0.2-0.5),但机构的2026/2027预测建立在<strong>非常乐观的假设</strong>上。Q1实际业绩远低于预测的均匀月度水平,意味着预测会被持续下修。一旦下修,PEG瞬间从0.3跳到0.8-1.5。</p>
+      <p>我们这次在33家标的中识别出4只"假便宜"标的:</p>
+      <table style="margin: 16px 0;">
+        <thead>
+          <tr><th>标的</th><th>PEG</th><th>Q1占比</th><th>判断</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>长飞光纤</td><td class="num">0.22</td><td class="num red">7.7%</td><td style="color: var(--red);">假便宜</td></tr>
+          <tr><td>剑桥科技</td><td class="num">0.24</td><td class="num red">7.2%</td><td style="color: var(--red);">假便宜</td></tr>
+          <tr><td>洁美科技</td><td class="num">0.44</td><td class="num red">10.4%</td><td style="color: var(--red);">假便宜</td></tr>
+          <tr><td>华正新材</td><td class="num">0.54</td><td class="num red">5.9%</td><td style="color: var(--red);">极度假便宜</td></tr>
+        </tbody>
+      </table>
+      <p>这四只标的的共同特征:产业概念漂亮(DCI光纤/光模块/MLCC离型膜/CBF对标味之素),但<strong>Q1实际业绩远远跑不到机构预测的1/4水平</strong>。这是预测被下修的明确前兆。</p>
+    </div>
+  </div>
+
+  <div class="highlight-box" style="margin-top: 60px;">
+    <div class="tag">本章小结</div>
+    <p>五条逻辑互相印证,共同支撑起我们33家标的的最终筛选:</p>
+    <p><strong>(1)</strong> CPU时代到来,所以澜起科技进入核心档。<br>
+    <strong>(2)</strong> 多产业链同步爆发(不是替代关系),所以中际旭创+东山精密(光通信)和澜起科技(CPU产业链)都是核心档。<br>
+    <strong>(3)</strong> 材料卡脖子,所以菲利华+宏和+生益+圣泉都是核心或次核心档。<br>
+    <strong>(4)</strong> 三大硬信号,所以胜宏+沪电+菲利华仓位上调。<br>
+    <strong>(5)</strong> 识破"假便宜",所以长飞+剑桥+洁美+华正不纳入投资组合。</p>
+    <p style="margin-top: 12px;">这五条逻辑会在<strong>第二部分(六条产业链深度拆解)</strong>得到完整的产业证据支撑,在<strong>第三部分(33家打分排序)</strong>转化为可执行的标的清单。</p>
+  </div>
+
+</section>
+</div>
+
+<!-- ====== Footer ====== -->
+<div class="container">
+<div class="footer">
+  <div class="ornament"></div>
+  <p>END OF PART I · 第一部分:产业链全景认知</p>
+  <p style="margin-top: 12px; letter-spacing: 0.15em;">NEXT — PART II · 六条产业链深度拆解</p>
+</div>
+</div>
+
+</body>
+</html>

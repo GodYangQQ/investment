@@ -1,0 +1,4971 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 链条系统风险监控仪表盘 · v1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans+SC:wght@300;400;500;600;700&family=IBM+Plex+Serif:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --bg-primary: #fafaf7;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f4f2ec;
+  --bg-elevated: #ebe8e0;
+  --text-primary: #1a1a1a;
+  --text-secondary: #5a5550;
+  --text-tertiary: #8a857a;
+  --accent-amber: #a8780c;
+  --accent-red: #b04429;
+  --accent-orange: #c46a2c;
+  --accent-yellow: #927a3c;
+  --accent-green: #4f7a35;
+  --accent-blue: #3d6f99;
+  --border-subtle: rgba(26, 26, 26, 0.08);
+  --border-emphasis: rgba(26, 26, 26, 0.18);
+  --font-sans: 'IBM Plex Sans SC', system-ui, -apple-system, sans-serif;
+  --font-serif: 'IBM Plex Serif', Georgia, serif;
+  --font-mono: 'IBM Plex Mono', 'SF Mono', monospace;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+/* === Header === */
+.masthead {
+  border-bottom: 1px solid var(--border-emphasis);
+  padding: 24px 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(12px);
+  background: rgba(250, 250, 247, 0.92);
+}
+
+.masthead-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.brand {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 20px;
+  letter-spacing: -0.01em;
+}
+
+.brand-subtitle {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin-top: 2px;
+}
+
+.masthead-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-align: right;
+  letter-spacing: 0.05em;
+}
+
+.masthead-meta span {
+  display: block;
+}
+
+.masthead-meta .live {
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.masthead-meta .live::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--text-tertiary);
+  border-radius: 50%;
+}
+
+/* === Hero === */
+.hero {
+  padding: 80px 0 60px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 64px;
+  align-items: end;
+}
+
+.hero-left h1 {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: 56px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin-bottom: 24px;
+  color: var(--text-primary);
+}
+
+.hero-left h1 em {
+  font-style: italic;
+  color: var(--accent-amber);
+}
+
+.hero-tagline {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 18px;
+  color: var(--text-secondary);
+  max-width: 520px;
+  line-height: 1.6;
+}
+
+.hero-score-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  padding: 32px;
+  position: relative;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+}
+
+.hero-score-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent-amber);
+}
+
+.score-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--text-tertiary);
+  margin-bottom: 16px;
+}
+
+.score-value {
+  font-family: var(--font-serif);
+  font-size: 96px;
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--accent-amber);
+}
+
+.score-divider {
+  font-size: 32px;
+  color: var(--text-tertiary);
+  font-weight: 300;
+}
+
+.score-max {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.score-status {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: rgba(168, 120, 12, 0.08);
+  border: 1px solid var(--accent-amber);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--accent-amber);
+}
+
+.status-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--accent-amber);
+  border-radius: 50%;
+}
+
+.score-trend {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+  letter-spacing: 0.05em;
+}
+
+.score-coverage {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.05em;
+}
+
+.score-coverage .coverage-warning {
+  color: var(--accent-yellow);
+}
+
+.score-coverage .coverage-warning.hidden {
+  display: none;
+}
+
+/* === Section === */
+.section {
+  padding: 80px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 48px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-emphasis);
+}
+
+.section-number {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.2em;
+  margin-bottom: 8px;
+}
+
+.section-title {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: 36px;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.section-title em {
+  font-style: italic;
+  color: var(--accent-amber);
+}
+
+.section-subtitle {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--text-secondary);
+  max-width: 380px;
+  text-align: right;
+}
+
+/* === Quick Insights === */
+.insights-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  margin-bottom: 48px;
+}
+
+.insight-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  padding: 24px;
+  position: relative;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+}
+
+.insight-card:hover {
+  border-color: var(--border-emphasis);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.insight-card.alert {
+  border-left: 3px solid var(--accent-red);
+}
+
+.insight-card.warning {
+  border-left: 3px solid var(--accent-orange);
+}
+
+.insight-card.healthy {
+  border-left: 3px solid var(--accent-green);
+}
+
+.insight-card.watching {
+  border-left: 3px solid var(--accent-amber);
+}
+
+.insight-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.insight-title {
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  line-height: 1.3;
+  color: var(--text-primary);
+}
+
+.insight-detail {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.insight-meta {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-subtle);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.1em;
+}
+
+/* === Charts === */
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+}
+
+.chart-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  padding: 32px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+}
+
+.chart-title {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.chart-description {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+}
+
+.chart-container {
+  position: relative;
+  width: 100%;
+  height: 360px;
+}
+
+.chart-container.tall {
+  height: 480px;
+}
+
+/* === Indicator Table === */
+.controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 16px 20px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+}
+
+.filter-group {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.filter-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-right: 8px;
+}
+
+.btn {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  padding: 6px 14px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn:hover {
+  border-color: var(--border-emphasis);
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+}
+
+.btn.active {
+  background: var(--bg-tertiary);
+  border-color: var(--accent-amber);
+  color: var(--accent-amber);
+}
+
+.btn.primary {
+  background: var(--accent-amber);
+  border-color: var(--accent-amber);
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.btn.primary:hover {
+  background: #8c6309;
+  border-color: #8c6309;
+  color: #ffffff;
+}
+
+.search-input {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  padding: 6px 12px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  width: 200px;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--accent-amber);
+}
+
+.indicator-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+}
+
+.indicator-table thead th {
+  background: var(--bg-tertiary);
+  padding: 14px 16px;
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  font-weight: 500;
+  border-bottom: 1px solid var(--border-emphasis);
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+}
+
+.indicator-table thead th:hover {
+  color: var(--text-secondary);
+}
+
+.indicator-table thead th.sortable::after {
+  content: '↕';
+  margin-left: 6px;
+  opacity: 0.4;
+  font-size: 9px;
+}
+
+.indicator-table thead th.sort-asc::after {
+  content: '↑';
+  opacity: 1;
+  color: var(--accent-amber);
+}
+
+.indicator-table thead th.sort-desc::after {
+  content: '↓';
+  opacity: 1;
+  color: var(--accent-amber);
+}
+
+.indicator-table tbody tr {
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background 0.15s;
+}
+
+.indicator-table tbody tr.indicator-row {
+  cursor: pointer;
+}
+
+.indicator-table tbody tr.indicator-row:hover {
+  background: var(--bg-tertiary);
+}
+
+.indicator-table td {
+  padding: 14px 16px;
+  font-size: 12px;
+  vertical-align: top;
+}
+
+.indicator-table td.col-num {
+  font-family: var(--font-mono);
+  color: var(--text-tertiary);
+  width: 48px;
+}
+
+.indicator-table td.col-name {
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.indicator-table td.col-name .indicator-current {
+  display: block;
+  font-weight: 400;
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  font-family: var(--font-mono);
+}
+
+.indicator-table td.col-category {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.05em;
+}
+
+.indicator-table td.col-weight {
+  text-align: center;
+  font-family: var(--font-mono);
+  width: 70px;
+  color: var(--text-secondary);
+}
+
+.indicator-table td.col-score {
+  text-align: center;
+  width: 90px;
+}
+
+.score-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  user-select: none;
+}
+
+.score-pill.red {
+  background: rgba(176, 68, 41, 0.10);
+  color: var(--accent-red);
+  border: 1px solid rgba(176, 68, 41, 0.35);
+}
+
+.score-pill.orange {
+  background: rgba(196, 106, 44, 0.10);
+  color: var(--accent-orange);
+  border: 1px solid rgba(196, 106, 44, 0.35);
+}
+
+.score-pill.yellow {
+  background: rgba(146, 122, 60, 0.10);
+  color: var(--accent-yellow);
+  border: 1px solid rgba(146, 122, 60, 0.35);
+}
+
+.score-pill.green {
+  background: rgba(79, 122, 53, 0.10);
+  color: var(--accent-green);
+  border: 1px solid rgba(79, 122, 53, 0.35);
+}
+
+.score-pill.gray {
+  background: rgba(138, 133, 122, 0.05);
+  color: var(--text-tertiary);
+  border: 1px dashed var(--border-subtle);
+}
+
+/* === Credibility badges (可信度) === */
+.cred-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 2px 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.cred-badge.high {
+  background: rgba(79, 122, 53, 0.10);
+  color: var(--accent-green);
+  border: 1px solid rgba(79, 122, 53, 0.35);
+}
+
+.cred-badge.mid {
+  background: rgba(146, 122, 60, 0.10);
+  color: var(--accent-yellow);
+  border: 1px solid rgba(146, 122, 60, 0.35);
+}
+
+.cred-badge.low {
+  background: rgba(176, 68, 41, 0.10);
+  color: var(--accent-red);
+  border: 1px solid rgba(176, 68, 41, 0.35);
+}
+
+.cred-badge.none {
+  background: rgba(138, 133, 122, 0.05);
+  color: var(--text-tertiary);
+  border: 1px dashed var(--border-subtle);
+}
+
+/* === Reference indicator row === */
+.indicator-table tbody tr.indicator-row.ref-row {
+  background: rgba(138, 133, 122, 0.05);
+}
+
+.indicator-table tbody tr.indicator-row.ref-row td.col-name {
+  color: var(--text-secondary);
+}
+
+.indicator-table tbody tr.indicator-row.ref-row:hover {
+  background: rgba(138, 133, 122, 0.10);
+}
+
+.ref-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--text-tertiary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-subtle);
+  vertical-align: middle;
+  text-transform: uppercase;
+}
+
+/* === Credibility column === */
+.indicator-table td.col-cred {
+  text-align: center;
+  width: 70px;
+}
+
+/* === Detail meta info (as_of / cite / note / fetched_at) === */
+.detail-meta {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.detail-meta h4 {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+
+.detail-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 32px;
+}
+
+.detail-meta-grid .meta-item {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  font-size: 12px;
+}
+
+.detail-meta-grid .meta-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  white-space: nowrap;
+  min-width: 96px;
+}
+
+.detail-meta-grid .meta-value {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-primary);
+  word-break: break-all;
+  flex: 1;
+}
+
+.detail-meta-grid .meta-value.empty {
+  color: var(--text-tertiary);
+}
+
+.detail-meta-grid .meta-value a {
+  color: var(--accent-amber);
+  text-decoration: none;
+}
+
+.indicator-table tbody tr.indicator-row.empty-row {
+  opacity: 0.55;
+}
+
+.indicator-table tbody tr.indicator-row.empty-row:hover {
+  opacity: 1;
+}
+
+.indicator-table td.col-weighted {
+  text-align: center;
+  width: 80px;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.indicator-table td.col-source {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  width: 200px;
+}
+
+/* === Detail panel === */
+.detail-row {
+  display: none;
+  background: var(--bg-tertiary) !important;
+}
+
+.detail-row.expanded {
+  display: table-row;
+}
+
+.detail-content {
+  padding: 24px 32px !important;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.detail-section h4 {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.detail-section p {
+  font-size: 13px;
+  color: var(--text-primary);
+  line-height: 1.6;
+  font-weight: 400;
+}
+
+.detail-edit {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.detail-edit label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.detail-edit input,
+.detail-edit textarea {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  padding: 6px 10px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  width: 100%;
+  resize: vertical;
+}
+
+.detail-edit input:focus,
+.detail-edit textarea:focus {
+  outline: none;
+  border-color: var(--accent-amber);
+}
+
+.thresholds {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  padding: 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.8;
+  color: var(--text-secondary);
+}
+
+/* === Action Plan === */
+.action-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-secondary);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+}
+
+.action-tier {
+  padding: 32px 24px;
+  border-right: 1px solid var(--border-subtle);
+  position: relative;
+}
+
+.action-tier:last-child {
+  border-right: none;
+}
+
+.action-tier-num {
+  font-family: var(--font-serif);
+  font-size: 64px;
+  font-weight: 300;
+  line-height: 1;
+  margin-bottom: 16px;
+  font-style: italic;
+}
+
+.action-tier.t1 .action-tier-num { color: var(--accent-green); }
+.action-tier.t2 .action-tier-num { color: var(--accent-yellow); }
+.action-tier.t3 .action-tier-num { color: var(--accent-orange); }
+.action-tier.t4 .action-tier-num { color: var(--accent-red); }
+
+.action-tier-trigger {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-tertiary);
+  margin-bottom: 12px;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 12px;
+}
+
+.action-tier-action {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 500;
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+.action-tier-detail {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+/* === Methodology === */
+.methodology-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 32px;
+}
+
+.method-block h3 {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 500;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.method-block ul {
+  list-style: none;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.8;
+  font-weight: 400;
+}
+
+.method-block ul li {
+  padding-left: 20px;
+  position: relative;
+  margin-bottom: 8px;
+}
+
+.method-block ul li::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  color: var(--accent-amber);
+  font-family: var(--font-mono);
+}
+
+/* === Data Manager === */
+.data-manager {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.snapshots-list {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+}
+
+.snapshot-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-subtle);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.snapshot-item:last-child {
+  border-bottom: none;
+}
+
+.snapshot-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.snapshot-actions button {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  padding: 4px 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.snapshot-actions button:hover {
+  border-color: var(--accent-amber);
+  color: var(--accent-amber);
+  background: var(--bg-tertiary);
+}
+
+.snapshot-actions button.delete:hover {
+  border-color: var(--accent-red);
+  color: var(--accent-red);
+  background: rgba(176, 68, 41, 0.05);
+}
+
+/* === Footer === */
+.footer {
+  padding: 64px 0;
+  text-align: center;
+  border-top: 1px solid var(--border-emphasis);
+  background: var(--bg-secondary);
+}
+
+.footer-tagline {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--text-secondary);
+  max-width: 600px;
+  margin: 0 auto 24px;
+  line-height: 1.7;
+}
+
+.disclaimer {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.05em;
+  max-width: 800px;
+  margin: 0 auto;
+  line-height: 1.8;
+}
+
+/* === Responsive === */
+@media (max-width: 980px) {
+  .container { padding: 0 20px; }
+  .hero-grid, .charts-grid, .insights-grid, .action-grid, .methodology-grid, .data-manager {
+    grid-template-columns: 1fr;
+  }
+  .insights-grid { gap: 16px; }
+  .hero-left h1 { font-size: 36px; }
+  .score-value { font-size: 64px; }
+  .section-header { flex-direction: column; gap: 12px; align-items: flex-start; }
+  .section-subtitle { text-align: left; }
+  .indicator-table { font-size: 11px; }
+  .indicator-table thead th { padding: 10px 8px; font-size: 9px; }
+  .indicator-table td { padding: 10px 8px; }
+  .indicator-table td.col-source { display: none; }
+  .action-tier { border-right: none; border-bottom: 1px solid var(--border-subtle); }
+  .action-tier:last-child { border-bottom: none; }
+}
+
+/* === Utility === */
+.kbd {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 2px 6px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-emphasis);
+  border-radius: 2px;
+  color: var(--text-secondary);
+}
+
+.text-mono { font-family: var(--font-mono); }
+.text-serif { font-family: var(--font-serif); }
+.text-secondary { color: var(--text-secondary); }
+.text-tertiary { color: var(--text-tertiary); }
+.text-amber { color: var(--accent-amber); }
+
+/* === Modal (批量录入) === */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  backdrop-filter: blur(2px);
+}
+
+.modal-overlay.hidden {
+  display: none;
+}
+
+.modal {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-emphasis);
+  width: 100%;
+  max-width: 1100px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+  padding: 18px 28px;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.modal-close {
+  background: transparent;
+  border: none;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--text-tertiary);
+  padding: 0 4px;
+}
+
+.modal-close:hover {
+  color: var(--text-primary);
+}
+
+.modal-body {
+  padding: 24px 28px;
+  overflow-y: auto;
+  flex: 1 1 auto;
+}
+
+.modal-body.hidden {
+  display: none;
+}
+
+.modal-footer {
+  padding: 14px 28px;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.modal-footer-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.modal-footer-actions.hidden {
+  display: none;
+}
+
+/* === 防御 3:批量录入影响范围摘要 === */
+.batch-summary-banner {
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+}
+.batch-summary-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+.batch-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px 16px;
+}
+.batch-summary-item {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 3px;
+  background: var(--bg-tertiary);
+}
+.batch-summary-item.bs-warn {
+  background: rgba(201, 122, 63, 0.12);
+  border-left: 3px solid #C97A3F;
+}
+.batch-summary-item.bs-err {
+  background: rgba(178, 59, 59, 0.12);
+  border-left: 3px solid #B23B3B;
+}
+.bs-num {
+  font-family: ui-monospace, monospace;
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--text-primary);
+}
+.bs-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.batch-summary-sanitize {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border-default);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+#batch-input-textarea {
+  width: 100%;
+  min-height: 320px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-subtle);
+  padding: 14px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  resize: vertical;
+}
+
+#batch-input-textarea:focus {
+  outline: none;
+  border-color: var(--accent-amber);
+}
+
+.batch-helper {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  margin-top: 8px;
+  letter-spacing: 0.05em;
+}
+
+.batch-error {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: rgba(176, 68, 41, 0.08);
+  border-left: 3px solid var(--accent-red);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--accent-red);
+}
+
+.batch-error.hidden {
+  display: none;
+}
+
+.batch-summary {
+  margin-bottom: 12px;
+  padding: 12px 16px;
+  background: var(--bg-tertiary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.batch-summary .ok { color: var(--accent-green); }
+.batch-summary .warn { color: var(--accent-yellow); }
+.batch-summary .bad { color: var(--accent-red); }
+
+.batch-warn-block {
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: rgba(196, 106, 44, 0.08);
+  border-left: 3px solid var(--accent-orange);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+.batch-warn-block .force-link {
+  color: var(--accent-orange);
+  cursor: pointer;
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.batch-warn-block .force-link.active {
+  color: var(--accent-green);
+}
+
+.batch-preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.batch-preview-table thead th {
+  background: var(--bg-tertiary);
+  padding: 10px 12px;
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  border-bottom: 1px solid var(--border-emphasis);
+  font-weight: 500;
+}
+
+.batch-preview-table tbody td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  vertical-align: top;
+}
+
+.batch-preview-table tr.row-warn td {
+  background: rgba(146, 122, 60, 0.06);
+}
+
+.batch-preview-table tr.row-bad td {
+  background: rgba(176, 68, 41, 0.06);
+}
+
+.batch-preview-table .change-old {
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.batch-preview-table .change-arrow {
+  margin: 0 8px;
+  color: var(--text-tertiary);
+}
+
+.batch-preview-table .change-new {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.batch-preview-table .row-warning-text {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--accent-yellow);
+  margin-top: 2px;
+}
+
+.batch-preview-table .row-error-text {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--accent-red);
+  margin-top: 2px;
+}
+
+.batch-preview-table input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+/* === Toast === */
+.toast {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 28px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--accent-green);
+  color: var(--accent-green);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  z-index: 2000;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.toast.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(-12px);
+}
+.text-red { color: var(--accent-red); }
+.text-green { color: var(--accent-green); }
+
+/* === 阶段 4: 本周解读卡片 === */
+.weekly-insight {
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.weekly-insight .wi-header {
+  align-items: center;
+}
+.wi-toggle {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.wi-toggle:hover { border-color: var(--border-emphasis); color: var(--text-primary); }
+.weekly-insight.collapsed .wi-body { display: none; }
+
+/* 一句话头条 */
+.wi-headline {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.5;
+  padding: 14px 0 14px 16px;
+  border-left: 4px solid;
+  margin-bottom: 20px;
+}
+.wi-headline-critical { color: var(--accent-red);    border-left-color: var(--accent-red); }
+.wi-headline-warning  { color: var(--accent-orange); border-left-color: var(--accent-orange); }
+.wi-headline-info     { color: var(--accent-blue);   border-left-color: var(--accent-blue); }
+.wi-headline-good     { color: var(--accent-green);  border-left-color: var(--accent-green); }
+
+/* 展开/收起按钮 + extra 项默认隐藏 */
+.wi-changes-group:not(.expanded) .wi-change-extra,
+.wi-action-group:not(.expanded) .wi-action-extra {
+  display: none;
+}
+.wi-expand-btn {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-subtle);
+  padding: 4px 10px;
+  margin-top: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.wi-expand-btn:hover {
+  color: var(--accent-amber);
+  border-color: var(--accent-amber);
+}
+
+.wi-empty, .wi-empty-init {
+  color: var(--text-tertiary);
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 14px;
+  padding: 12px 0;
+}
+.wi-empty-sm { padding: 6px 0; font-size: 13px; }
+
+.wi-coverage-alert {
+  padding: 12px 16px;
+  margin-bottom: 24px;
+  border-left: 3px solid;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  background: var(--bg-secondary);
+}
+.wi-alert-warning { border-color: var(--accent-orange); color: var(--accent-orange); }
+.wi-alert-critical { border-color: var(--accent-red); color: var(--accent-red); font-weight: 600; }
+
+.wi-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1.4fr 1.2fr 1.1fr;
+  gap: 32px;
+}
+@media (max-width: 1100px) {
+  .wi-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 640px) {
+  .wi-grid { grid-template-columns: 1fr; }
+}
+
+.wi-block {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  padding: 20px;
+  min-width: 0;
+}
+.wi-h3 {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+}
+.wi-h3 + .wi-h3 { margin-top: 20px; }
+
+/* Block 1: 覆盖率 */
+.wi-coverage-number {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  letter-spacing: -0.01em;
+}
+.wi-coverage-good { color: var(--accent-green); }
+.wi-coverage-warning { color: var(--accent-orange); }
+.wi-coverage-critical { color: var(--accent-red); }
+
+/* Top 3 */
+.wi-top3 {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.wi-top3 li {
+  padding: 10px 12px;
+  background: var(--bg-tertiary);
+  border-left: 2px solid var(--accent-amber);
+}
+.wi-top3-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+.wi-top3-rank {
+  font-family: var(--font-mono);
+  color: var(--accent-amber);
+  font-weight: 600;
+}
+.wi-top3-name { flex: 1; color: var(--text-primary); font-weight: 500; }
+.wi-top3-score {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  color: var(--accent-red);
+  font-weight: 600;
+}
+.wi-top3-formula {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin-bottom: 4px;
+}
+.wi-top3-note {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* Block 2: 本周变化 */
+.wi-changes-group { margin-bottom: 14px; }
+.wi-changes-group:last-child { margin-bottom: 0; }
+.wi-badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  margin-bottom: 6px;
+  letter-spacing: 0.02em;
+}
+.wi-badge-deteriorated { color: var(--accent-red); background: rgba(176, 68, 41, 0.08); }
+.wi-badge-warning      { color: var(--accent-orange); background: rgba(196, 106, 44, 0.08); }
+.wi-badge-improved     { color: var(--accent-green); background: rgba(79, 122, 53, 0.08); }
+.wi-badge-newData      { color: var(--accent-blue); background: rgba(61, 111, 153, 0.08); }
+.wi-badge-lostData     { color: var(--text-tertiary); background: rgba(138, 133, 122, 0.10); }
+
+.wi-change-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.wi-change-list li {
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  padding-left: 8px;
+  border-left: 1px solid var(--border-subtle);
+}
+.wi-change-n { color: var(--text-tertiary); margin-right: 4px; }
+.wi-change-name { color: var(--text-primary); margin-right: 6px; }
+.wi-change-sep { color: var(--text-tertiary); margin: 0 6px; }
+.wi-change-reason { color: var(--text-secondary); }
+.wi-more { color: var(--text-tertiary); font-style: italic; }
+
+.wi-hint {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--text-tertiary);
+  padding: 12px;
+  background: var(--bg-tertiary);
+  border-left: 2px solid var(--accent-amber);
+}
+
+/* Block 3: 主题 */
+.wi-themes {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.wi-theme {
+  padding: 10px 12px;
+  background: var(--bg-tertiary);
+  border-left: 2px solid var(--accent-orange);
+}
+.wi-theme-systemic {
+  background: rgba(176, 68, 41, 0.06);
+  border-left-color: var(--accent-red);
+}
+.wi-theme-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.wi-theme-name {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+.wi-theme-desc {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.wi-theme-indicators {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.wi-theme-indicators li {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.wi-theme-ind-n { color: var(--text-tertiary); margin-right: 4px; }
+.wi-theme-ind-name { color: var(--text-primary); margin-right: 6px; }
+.wi-theme-ind-s { color: var(--accent-orange); }
+
+/* Block 4: 下周行动 */
+.wi-action-group { margin-bottom: 14px; }
+.wi-action-group:last-child { margin-bottom: 0; }
+.wi-action-label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  margin-bottom: 6px;
+}
+.wi-action-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.wi-action-list li {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  padding-left: 8px;
+  border-left: 1px solid var(--border-subtle);
+}
+.wi-action-n { color: var(--text-tertiary); margin-right: 4px; }
+.wi-action-name { color: var(--text-primary); margin-right: 6px; }
+.wi-action-weight { color: var(--accent-amber); font-size: 11px; margin-right: 4px; }
+.wi-action-detail { color: var(--text-secondary); }
+.wi-action-s { color: var(--accent-amber); margin-left: 4px; }
+.wi-action-subtitle {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-bottom: 8px;
+}
+.wi-action-link {
+  color: var(--accent-blue);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--accent-blue);
+}
+.wi-action-link:hover { color: var(--accent-amber); border-color: var(--accent-amber); }
+.wi-action-placeholder {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 12px;
+  color: var(--text-tertiary);
+  padding: 8px 0;
+  border-top: 1px dashed var(--border-subtle);
+  margin-top: 12px;
+}
+
+/* === 阶段 4.1: 指标名 hover/click 解释 tooltip === */
+.indicator-name {
+  cursor: help;
+  border-bottom: 1px dotted transparent;
+  transition: border-color 0.15s, color 0.15s;
+}
+.indicator-name:hover,
+.indicator-name:focus {
+  border-bottom-color: var(--accent-amber);
+  color: var(--accent-amber);
+  outline: none;
+}
+
+.indicator-tooltip {
+  position: absolute;
+  width: 320px;
+  max-width: calc(100vw - 16px);
+  padding: 14px 16px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-emphasis);
+  border-radius: 4px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  z-index: 9999;
+  font-family: var(--font-sans);
+  pointer-events: auto;
+  transition: opacity 0.12s;
+}
+.indicator-tooltip.hidden { display: none; }
+
+.indicator-tooltip .tt-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.indicator-tooltip .tt-num {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--accent-amber);
+  font-weight: 600;
+}
+.indicator-tooltip .tt-name {
+  font-family: var(--font-serif);
+  font-size: 17px;
+  color: var(--text-primary);
+  line-height: 1.3;
+  flex: 1;
+}
+
+.indicator-tooltip .tt-row {
+  margin-bottom: 8px;
+  line-height: 1.55;
+}
+.indicator-tooltip .tt-row:last-child { margin-bottom: 0; }
+.indicator-tooltip .tt-label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.02em;
+  margin-bottom: 2px;
+}
+.indicator-tooltip .tt-text {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.indicator-tooltip .tt-text-mono {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+/* tooltip 顶部小三角(指向锚点) */
+.indicator-tooltip[data-placement="below"]::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 24px;
+  width: 10px;
+  height: 10px;
+  background: var(--bg-tertiary);
+  border-left: 1px solid var(--border-emphasis);
+  border-top: 1px solid var(--border-emphasis);
+  transform: rotate(45deg);
+}
+.indicator-tooltip[data-placement="above"]::before {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 24px;
+  width: 10px;
+  height: 10px;
+  background: var(--bg-tertiary);
+  border-right: 1px solid var(--border-emphasis);
+  border-bottom: 1px solid var(--border-emphasis);
+  transform: rotate(45deg);
+}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="container masthead-inner">
+    <div>
+      <div class="brand">AI 链条系统风险监控</div>
+      <div class="brand-subtitle">SYSTEMIC RISK DASHBOARD · <span id="indicator-count">63</span> INDICATORS</div>
+    </div>
+    <div class="masthead-meta">
+      <span class="live">半自动 · 周二/周五更新</span>
+      <span id="last-updated">最后更新: 未录入</span>
+      <span>v1 规范 · <span id="masthead-count">63</span> 项 · 2026.05.10 锁定</span>
+    </div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="container hero-grid">
+    <div class="hero-left">
+      <h1>当所有人都在赚钱时，<br><em>最危险的事是什么？</em></h1>
+      <p class="hero-tagline">这是基于 68 项前置指标的 AI 链条系统风险评估框架。每一项指标都有明确的数据来源、阈值和权重。综合评分越高，链条断裂的紧迫程度越高。</p>
+    </div>
+    <div class="hero-score-card">
+      <div class="score-label">当前综合风险评分</div>
+      <div style="display: flex; align-items: baseline; gap: 12px;">
+        <span class="score-value" id="overall-score">3.7</span>
+        <span class="score-divider">/</span>
+        <span class="score-max">10.0</span>
+      </div>
+      <div class="score-status">
+        <span class="status-badge" id="status-badge">黄灯 · 早期阶段</span>
+        <span class="score-trend" id="score-trend">基准: 2026.05.09</span>
+      </div>
+      <div class="score-coverage">
+        <span>已录入: <span id="coverage-filled">0</span>/<span id="coverage-total">55</span> 主指标</span>
+        <span id="coverage-warning" class="coverage-warning hidden">⚠ 样本不足，主分仅供参考</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- === 阶段 4: 本周解读卡片 (— 00) === -->
+<section class="section weekly-insight" id="weekly-insight">
+  <div class="container">
+    <div class="section-header wi-header">
+      <div>
+        <div class="section-number">— 00</div>
+        <h2 class="section-title">本周<em>解读</em></h2>
+      </div>
+      <button type="button" class="wi-toggle" onclick="toggleWeeklyInsight()">折叠</button>
+    </div>
+    <div class="wi-body">
+      <div class="wi-empty wi-empty-init">尚未生成解读。请批量录入数据或加载历史快照。</div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <div>
+        <div class="section-number">— 01</div>
+        <h2 class="section-title">关键<em>洞察</em></h2>
+      </div>
+      <div class="section-subtitle">链条最薄弱的几个节点，每周扫一眼即可</div>
+    </div>
+    <div class="insights-grid" id="insights-grid"></div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <div>
+        <div class="section-number">— 02</div>
+        <h2 class="section-title">风险<em>分布</em></h2>
+      </div>
+      <div class="section-subtitle">11 大类别加权评分概览 · Top 15 加权风险节点</div>
+    </div>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-title">11 大类别雷达图</div>
+        <div class="chart-description">越靠外越危险，理想状态是均匀的小圆</div>
+        <div class="chart-container">
+          <canvas id="radar-chart" role="img" aria-label="11 大类别风险评分雷达图"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Top 15 加权风险节点</div>
+        <div class="chart-description">权重 × 评分排序，优先监控这些</div>
+        <div class="chart-container">
+          <canvas id="top-bar-chart" role="img" aria-label="Top 15 加权风险节点条形图"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <div>
+        <div class="section-number">— 03</div>
+        <h2 class="section-title">68 项<em>指标矩阵</em></h2>
+      </div>
+      <div class="section-subtitle">点击任一行展开详情 · 双击数据可编辑 · 表头可排序</div>
+    </div>
+
+    <div class="controls">
+      <div class="filter-group">
+        <span class="filter-label">等级</span>
+        <button class="btn active" data-level="all" onclick="filterByLevel('all', this)">全部 (<span id="count-all">63</span>)</button>
+        <button class="btn" data-level="red" onclick="filterByLevel('red', this)">红灯</button>
+        <button class="btn" data-level="orange" onclick="filterByLevel('orange', this)">橙灯</button>
+        <button class="btn" data-level="yellow" onclick="filterByLevel('yellow', this)">黄灯</button>
+        <button class="btn" data-level="green" onclick="filterByLevel('green', this)">绿灯</button>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">可信度</span>
+        <button class="btn active" data-cred="all" onclick="filterByCredibility('all', this)">全部</button>
+        <button class="btn" data-cred="H" onclick="filterByCredibility('H', this)">🟢 H</button>
+        <button class="btn" data-cred="M" onclick="filterByCredibility('M', this)">🟡 M</button>
+        <button class="btn" data-cred="L" onclick="filterByCredibility('L', this)">🔴 L</button>
+        <button class="btn" data-cred="none" onclick="filterByCredibility('none', this)">⚪ 未获取</button>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">类别</span>
+        <select class="search-input" id="category-filter" onchange="applyFilters()" style="width: 140px;">
+          <option value="all">全部类别</option>
+        </select>
+        <input type="text" class="search-input" id="search-input" placeholder="搜索指标..." oninput="applyFilters()">
+      </div>
+      <div class="filter-group">
+        <button class="btn" onclick="exportCSV()">导出 CSV</button>
+        <button class="btn" id="copy-prompt-btn" onclick="copyAiPrompt(this)">📋 复制提示词</button>
+        <button class="btn primary" onclick="openBatchImport()">批量录入数据 ▾</button>
+        <button class="btn" onclick="saveSnapshot(this)">保存快照</button>
+      </div>
+    </div>
+
+    <table class="indicator-table" id="indicator-table">
+      <thead>
+        <tr>
+          <th class="sortable" data-sort="n">序号</th>
+          <th>指标 / 当前数据</th>
+          <th>类别</th>
+          <th class="sortable" data-sort="w">权重</th>
+          <th class="sortable" data-sort="f">可信度</th>
+          <th class="sortable" data-sort="s">评分</th>
+          <th class="sortable sort-desc" data-sort="weighted">加权</th>
+          <th>主要数据源</th>
+        </tr>
+      </thead>
+      <tbody id="indicator-tbody"></tbody>
+    </table>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <div>
+        <div class="section-number">— 04</div>
+        <h2 class="section-title">行动<em>决策框架</em></h2>
+      </div>
+      <div class="section-subtitle">不是预测顶部，是结构性减仓的科学</div>
+    </div>
+    <div class="action-grid">
+      <div class="action-tier t1">
+        <div class="action-tier-num">01</div>
+        <div class="action-tier-trigger">综合分 &lt; 4.0</div>
+        <div class="action-tier-action">观察</div>
+        <div class="action-tier-detail">维持现有仓位，停止任何 AI 链条新增加仓。每周扫一眼前 5 大红橙节点。</div>
+      </div>
+      <div class="action-tier t2">
+        <div class="action-tier-num">02</div>
+        <div class="action-tier-trigger">综合分 4.0–5.5</div>
+        <div class="action-tier-action">减仓 30%</div>
+        <div class="action-tier-detail">从 Beta 最高的标的开始减——半导体 ETF、CoreWeave、Oracle、英伟达期权。保留核心持仓。</div>
+      </div>
+      <div class="action-tier t3">
+        <div class="action-tier-num">03</div>
+        <div class="action-tier-trigger">综合分 5.5–7.0</div>
+        <div class="action-tier-action">减仓 50–60%</div>
+        <div class="action-tier-detail">进入防御模式。减仓所有循环融资链条标的。考虑买入 SOXX 看跌期权或反向 ETF 对冲。</div>
+      </div>
+      <div class="action-tier t4">
+        <div class="action-tier-num">04</div>
+        <div class="action-tier-trigger">综合分 ≥ 7.0</div>
+        <div class="action-tier-action">清仓</div>
+        <div class="action-tier-detail">全面退出 AI 链条暴露。资金转向防御性资产（公用事业、消费必需、黄金）。等待第二轮入场。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <div>
+        <div class="section-number">— 05</div>
+        <h2 class="section-title">历史<em>快照</em></h2>
+      </div>
+      <div class="section-subtitle">本地存储 · 用于跟踪综合评分随时间的变化</div>
+    </div>
+    <div class="data-manager">
+      <div class="snapshots-list">
+        <h3 style="font-family: var(--font-serif); font-size: 16px; margin-bottom: 16px;">已保存快照</h3>
+        <div id="snapshots-container"></div>
+      </div>
+      <div class="snapshots-list">
+        <h3 style="font-family: var(--font-serif); font-size: 16px; margin-bottom: 16px;">使用说明</h3>
+        <ul style="font-size: 13px; color: var(--text-secondary); line-height: 1.9; font-weight: 400; padding-left: 0; list-style: none;">
+          <li style="margin-bottom: 12px;"><span class="text-amber text-mono" style="font-size: 10px;">①</span> 每个季度末更新一次 68 项指标的最新数据</li>
+          <li style="margin-bottom: 12px;"><span class="text-amber text-mono" style="font-size: 10px;">②</span> 点击「保存快照」将当前评分存入本地</li>
+          <li style="margin-bottom: 12px;"><span class="text-amber text-mono" style="font-size: 10px;">③</span> 通过快照对比，捕捉系统风险的趋势变化</li>
+          <li style="margin-bottom: 12px;"><span class="text-amber text-mono" style="font-size: 10px;">④</span> 数据保存在浏览器本地，清除浏览器数据会丢失</li>
+          <li><span class="text-amber text-mono" style="font-size: 10px;">⑤</span> 建议定期导出 CSV 作为长期备份</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <div>
+        <div class="section-number">— 06</div>
+        <h2 class="section-title">方法<em>论说明</em></h2>
+      </div>
+      <div class="section-subtitle">透明性是分析框架可信度的基础</div>
+    </div>
+    <div class="methodology-grid">
+      <div class="method-block">
+        <h3>评分逻辑</h3>
+        <ul>
+          <li>0-2 分：绿灯，安全状态</li>
+          <li>3-5 分：黄灯，需要关注</li>
+          <li>6-7 分：橙灯，警戒级别</li>
+          <li>8-10 分：红灯，立即行动</li>
+          <li>评分代表「链条断裂的紧迫程度」</li>
+        </ul>
+      </div>
+      <div class="method-block">
+        <h3>权重设计</h3>
+        <ul>
+          <li>权重 5：顶级关键，不可替代</li>
+          <li>权重 4：关键，结构性影响</li>
+          <li>权重 3：重要，需持续跟踪</li>
+          <li>权重 2：辅助，验证用</li>
+          <li>权重 1：参考，背景信息</li>
+        </ul>
+      </div>
+      <div class="method-block">
+        <h3>综合分计算</h3>
+        <ul>
+          <li>加权平均: Σ(权重 × 评分) ÷ Σ(权重)</li>
+          <li>总权重: <span id="total-weight">—</span> (主评分 <span id="main-count">60</span> 项加总)</li>
+          <li>11 大类别独立计算</li>
+          <li>避免单一指标过度影响</li>
+          <li>同时跟踪类别间的均衡度</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container">
+    <p class="footer-tagline">"在华尔街，有两种疯子：一种是在泡沫里跳舞的，一种是在泡沫外等待的。区别是——后一种疯子只需要对一次。"</p>
+    <p class="disclaimer">本仪表盘仅供分析参考，不构成投资建议。所有数据来源于公开信息，但准确性和实时性需自行验证。投资决策应基于个人财务状况和风险承受能力。系统性风险评估存在主观判断成分，使用者需独立思考。版本 v1 · 2026.05.10 锁定 · 68 项指标全交互监控框架</p>
+  </div>
+</footer>
+
+<script>
+// === v1 指标定义 (2026-05-10 鹰眼复审定稿) ===
+// 总计 68 项 = 主评分 60 + 参考 8
+// 字段: n=指标号, nLabel=显示标签(如 "1b"), c=类别, w=权重, ref=是否参考指标
+//      name=名称, src=数据源, srcUrl=数据源主页, thr=阈值, detail=背景, tag=earliest/weekly
+// 数据字段(由批量录入填充): s=评分, cur=当前值, f=可信度(H/M/L), as_of=数据时点,
+//      cite=具体来源URL, note=评分理由, fetched_at=录入日期
+const indicatorsData = [
+  // === 信用市场 (6 项) ===
+  {n:1,c:"信用市场",w:3,name:"Oracle 5 年期 CDS",src:"S&P Global Market Intelligence",srcUrl:"https://www.spglobal.com/marketintelligence",thr:"<150 bps 绿 / 150-200 黄 / 200-250 橙 / >250 红",detail:"信用违约互换利差是最敏感的早期信号。Oracle 在 AI 资本支出周期中承担巨额债务，其 CDS 是市场对其偿债能力担忧的直接体现。v1: W5→W3 (让位给 #1b)。"},
+  {n:1.5,nLabel:"1b",c:"信用市场",w:5,name:"AI 算力公司加权平均 CDS",src:"S&P Global / FINRA TRACE",srcUrl:"https://www.spglobal.com/marketintelligence",thr:"<150 bps 绿 / 150-200 黄 / 200-250 橙 / >250 红",detail:"按 Oracle 30% + CoreWeave 50% + Coherent 20% 加权。三家覆盖云、GPU 租赁、光网三个 AI 算力链条核心环节。任一家数据缺失，该项整体标 L。v1 新增。"},
+  {n:2,c:"信用市场",w:5,name:"CoreWeave 债券价格",src:"FINRA TRACE",srcUrl:"https://www.finra.org/finra-data/fixed-income/corp-and-agency",thr:">95 美分 绿 / 90-95 黄 / 80-90 橙 / <80 红",detail:"CoreWeave 用 GPU 抵押贷款，2026 下半年有大额债务到期，资金链最脆弱的环节。"},
+  {n:3,c:"信用市场",w:5,name:"Oracle 信用评级",src:"S&P/Moody's/Fitch",srcUrl:"https://www.spglobal.com/ratings",thr:"A 及以上 绿 / BBB+ 或负面展望 黄 / 下调一级 橙 / 跌破投资级 红",detail:"Oracle 因 Stargate 项目承担巨额债务。评级下行直接威胁其继续融资的能力。"},
+  {n:4,c:"信用市场",w:3,name:"高收益债利差",src:"FRED 数据库 BAMLH0A0HYM2",srcUrl:"https://fred.stlouisfed.org/series/BAMLH0A0HYM2",thr:"<350 bps 绿 / 350-450 黄 / 450-550 橙 / >550 红",detail:"整体信用市场紧张度。当 HY spread 扩大，AI 链条这种高 Beta 资产受冲击最大。"},
+  {n:5,c:"信用市场",w:4,name:"美 10 年期国债",src:"FRED DGS10",srcUrl:"https://fred.stlouisfed.org/series/DGS10",thr:"<4.5% 绿 / 4.5-5.0% 黄 / 5.0-5.5% 橙 / >5.5% 红",detail:"利率上升直接打击高估值成长股。AI 投资周期建立在低利率假设上，5.5% 已显著破坏估值假设。v1: 红线 5.5% (不是 6%)。"},
+  // === 私募市场 (4 项, #8 删除) ===
+  {n:6,c:"私募市场",w:5,name:"Anthropic 二级估值",src:"Hiive、Forge Global",srcUrl:"https://www.hiive.com",thr:"溢价/平价 绿 / 折价 0-10% 黄 / 10-25% 橙 / >25% 红",detail:"基本面最健康的 AI 公司。如果它都开始降估值，整个故事就破了——这是终极信号。"},
+  {n:7,c:"私募市场",w:5,name:"OpenAI 二级估值",src:"Hiive、Forge Global",srcUrl:"https://www.hiive.com",thr:"溢价/平价 绿 / 折价 0-10% 黄 / 10-25% 橙 / >25% 红",detail:"OpenAI 二级市场的折价是对其收入未达内部目标担忧的最直接定价。"},
+  {n:9,c:"私募市场",w:5,name:"OpenAI 融资进展",src:"The Information、彭博",srcUrl:"https://www.theinformation.com",thr:"按计划 绿 / 延期 ≤3 月 黄 / 延期 >3 月或降估值传闻 橙 / 正式降估值或失败 红",detail:"OpenAI 必须不断融资续命。下一轮中东主权基金的资金是否能按时到位是关键。"},
+  {n:10,c:"私募市场",w:4,name:"中东主权基金 AI 投入",src:"impactalpha.com、CNBC",srcUrl:"https://impactalpha.com",thr:"平稳/上升 绿 / 季度降 0-30% 黄 / 30-40% 橙 / >40% 红",detail:"中东资金是 AI 资本支出的最后买家。他们的承诺金额和到位速度决定生命线。v1: 红线下调到 >40% (不是 >50%)。"},
+  // === 芯片产能 (10 项, 延续到末尾还有 #63 #64) ===
+  {n:11,c:"芯片产能",w:5,name:"台积电月营收增速",src:"台积电官网每月 10 日",srcUrl:"https://www.tsmc.com/english/investorRelations/sales_archive.htm",thr:"vs 4 月均增速差: ≥+5pp 绿 / 0-5pp 黄 / -5-0pp 橙 / <-5pp 红",detail:"AI 链条最早的物理信号。看相对过去 4 个月平均增速的动量，而非绝对水平。v1 口径调整。"},
+  {n:12,c:"芯片产能",w:5,name:"ASML 季度订单",src:"ASML 官网季报",srcUrl:"https://www.asml.com/en/investors/financial-results",thr:"持平/上升 绿 / 环比降 0-30% 黄 / 30-50% 橙 / >50% 红",detail:"光刻机订单代表 18-24 个月后的产能。最前置的资本支出领先指标。"},
+  {n:13,c:"芯片产能",w:4,name:"SK Hynix HBM 营收 QoQ",src:"SK Hynix 季报",srcUrl:"https://www.skhynix.com/eng/ir/IRMain.do",thr:">25% 绿 / 10-25% 黄 / 0-10% 橙 / <0% 红",detail:"HBM 内存价格数据不可得，改用 SK Hynix HBM 营收的季度环比作代理。看动量。v1 口径调整。注意与 #14 互补 (本项看 QoQ 动量, #14 看 YoY)。"},
+  {n:14,c:"芯片产能",w:4,name:"SK 海力士 HBM 收入 YoY",src:"SK 海力士季报",srcUrl:"https://www.skhynix.com/eng/ir/IRMain.do",thr:">100% 绿 / 50-100% 黄 / 20-50% 橙 / <20% 红",detail:"HBM 全球老大。年度同比反映 AI 训练芯片真实需求。"},
+  {n:15,c:"芯片产能",w:3,name:"美光 DRAM 收入",src:"美光季报",srcUrl:"https://investors.micron.com",thr:">50% 绿 / 20-50% 黄 / 0-20% 橙 / 同比下滑 红",detail:"美光是 HBM 第二梯队。其市场份额变化反映竞争格局。"},
+  {n:16,c:"芯片产能",w:3,name:"台积电 CoWoS 产能利用率",src:"TrendForce、台积电",srcUrl:"https://www.trendforce.com",thr:">95% 绿 / 90-95% 黄 / 80-90% 橙 / <80% 红",detail:"AI 芯片的物理瓶颈。所有 GPU/TPU 都需要 CoWoS 封装。v1: W5→W3 (数据更新滞后)。"},
+  {n:17,c:"芯片产能",w:5,name:"H100 一年期租金",src:"SemiAnalysis 月报",srcUrl:"https://newsletter.semianalysis.com",thr:">$2.50/h 绿 / $2.00-2.50 黄 / $1.50-2.00 橙 / <$1.50 红",detail:"GPU 租赁价格是 GPU 残值的真实反映，决定 GPU 抵押贷款金融工程的稳定性。"},
+  {n:18,c:"芯片产能",w:5,name:"H100/H200 折扣率",src:"compute.exchange / SemiAnalysis",srcUrl:"https://compute.exchange",thr:"H100/H200 ≥60% 绿 / 50-60% 黄 / 40-50% 橙 / <40% 红",detail:"H100 二手价相对 H200 同期新品价的折扣率。绝对二手价随通胀和上一代变化大，用相对值更稳。v1 口径调整。"},
+  {n:19,c:"芯片产能",w:4,name:"GPU 等待时间",src:"SemiAnalysis",srcUrl:"https://newsletter.semianalysis.com",thr:">6 月 绿 / 4-6 月 黄 / 2-4 月 橙 / <2 月 红",detail:"等待时间反映需求强度。突然缩短意味着 6 个月前订单在减少。"},
+  {n:20,c:"芯片产能",w:5,name:"Broadcom AI 收入占比",src:"Broadcom 季报",srcUrl:"https://investors.broadcom.com",thr:"同比 >100% 绿 / 60-100% 黄 / 30-60% 橙 / <30% 红",detail:"ASIC 替代 GPU 趋势的代理变量。如果 Broadcom 增速远超英伟达，市场将重新定价垄断。"},
+  // === 英伟达 (4 项, #25 删除) ===
+  {n:21,c:"英伟达",w:5,name:"英伟达 DSO",src:"sec.gov 10-Q",srcUrl:"https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0001045810",thr:"<50 天 绿 / 50-60 黄 / 60-70 橙 / 70-80 红 / >80 红高",detail:"应收账款周转天数。客户付款变慢可能资金紧张。"},
+  {n:22,c:"英伟达",w:5,name:"英伟达对循环客户应收",src:"英伟达 10-K 客户附注",srcUrl:"https://investor.nvidia.com",thr:"双因子取较严: A=前2大占应收比 / B=应收增速 vs 营收增速差。绿 A<35% 且 B≤0 / 黄 A 35-45% 或 B 0-25% / 橙 A 45-55% 或 B 25-50% / 红 A ≥55% 或 B >50%",tag:"earliest",detail:"循环融资真实敞口。应收账款增速远超营收增速是危险信号——英伟达可能在间接资助客户。v1: 双因子取较严 (任一指标触发更高档，直接采用更高档分数)。"},
+  {n:23,c:"英伟达",w:4,name:"英伟达期权 P/C 比率",src:"OpenInsider、Yahoo 期权",srcUrl:"https://openinsider.com",thr:"<0.6 绿 / 0.6-0.9 黄 / 0.9-1.2 橙 / >1.2 红",detail:"聪明钱定位。Burry/Goldman 等对冲基金的期权头寸是市场情绪转向的早期信号。"},
+  {n:24,c:"英伟达",w:4,name:"AMD 数据中心收入",src:"AMD 季报",srcUrl:"https://ir.amd.com",thr:"同比 >80% 绿 / 40-80% 黄 / 20-40% 橙 / <20% 红",detail:"AMD 在数据中心市场份额反映对英伟达定价权的侵蚀。"},
+  // === 系统ODM (5 项) ===
+  {n:26,c:"系统ODM",w:3,name:"Super Micro 订单",src:"季报",srcUrl:"https://ir.supermicro.com",thr:"环比 >0% 绿 / 0--10% 黄 / -10--20% 橙 / <-20% 红",detail:"AI 服务器集成商，对 GPU 需求最敏感。"},
+  {n:27,c:"系统ODM",w:3,name:"Dell ISG 同比增速",src:"Dell 季报",srcUrl:"https://investors.delltechnologies.com",thr:"同比 >25% 绿 / 10-25% 黄 / 0-10% 橙 / 同比下滑 红",detail:"Dell ISG (Infrastructure Solutions Group) 同比增速反映企业 AI 服务器需求。v1: 原 backlog 不公开，改用披露口径。"},
+  {n:28,c:"系统ODM",w:4,name:"鸿海 AI 服务器收入",src:"鸿海月度公告",srcUrl:"https://www.foxconn.com/en-us/investors",thr:"同比 >50% 绿 / 30-50% 黄 / 10-30% 橙 / <10% 红",detail:"鸿海是英伟达 AI 服务器主要组装商。月度营收是最快的产业链信号。"},
+  {n:29,c:"系统ODM",w:4,name:"广达月度营收",src:"台股每月公告",srcUrl:"https://www.quantatw.com/Quanta/english/Investor",thr:"同比 >40% 绿 / 30-40% 黄 / 10-30% 橙 / <10% 红",detail:"广达是 OpenAI、Meta 等的 AI 服务器供应商。台股月度披露速度优势。"},
+  {n:30,c:"系统ODM",w:3,name:"纬创月度营收",src:"台股每月公告",srcUrl:"https://www.wistron.com/en/Investors",thr:"同比 >40% 绿 / 30-40% 黄 / 10-30% 橙 / <10% 红",detail:"纬创是 AI 服务器二级供应商。其营收变化反映整体 ODM 行业。"},
+  // === 网络基建 (5 项) ===
+  {n:31,c:"网络基建",w:3,name:"Arista Networks",src:"Arista 季报",srcUrl:"https://investors.arista.com",thr:"同比 >30% 绿 / 20-30% 黄 / 10-20% 橙 / <10% 红",detail:"数据中心交换机龙头。AI 网络基建的指示性公司。"},
+  {n:32,c:"网络基建",w:4,name:"中际旭创",src:"沪深公告",srcUrl:"http://www.innolight.com",thr:"同比 >80% 绿 / 40-80% 黄 / 20-40% 橙 / <20% 红",detail:"光模块全球龙头。月度披露速度优势，是非常前置的信号。"},
+  {n:33,c:"网络基建",w:3,name:"Coherent 光模块",src:"Coherent 季报",srcUrl:"https://investors.coherent.com",thr:"同比 >50% 绿 / 25-50% 黄 / 10-25% 橙 / <10% 红",detail:"高端光模块供应商。北美 AI 网络的主要受益者。"},
+  {n:34,c:"网络基建",w:3,name:"Vertiv 订单",src:"Vertiv 季报",srcUrl:"https://investors.vertiv.com",thr:"订单同比 >40% 绿 / 20-40% 黄 / 10-20% 橙 / <10% 红",detail:"数据中心电源/制冷系统。基建强度的物理代理。"},
+  {n:35,c:"网络基建",w:3,name:"Eaton 数据中心",src:"Eaton 季报",srcUrl:"https://www.eaton.com/us/en-us/company/investor-relations.html",thr:"同比 >30% 绿 / 15-30% 黄 / 5-15% 橙 / <5% 红",detail:"电源管理系统供应商。其数据中心业务是 AI 投资的领先指标。"},
+  // === 电力基建 (5 项, 全 ref=true 不参与综合分) ===
+  {n:36,c:"电力基建",w:2,ref:true,name:"维州 Dominion 队列",src:"Dominion Energy 公告",srcUrl:"https://www.dominionenergy.com",thr:"队列净增 / 增长放缓 / 1-2 起取消 / ≥3 起或大单(>500MW)取消",detail:"数据中心电力签约需要 18-24 个月。出现取消意味着两年后产能过剩。v1: 滞后做先行不合适，转参考。"},
+  {n:37,c:"电力基建",w:2,ref:true,name:"Texas ERCOT 签约",src:"ERCOT 公告",srcUrl:"https://www.ercot.com",thr:"季度大用户 >2GW 绿 / 1-2GW 黄 / 0.5-1GW 橙 / <0.5GW 红",detail:"得州电力市场是 AI 数据中心新热点。其新增大用户队列反映需求。"},
+  {n:38,c:"电力基建",w:2,ref:true,name:"Constellation 长期合同",src:"Constellation 季报",srcUrl:"https://investors.constellationenergy.com",thr:"季度: ≥1 起新签 绿 / 0 起 黄 / 1 起取消 橙 / ≥2 起取消 红",detail:"美国最大核电运营商。其与 Microsoft、Meta 等的长期合同反映对 AI 持续需求的判断。"},
+  {n:39,c:"电力基建",w:2,ref:true,name:"Equinix 入住率",src:"Equinix 季报",srcUrl:"https://investor.equinix.com",thr:"≥85% 绿 / 80-85% 黄 / 75-80% 橙 / <75% 红",detail:"全球最大数据中心运营商。入住率是物业层最直接的需求信号。"},
+  {n:40,c:"电力基建",w:2,ref:true,name:"PPA 签约速度",src:"latitudemedia.com、SEC",srcUrl:"https://www.latitudemedia.com",thr:"季度: 持平/上升 绿 / 减 0-50% 黄 / 50-75% 橙 / 出现取消或减 >75% 红",detail:"购电协议是 12-24 个月的领先指标。最前置的物理信号，但反应慢，转参考。"},
+  // === 模型公司 (11 项: 8 主 + 3 ref) ===
+  {n:41,c:"模型公司",w:5,name:"Anthropic 收入增速",src:"Sacra、媒体披露",srcUrl:"https://sacra.com/c/anthropic",thr:"同比倍数 >10x 绿 / 5-10x 黄 / 3-5x 橙 / <3x 红",detail:"基本面最健康的 AI 公司。Anthropic 增速是整个 AI 行业的火车头。"},
+  {n:42,c:"模型公司",w:5,name:"Anthropic 烧钱率",src:"WSJ、Fortune",srcUrl:"https://www.wsj.com",thr:"亏损/收入 <50% 绿 / 50-75% 黄 / 75-100% 橙 / >100% 红",detail:"烧钱率/收入比下降意味着 Anthropic 接近自我造血。这是健康信号。"},
+  {n:43,c:"模型公司",w:2,ref:true,name:"Anthropic 企业 NRR",src:"行业基准 SaaS NRR",srcUrl:"https://www.feinternational.com",thr:">120% 绿 / 110-120% 黄 / 100-110% 橙 / <100% 红",detail:"客户留存与扩张率。NRR 公开渠道极少披露。v1: 数据可得性低，转参考。"},
+  {n:44,c:"模型公司",w:5,name:"OpenAI 收入增速",src:"WSJ 报道、Sacra",srcUrl:"https://sacra.com/c/openai",thr:"同比倍数 >3x 绿 / 2-3x 黄 / 1.5-2x 橙 / <1.5x 红",detail:"OpenAI 多次未达内部增长目标，链条最薄弱的一环。"},
+  {n:45,c:"模型公司",w:5,name:"OpenAI 烧钱率",src:"内部文件、Fortune",srcUrl:"https://fortune.com",thr:"亏损/收入 <50% 绿 / 50-75% 黄 / 75-100% 橙 / >100% 红",detail:"OpenAI 烧钱率反映其能否走出依赖外部融资的循环。"},
+  {n:46,c:"模型公司",w:5,name:"企业 AI 市场总规模增速",src:"Gartner、IDC、PitchBook",srcUrl:"https://www.gartner.com",thr:"同比 TAM 增速 >100% 绿 / 50-100% 黄 / 25-50% 橙 / <25% 红",detail:"企业 AI 市场总规模年增速。v1: 原口径 (OpenAI 份额) 拆到 #46b。"},
+  {n:46.5,nLabel:"46b",c:"模型公司",w:2,ref:true,name:"企业 AI 份额集中度",src:"Gartner、IDC、PitchBook",srcUrl:"https://www.gartner.com",thr:"OpenAI 份额 ≥25% 绿 / 20-25% 黄 / 15-20% 橙 / <15% 红",detail:"以 OpenAI 份额为代理。从 50% 跌到 25% 是结构性转折。v1: 拆分自 #46，转参考。"},
+  {n:47,c:"模型公司",w:2,ref:true,name:"ChatGPT 流量份额",src:"Similarweb",srcUrl:"https://www.similarweb.com",thr:"≥70% 绿 / 60-70% 黄 / 50-60% 橙 / <50% 红",detail:"消费者市场份额。一年从 86.7% 跌到 64.5% 反映多模型崛起。v1: Similarweb 噪音大，转参考。"},
+  {n:48,c:"模型公司",w:5,name:"中美 SWE-Bench 对比",src:"benchlm.ai",srcUrl:"https://benchlm.ai",thr:"美闭源领先 ≥10pp 绿 / 5-10pp 黄 / 0-5pp 橙 / 中国反超 红",detail:"中国开源模型在 SWE-Bench 已经接近美国闭源前沿。如果反超，整个美国 AI 估值溢价就破。"},
+  {n:49,c:"模型公司",w:4,name:"前沿基准 ARC-AGI-3",src:"arcprize.org",srcUrl:"https://arcprize.org",thr:"季度 ≥10pp 绿 / 5-10pp 黄 / 半年 <5pp 橙 / 半年 0pp 或退步 红",detail:"如果 ARC-AGI-3 长期没有进展，意味着 Scaling Law 接近极限，整个 AI 资本支出故事的根基动摇。"},
+  {n:50,c:"模型公司",w:3,name:"顶级研究员离职(事件型)",src:"LinkedIn、媒体披露",srcUrl:"https://www.linkedin.com",thr:"无关键人物 绿 / 非核心研究员 黄 / 研究负责人级别 橙 / Co-founder/Chief Scientist 红",detail:"顶级 AI 研究员公开离职/跳槽事件。v1: 改为按级别分档：级别越高代表的信号越强。"},
+  // === 应用层 (5 项) ===
+  {n:51,c:"应用层",w:4,name:"Salesforce Agentforce ARR",src:"Salesforce 季报",srcUrl:"https://investor.salesforce.com",thr:"同比 ≥150% 绿 / 80-150% 黄 / 30-80% 橙 / <30% 红",detail:"企业 AI 真实付费的代理变量，反映企业 AI 是否真在产生价值。"},
+  {n:52,c:"应用层",w:4,name:"ServiceNow Now Assist",src:"ServiceNow 季报",srcUrl:"https://www.servicenow.com/company/investor-relations.html",thr:"同比 ≥100% 绿 / 50-100% 黄 / 20-50% 橙 / <20% 红",detail:"工作流自动化 AI 平台。其 ARR 增长反映 AI 在企业核心流程的渗透。"},
+  {n:53,c:"应用层",w:4,name:"Microsoft Copilot ARR(事件型)",src:"Microsoft 季报",srcUrl:"https://www.microsoft.com/en-us/investor",thr:"披露具体数字 绿 / 仅披露百分比 黄 / 减少披露 橙 / 公开下调指引 红",detail:"全球最大 AI 应用收入流。Microsoft 减少披露是个微妙信号。"},
+  {n:54,c:"应用层",w:3,name:"AI 应用层融资速度",src:"PitchBook、CB Insights",srcUrl:"https://pitchbook.com",thr:"季度环比 ±20% 内 绿 / 减 20-35% 黄 / 35-50% 橙 / >50% 红",detail:"AI 应用层创业公司的融资节奏。骤减意味着风险偏好下降。"},
+  {n:55,c:"应用层",w:3,name:"财富 500 AI 使用率",src:"Gartner、IDC",srcUrl:"https://www.gartner.com",thr:"≥90% 绿 / 80-90% 黄 / 70-80% 橙 / <70% 红",detail:"广度 vs 深度的差距是关键。听起来高但真正深度集成不到 15%。"},
+  // === 宏观情绪 (6 项, #59 删除) ===
+  {n:56,c:"宏观情绪",w:5,name:"软银股价",src:"Yahoo Finance 9984.T",srcUrl:"https://finance.yahoo.com/quote/9984.T",thr:"周变动: 涨/持平 绿 / 跌 0-10% 黄 / 10-20% 橙 / >20% 红",tag:"weekly",detail:"OpenAI 公开代理。软银的股价就是 OpenAI 的股价。最直观的信心指标。每周必查 (不只周二/周五)。"},
+  {n:57,c:"宏观情绪",w:3,name:"美元兑人民币",src:"任何财经网站",srcUrl:"https://www.investing.com/currencies/usd-cny",thr:"<7.2 绿 / 7.2-7.5 黄 / 7.5-7.8 橙 / >7.8 红",detail:"汇率。中国 AI 厂商的成本优势在贬值时放大，对美国 AI 公司利润的冲击。"},
+  {n:58,c:"宏观情绪",w:4,name:"七巨头股价分化",src:"对比 QQEW QQQ",srcUrl:"https://www.invesco.com/qqq",thr:"季度收益差: QQEW 落后 绿 / 跑赢 0-5pp 黄 / 5-10pp 橙 / >10pp 红",detail:"等权 vs 市值加权指数。如果等权跑赢，意味着资金在抛售七巨头转向其他。"},
+  {n:60,c:"宏观情绪",w:5,name:"Microsoft Azure capex 指引",src:"Microsoft 季报",srcUrl:"https://www.microsoft.com/en-us/investor",thr:"上调 绿 / 持平 黄 / 下调 0-10% 橙 / 下调 >10% 或不再披露 红",detail:"Azure 资本支出指引是超大规模云厂商对 AI 需求强度判断的最直接表态。任何下调都是行业级别的需求拐点信号。"},
+  {n:61,c:"宏观情绪",w:4,name:"AI 主题 ETF 资金流",src:"ETF.com、Bloomberg ETF flow",srcUrl:"https://www.etf.com",thr:"月净流入 绿 / 单月净流出 黄 / 连续 2 月净流出 橙 / 连续 ≥3 月 红",detail:"AI 主题 ETF (BOTZ、CHAT、AIQ、ROBO) 月度净流入是散户/机构对 AI 主题信心的代理。"},
+  {n:62,c:"宏观情绪",w:5,name:"标普 500 AI 集中度(双向告警)",src:"S&P 官网、SlickCharts",srcUrl:"https://www.slickcharts.com/sp500",thr:"30-33% 绿 / 上方 33-35% 或下方 25-30% 黄 / >35% 橙 / >37% 红",detail:"双向告警。Mag 7 占 SPX 比 30-33% 健康；33-35% 或 25-30% 黄 (后者为黄/逆向)；>35% 橙；>37% 红。v1: <25% 在 v0 设计为红，调整为黄/逆向 (评分 4-5)。"},
+  // === 芯片产能 (补 2 项) ===
+  {n:63,c:"芯片产能",w:4,name:"英伟达成品库存周转天数",src:"英伟达 10-Q",srcUrl:"https://investor.nvidia.com",thr:"<60 天 绿 / 60-90 黄 / 90-120 橙 / >120 红",detail:"库存堆积是需求拐点最确定的信号。比订单下滑更滞后但更确定。计算公式: (期末成品库存 / 季度成本) × 90。"},
+  {n:64,c:"芯片产能",w:3,name:"HBM 渠道库存",src:"TrendForce 月报",srcUrl:"https://www.trendforce.com",thr:"严重短缺 绿 / 紧张 黄 / 正常 橙 / 过剩 红",detail:"HBM 是 AI 训练芯片最稀缺的组件。从「短缺」到「累库」是 AI 训练需求见顶最直接的物理证据。"},
+  // === 美股结构脆弱性 (4 项) ===
+  {n:65,c:"美股结构脆弱性",w:5,name:"标普新高日 breadth(双因子取较严)",src:"Schwab Research / Bespoke / 自算",srcUrl:"https://www.schwab.com/learn/story/stock-market-update",thr:"A=SPX>200DMA%, B=SPX 触52W低%; 取较严: A≥70%且B<2% 绿 / A 60-70%或B 2-4% 黄 / A 50-60%或B 4-6% 橙 / A<50%或B>6% 红",tag:"earliest",detail:"SPX 成分股中位于 200 日均线之上的比例(A)与触 52 周新低的比例(B),取较严档。1998-2000 是历史上唯一在 SPX 新高日 A<60% 的先例。领先大顶 3-6 个月。"},
+  {n:66,c:"美股结构脆弱性",w:5,name:"FINRA 保证金债务 / GDP",src:"FINRA + BEA",srcUrl:"https://www.finra.org/investors/learn-to-invest/advanced-investing/margin-statistics",thr:"<2% 绿 / 2-3% 黄 / 3-4% 橙 / >4% 红",detail:"保证金债务占名义 GDP 比例。50 年中位数 1.5%,2007 顶部 2.9%,2021 顶部 3.4%,2026 初创纪录 4.1%。1929/1987/2000/2007/2021 大顶前均创纪录。"},
+  {n:67,c:"美股结构脆弱性",w:4,name:"Mag 7 盈利占 SP500 总盈利比",src:"FactSet Earnings Insight",srcUrl:"https://insight.factset.com/topic/earnings",thr:"<20% 绿 / 20-28% 黄 / 28-35% 橙 / >35% 红",detail:"Mag 7 (MSFT/AAPL/NVDA/GOOG/AMZN/META/TSLA) 盈利占 SP500 总盈利比。历史均值 ~10%,近年大幅抬升。指数级集中度,一旦基本面溢价瓦解会冲击整个指数。"},
+  {n:68,c:"美股结构脆弱性",w:4,name:"半导体板块占 SPX 权重",src:"slickcharts + GICS",srcUrl:"https://www.slickcharts.com/sp500",thr:"<10% 绿 / 10-14% 黄 / 14-18% 橙 / >18% 红",detail:"半导体子板块占 S&P 500 总市值比。1999 IT 板块 33%、2007 金融 22%、2014 能源 13% 都是子板块极端集中度先例。目前半导体接近 16% 已是警戒位。"},
+  // === 宏观情绪 (补 1 项) ===
+  {n:69,c:"宏观情绪",w:3,name:"5 年通胀预期(双源取较严)",src:"UMich + FRED T5YIE",srcUrl:"https://fred.stlouisfed.org/series/T5YIE",thr:"A=UMich 5Y, B=FRED T5YIE; 取较严: 两者均<2.5% 绿 / 任一 2.5-3.0% 黄 / 任一 3.0-3.5% 橙 / 任一>3.5% 红",detail:"密歇根大学 5 年通胀预期调查(A)与 5 年美债盈亏平衡通胀率(B)取较严档。脱锚是沃什“被动加息”触发线。"},
+].map(i => Object.assign({s:null, cur:"未获取", ref:false, f:null, as_of:null, cite:null, note:null, fetched_at:null}, i));
+
+let currentLevel = 'all';
+let currentSort = { col: 'weighted', dir: 'desc' };
+let currentSearch = '';
+let currentCategory = 'all';
+let currentCredibility = 'all';
+
+function getColorClass(score) {
+  if (score === null || score === undefined) return 'gray';
+  if (score >= 8) return 'red';
+  if (score >= 6) return 'orange';
+  if (score >= 3) return 'yellow';
+  return 'green';
+}
+
+function getColorLabel(score) {
+  if (score === null || score === undefined) return '⚪';
+  if (score >= 8) return '红';
+  if (score >= 6) return '橙';
+  if (score >= 3) return '黄';
+  return '绿';
+}
+
+function getCredibilityBadge(f) {
+  if (f === 'H') return { cls: 'high', label: '🟢 H' };
+  if (f === 'M') return { cls: 'mid',  label: '🟡 M' };
+  if (f === 'L') return { cls: 'low',  label: '🔴 L' };
+  return { cls: 'none', label: '⚪' };
+}
+
+function credibilityRank(f) {
+  if (f === 'H') return 3;
+  if (f === 'M') return 2;
+  if (f === 'L') return 1;
+  return 0;
+}
+
+function calculateOverallScore() {
+  let weightedSum = 0;
+  let weightTotal = 0;
+  indicatorsData.forEach(i => {
+    if (i.ref) return;
+    if (i.s === null || i.s === undefined) return;
+    weightedSum += i.w * i.s;
+    weightTotal += i.w;
+  });
+  if (weightTotal === 0) return '—';
+  return (weightedSum / weightTotal).toFixed(2);
+}
+
+function calculateTotalWeight() {
+  return indicatorsData.filter(i => !i.ref).reduce((sum, i) => sum + i.w, 0);
+}
+
+function getMainCount() {
+  return indicatorsData.filter(i => !i.ref).length;
+}
+
+function getFilledMainCount() {
+  return indicatorsData.filter(i => !i.ref && i.s !== null && i.s !== undefined).length;
+}
+
+function getLatestFetchedAt() {
+  const dates = indicatorsData.map(i => i.fetched_at).filter(Boolean);
+  if (dates.length === 0) return null;
+  return dates.slice().sort().pop();
+}
+
+function getStatusBadge(score) {
+  if (score >= 7.0) return { label: '红灯 · 立即行动', color: 'var(--accent-red)', rgb: '176, 68, 41' };
+  if (score >= 5.5) return { label: '橙灯 · 进入防御', color: 'var(--accent-orange)', rgb: '196, 106, 44' };
+  if (score >= 4.0) return { label: '黄灯 · 减仓 30%', color: 'var(--accent-yellow)', rgb: '146, 122, 60' };
+  return { label: '黄灯 · 早期阶段', color: 'var(--accent-amber)', rgb: '168, 120, 12' };
+}
+
+function calculateCategoryScores() {
+  const categoryScores = {};
+  const categoryWeights = {};
+  indicatorsData.forEach(i => {
+    if (i.s == null) return;
+    if (!(i.c in categoryScores)) {
+      categoryScores[i.c] = 0;
+      categoryWeights[i.c] = 0;
+    }
+    categoryScores[i.c] += i.w * i.s;
+    categoryWeights[i.c] += i.w;
+  });
+  const result = {};
+  Object.keys(categoryScores).forEach(c => {
+    result[c] = categoryScores[c] / categoryWeights[c];
+  });
+  return result;
+}
+
+function renderInsights() {
+  const grid = document.getElementById('insights-grid');
+  // 过滤掉 s 为 null 的项，避免 NaN 排序与 "null" 文字渲染
+  const filled = indicatorsData.filter(i => i.s != null);
+  if (filled.length === 0) {
+    grid.innerHTML = `
+      <div class="insight-card" style="grid-column: 1 / -1; text-align: center; padding: 48px;">
+        <div class="insight-label">暂无数据</div>
+        <div class="insight-title" style="margin-top: 8px;">请通过「批量录入数据」导入本周指标后查看洞察</div>
+      </div>`;
+    return;
+  }
+
+  // 最危险节点：加权分最高
+  const sorted = [...filled].sort((a, b) => (b.w * b.s) - (a.w * a.s));
+  const mostDangerous = sorted[0];
+
+  // 最早信号：tag === 'earliest'，找不到则取应收账款类指标
+  const earliestSignal = filled.find(i => i.tag === 'earliest') || sorted.find(i => i.c === '英伟达' && i.s >= 6) || sorted[1] || sorted[0];
+
+  // 基本面最健康：评分最低（同分时取权重最高的）
+  const healthiest = [...filled].sort((a, b) => a.s - b.s || b.w - a.w)[0];
+
+  // 最值得每周跟踪：tag === 'weekly'，找不到则取宏观情绪类高分指标
+  const watching = filled.find(i => i.tag === 'weekly') || sorted.find(i => i.c === '宏观情绪') || sorted[0];
+
+  grid.innerHTML = `
+    <div class="insight-card alert">
+      <div class="insight-label">最危险节点</div>
+      <div class="insight-title"><span class="indicator-name" data-n="${escapeHtml(String(mostDangerous.n))}" tabindex="0">${escapeHtml(mostDangerous.name)}</span></div>
+      <div class="insight-detail">${escapeHtml(String(mostDangerous.cur))}</div>
+      <div class="insight-meta">权重 ${mostDangerous.w} × 评分 ${mostDangerous.s} = ${mostDangerous.w * mostDangerous.s}</div>
+    </div>
+    <div class="insight-card warning">
+      <div class="insight-label">最早信号</div>
+      <div class="insight-title"><span class="indicator-name" data-n="${escapeHtml(String(earliestSignal.n))}" tabindex="0">${escapeHtml(earliestSignal.name)}</span></div>
+      <div class="insight-detail">${escapeHtml(String(earliestSignal.cur))}</div>
+      <div class="insight-meta">权重 ${earliestSignal.w} × 评分 ${earliestSignal.s} = ${earliestSignal.w * earliestSignal.s}</div>
+    </div>
+    <div class="insight-card healthy">
+      <div class="insight-label">基本面最健康</div>
+      <div class="insight-title"><span class="indicator-name" data-n="${escapeHtml(String(healthiest.n))}" tabindex="0">${escapeHtml(healthiest.name)}</span></div>
+      <div class="insight-detail">${escapeHtml(String(healthiest.cur))}</div>
+      <div class="insight-meta">权重 ${healthiest.w} × 评分 ${healthiest.s} = ${healthiest.w * healthiest.s}</div>
+    </div>
+    <div class="insight-card watching">
+      <div class="insight-label">最值得每周跟踪</div>
+      <div class="insight-title"><span class="indicator-name" data-n="${escapeHtml(String(watching.n))}" tabindex="0">${escapeHtml(watching.name)}</span></div>
+      <div class="insight-detail">${escapeHtml(String(watching.cur))}</div>
+      <div class="insight-meta">权重 ${watching.w} × 评分 ${watching.s} = ${watching.w * watching.s}</div>
+    </div>
+  `;
+}
+
+function renderRadar() {
+  const ctx = document.getElementById('radar-chart');
+  const cats = calculateCategoryScores();
+  const order = ['信用市场','私募市场','芯片产能','英伟达','系统ODM','网络基建','电力基建','模型公司','应用层','宏观情绪','美股结构脆弱性'];
+  const labels = order;
+  const data = order.map(c => cats[c] || 0);
+
+  if (window.radarChart) window.radarChart.destroy();
+  window.radarChart = new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels,
+      datasets: [{
+        label: '类别加权评分',
+        data,
+        backgroundColor: 'rgba(168, 120, 12, 0.18)',
+        borderColor: '#a8780c',
+        borderWidth: 1.5,
+        pointBackgroundColor: '#a8780c',
+        pointRadius: 4,
+        pointHoverRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+          titleColor: '#1a1a1a',
+          bodyColor: '#1a1a1a',
+          borderColor: 'rgba(26, 26, 26, 0.18)',
+          borderWidth: 1,
+          callbacks: {
+            label: (ctx) => {
+              const v = ctx.parsed.r;
+              return `评分: ${(typeof v === 'number' && Number.isFinite(v)) ? v.toFixed(2) : '—'} / 10`;
+            }
+          }
+        }
+      },
+      scales: {
+        r: {
+          beginAtZero: true,
+          min: 0,
+          max: 10,
+          ticks: {
+            stepSize: 2,
+            color: '#8a857a',
+            backdropColor: 'transparent',
+            font: { size: 10, family: 'IBM Plex Mono' }
+          },
+          grid: { color: 'rgba(26, 26, 26, 0.08)' },
+          angleLines: { color: 'rgba(26, 26, 26, 0.08)' },
+          pointLabels: {
+            color: '#5a5550',
+            font: { size: 11, family: 'IBM Plex Sans SC' }
+          }
+        }
+      }
+    }
+  });
+}
+
+function renderTopBar() {
+  const ctx = document.getElementById('top-bar-chart');
+  const top15 = [...indicatorsData]
+    .filter(i => i.s != null)
+    .map(i => ({ ...i, weighted: i.w * i.s }))
+    .sort((a, b) => b.weighted - a.weighted)
+    .slice(0, 15);
+
+  const colors = top15.map(i => {
+    if (i.s >= 8) return '#b04429';
+    if (i.s >= 6) return '#c46a2c';
+    if (i.s >= 3) return '#927a3c';
+    return '#4f7a35';
+  });
+
+  if (window.topBarChart) window.topBarChart.destroy();
+  window.topBarChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: top15.map(i => i.name),
+      datasets: [{
+        label: '加权风险',
+        data: top15.map(i => i.weighted),
+        backgroundColor: colors,
+        borderRadius: 2,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+          titleColor: '#1a1a1a',
+          bodyColor: '#1a1a1a',
+          borderColor: 'rgba(26, 26, 26, 0.18)',
+          borderWidth: 1,
+          callbacks: {
+            afterLabel: (ctx) => {
+              const i = top15[ctx.dataIndex];
+              return `权重 ${i.w} × 评分 ${i.s}\n${i.c}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          max: 50,
+          ticks: { color: '#5a5550', font: { size: 10, family: 'IBM Plex Mono' } },
+          grid: { color: 'rgba(26, 26, 26, 0.05)' }
+        },
+        y: {
+          ticks: { color: '#5a5550', font: { size: 10, family: 'IBM Plex Sans SC' } },
+          grid: { display: false }
+        }
+      }
+    }
+  });
+}
+
+function renderTable() {
+  let filtered = [...indicatorsData];
+
+  if (currentLevel !== 'all') {
+    filtered = filtered.filter(i => getColorClass(i.s) === currentLevel);
+  }
+  if (currentCredibility !== 'all') {
+    if (currentCredibility === 'none') {
+      filtered = filtered.filter(i => !i.f);
+    } else {
+      filtered = filtered.filter(i => i.f === currentCredibility);
+    }
+  }
+  if (currentCategory !== 'all') {
+    filtered = filtered.filter(i => i.c === currentCategory);
+  }
+  if (currentSearch) {
+    const s = currentSearch.toLowerCase();
+    filtered = filtered.filter(i =>
+      i.name.toLowerCase().includes(s) ||
+      String(i.cur).toLowerCase().includes(s) ||
+      i.c.toLowerCase().includes(s)
+    );
+  }
+
+  filtered.sort((a, b) => {
+    const dir = currentSort.dir === 'desc' ? -1 : 1;
+    if (currentSort.col === 'weighted') {
+      const aw = (a.s == null) ? -Infinity : a.w * a.s;
+      const bw = (b.s == null) ? -Infinity : b.w * b.s;
+      return dir * (bw - aw);
+    }
+    if (currentSort.col === 'f') {
+      return dir * (credibilityRank(b.f) - credibilityRank(a.f));
+    }
+    if (currentSort.col === 's') {
+      const av = (a.s == null) ? -Infinity : a.s;
+      const bv = (b.s == null) ? -Infinity : b.s;
+      return dir * (bv - av);
+    }
+    return dir * (b[currentSort.col] - a[currentSort.col]);
+  });
+
+  const tbody = document.getElementById('indicator-tbody');
+  let html = '';
+  filtered.forEach(i => {
+    const isEmpty = (i.s == null);
+    const colorClass = getColorClass(i.s);
+    const colorLabel = getColorLabel(i.s);
+    const cred = getCredibilityBadge(i.f);
+    const numLabel = i.nLabel || String(i.n).padStart(2, '0');
+    const refTag = i.ref ? '<span class="ref-tag">参考</span>' : '';
+    const rowClasses = ['indicator-row'];
+    if (isEmpty) rowClasses.push('empty-row');
+    if (i.ref) rowClasses.push('ref-row');
+
+    const scoreCell = isEmpty
+      ? `<span class="score-pill gray">— —</span>`
+      : `<span class="score-pill ${colorClass}">${colorLabel} ${i.s}</span>`;
+    const weightedCell = isEmpty ? '—' : (i.w * i.s);
+    const scoreInputValue = (i.s == null) ? '' : i.s;
+    const curEscaped = String(i.cur == null ? '' : i.cur).replace(/"/g, '&quot;');
+
+    html += `
+      <tr class="${rowClasses.join(' ')}" onclick="toggleDetail(${i.n})">
+        <td class="col-num">#${numLabel}</td>
+        <td class="col-name"><span class="indicator-name" data-n="${escapeHtml(String(i.n))}" tabindex="0" onclick="event.stopPropagation()">${escapeHtml(i.name)}</span>${refTag}<span class="indicator-current">${escapeHtml(String(i.cur))}</span></td>
+        <td class="col-category">${i.c}</td>
+        <td class="col-weight">W${i.w}</td>
+        <td class="col-cred"><span class="cred-badge ${cred.cls}">${cred.label}</span></td>
+        <td class="col-score">${scoreCell}</td>
+        <td class="col-weighted">${weightedCell}</td>
+        <td class="col-source">${i.src}</td>
+      </tr>
+      <tr class="detail-row" id="detail-${i.n}">
+        <td colspan="8" class="detail-content">
+          <div class="detail-grid">
+            <div>
+              <div class="detail-section">
+                <h4>详细分析</h4>
+                <p>${i.detail || '该指标的详细背景分析待补充。'}</p>
+              </div>
+              <div class="detail-section" style="margin-top: 16px;">
+                <h4>阈值定义</h4>
+                <div class="thresholds">${i.thr || '阈值待定义'}</div>
+              </div>
+            </div>
+            <div>
+              <div class="detail-section">
+                <h4>数据来源</h4>
+                <p>${i.src} ${i.srcUrl ? `<a href="${i.srcUrl}" target="_blank" rel="noopener" style="color: var(--accent-amber); text-decoration: none;">↗ 访问</a>` : ''}</p>
+              </div>
+              <div class="detail-section" style="margin-top: 16px;">
+                <h4>编辑数据</h4>
+                <div class="detail-edit" onclick="event.stopPropagation()">
+                  <label>当前数值</label>
+                  <input type="text" value="${curEscaped}" onchange="updateField(${i.n}, 'cur', this.value)" onclick="event.stopPropagation()">
+                  <label>评分 (0-10)</label>
+                  <input type="number" min="0" max="10" step="1" value="${scoreInputValue}" onchange="updateField(${i.n}, 's', this.value === '' ? null : parseInt(this.value))" onclick="event.stopPropagation()">
+                  <label>权重 (1-5)</label>
+                  <input type="number" min="1" max="5" step="1" value="${i.w}" onchange="updateField(${i.n}, 'w', parseInt(this.value))" onclick="event.stopPropagation()">
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="detail-meta" onclick="event.stopPropagation()">
+            <h4>数据元信息</h4>
+            <div class="detail-meta-grid">
+              <div class="meta-item">
+                <span class="meta-label">数据时点 as_of</span>
+                <span class="meta-value ${i.as_of ? '' : 'empty'}">${i.as_of || '—'}</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">来源 cite</span>
+                <span class="meta-value ${i.cite ? '' : 'empty'}">${i.cite ? `<a href="${i.cite}" target="_blank" rel="noopener">${i.cite}</a>` : '—'}</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">评分理由 note</span>
+                <span class="meta-value ${i.note ? '' : 'empty'}">${i.note || '—'}</span>
+              </div>
+              <div class="meta-item">
+                <span class="meta-label">录入日期 fetched_at</span>
+                <span class="meta-value ${i.fetched_at ? '' : 'empty'}">${i.fetched_at || '—'}</span>
+              </div>
+            </div>
+          </div>
+        </td>
+      </tr>
+    `;
+  });
+
+  tbody.innerHTML = html;
+}
+
+function toggleDetail(n) {
+  const detail = document.getElementById(`detail-${n}`);
+  if (detail) detail.classList.toggle('expanded');
+}
+
+function updateField(n, field, value) {
+  const idx = indicatorsData.findIndex(i => i.n === n);
+  if (idx !== -1) {
+    indicatorsData[idx][field] = value;
+    saveToLocalStorage();
+    renderAll();
+  }
+}
+
+function filterByLevel(level, btn) {
+  currentLevel = level;
+  document.querySelectorAll('.filter-group .btn[data-level]').forEach(b => {
+    b.classList.remove('active');
+  });
+  if (btn) btn.classList.add('active');
+  renderTable();
+}
+
+function filterByCredibility(cred, btn) {
+  currentCredibility = cred;
+  document.querySelectorAll('.filter-group .btn[data-cred]').forEach(b => {
+    b.classList.remove('active');
+  });
+  if (btn) btn.classList.add('active');
+  renderTable();
+}
+
+function applyFilters() {
+  currentCategory = document.getElementById('category-filter').value;
+  currentSearch = document.getElementById('search-input').value;
+  renderTable();
+}
+
+function setupSorting() {
+  document.querySelectorAll('th.sortable').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.sort;
+      if (currentSort.col === col) {
+        currentSort.dir = currentSort.dir === 'desc' ? 'asc' : 'desc';
+      } else {
+        currentSort.col = col;
+        currentSort.dir = 'desc';
+      }
+      document.querySelectorAll('th.sortable').forEach(t => {
+        t.classList.remove('sort-asc', 'sort-desc');
+      });
+      th.classList.add(currentSort.dir === 'asc' ? 'sort-asc' : 'sort-desc');
+      renderTable();
+    });
+  });
+}
+
+function populateCategoryFilter() {
+  const cats = [...new Set(indicatorsData.map(i => i.c))];
+  const sel = document.getElementById('category-filter');
+  cats.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c;
+    opt.textContent = c;
+    sel.appendChild(opt);
+  });
+}
+
+function exportCSV() {
+  const headers = ['编号','类别','指标','当前数据','权重','评分','加权分','颜色','数据来源','阈值','详细'];
+  const rows = indicatorsData.map(i => [
+    i.n, i.c, i.name, i.cur, i.w, i.s, i.w * i.s, getColorLabel(i.s), i.src, i.thr || '', (i.detail || '').replace(/\n/g, ' ')
+  ]);
+
+  let csv = headers.join(',') + '\n';
+  rows.forEach(row => {
+    csv += row.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',') + '\n';
+  });
+
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  const date = new Date().toISOString().split('T')[0];
+  link.download = `ai-chain-risk-${date}.csv`;
+  link.click();
+}
+
+function saveSnapshot(btn) {
+  const score = calculateOverallScore();
+  const numScore = parseFloat(score);
+  const validScore = Number.isFinite(numScore) ? numScore : null;
+  const cats = calculateCategoryScores();
+  const snapshot = {
+    date: new Date().toISOString(),
+    score: validScore,
+    categoryScores: cats,
+    indicators: indicatorsData.map(i => ({ n: i.n, s: i.s, w: i.w, cur: i.cur }))
+  };
+
+  const snapshots = JSON.parse(localStorage.getItem('aiChainSnapshots') || '[]');
+  snapshots.unshift(snapshot);
+  if (snapshots.length > 30) snapshots.pop();
+  localStorage.setItem('aiChainSnapshots', JSON.stringify(snapshots));
+  renderSnapshots();
+
+  if (btn) {
+    const orig = btn.textContent;
+    btn.textContent = '✓ 已保存';
+    setTimeout(() => btn.textContent = orig, 1500);
+  }
+}
+
+function renderSnapshots() {
+  const snapshots = JSON.parse(localStorage.getItem('aiChainSnapshots') || '[]');
+  const container = document.getElementById('snapshots-container');
+
+  if (snapshots.length === 0) {
+    container.innerHTML = '<div style="color: var(--text-tertiary); font-size: 12px; padding: 16px 0;">暂无快照。点击「保存快照」开始记录。</div>';
+    return;
+  }
+
+  let html = '';
+  snapshots.forEach((s, idx) => {
+    const date = new Date(s.date);
+    const dateStr = date.toLocaleString('zh-CN', {
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit'
+    });
+    const colorClass = getColorClass(s.score);
+    const scoreLabel = (typeof s.score === 'number' && Number.isFinite(s.score)) ? s.score.toFixed(2) : '— —';
+    html += `
+      <div class="snapshot-item">
+        <div>
+          <span style="color: var(--text-tertiary);">#${snapshots.length - idx}</span>
+          &nbsp;&nbsp;<span style="color: var(--text-secondary);">${dateStr}</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span class="score-pill ${colorClass}" style="cursor: default;">${scoreLabel}</span>
+          <div class="snapshot-actions">
+            <button onclick="loadSnapshot(${idx})">载入</button>
+            <button class="delete" onclick="deleteSnapshot(${idx})">删除</button>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+  container.innerHTML = html;
+}
+
+function loadSnapshot(idx) {
+  const snapshots = JSON.parse(localStorage.getItem('aiChainSnapshots') || '[]');
+  const s = snapshots[idx];
+  if (!s) return;
+
+  s.indicators.forEach(saved => {
+    const i = indicatorsData.find(x => x.n === saved.n);
+    if (i) {
+      i.s = saved.s;
+      i.w = saved.w;
+      if (saved.cur) i.cur = saved.cur;
+    }
+  });
+  saveToLocalStorage();
+  const prev = computePreviousSnapshot(idx);
+  const insight = generateInsights(indicatorsData, prev);
+  renderWeeklyInsight(insight);
+  renderAll();
+}
+
+function deleteSnapshot(idx) {
+  if (!confirm('确认删除该快照？')) return;
+  const snapshots = JSON.parse(localStorage.getItem('aiChainSnapshots') || '[]');
+  snapshots.splice(idx, 1);
+  localStorage.setItem('aiChainSnapshots', JSON.stringify(snapshots));
+  renderSnapshots();
+}
+
+function saveToLocalStorage() {
+  localStorage.setItem('aiChainCurrentData', JSON.stringify(indicatorsData));
+}
+
+function loadFromLocalStorage() {
+  const saved = localStorage.getItem('aiChainCurrentData');
+  if (saved) {
+    try {
+      const data = JSON.parse(saved);
+      data.forEach(saved => {
+        const i = indicatorsData.find(x => x.n === saved.n);
+        if (i) {
+          i.s = saved.s;
+          i.w = saved.w;
+          i.cur = saved.cur;
+        }
+      });
+    } catch(e) { console.warn('载入失败', e); }
+  }
+}
+
+function updateLevelCounts() {
+  // 更新「全部」按钮的计数
+  const total = indicatorsData.length;
+  const allCountEl = document.getElementById('count-all');
+  if (allCountEl) allCountEl.textContent = total;
+}
+
+function renderAll() {
+  const score = calculateOverallScore();
+  document.getElementById('overall-score').textContent = score;
+
+  const status = getStatusBadge(score);
+  const badge = document.getElementById('status-badge');
+  badge.textContent = status.label;
+  badge.style.color = status.color;
+  badge.style.borderColor = status.color;
+  badge.style.background = `rgba(${status.rgb}, 0.08)`;
+
+  // 总权重显示
+  const totalWeightEl = document.getElementById('total-weight');
+  if (totalWeightEl) totalWeightEl.textContent = calculateTotalWeight();
+
+  // 指标总数显示（masthead 副标题 + masthead-meta v1 行）
+  const indicatorCountEl = document.getElementById('indicator-count');
+  if (indicatorCountEl) indicatorCountEl.textContent = indicatorsData.length;
+  const mastheadCountEl = document.getElementById('masthead-count');
+  if (mastheadCountEl) mastheadCountEl.textContent = indicatorsData.length;
+
+  // 主指标计数（方法论说明）
+  const mainCountEl = document.getElementById('main-count');
+  if (mainCountEl) mainCountEl.textContent = getMainCount();
+
+  // 覆盖率提示
+  const filled = getFilledMainCount();
+  const totalMain = getMainCount();
+  const filledEl = document.getElementById('coverage-filled');
+  const totalEl = document.getElementById('coverage-total');
+  if (filledEl) filledEl.textContent = filled;
+  if (totalEl) totalEl.textContent = totalMain;
+  const warnEl = document.getElementById('coverage-warning');
+  if (warnEl) {
+    if (filled < totalMain / 2) warnEl.classList.remove('hidden');
+    else warnEl.classList.add('hidden');
+  }
+
+  // 最后更新（取所有 fetched_at 的最大值，全空时显示「未录入」）
+  const lastUpdatedEl = document.getElementById('last-updated');
+  if (lastUpdatedEl) {
+    const latest = getLatestFetchedAt();
+    lastUpdatedEl.textContent = latest ? `最后更新: ${latest}` : '最后更新: 未录入';
+  }
+
+  updateLevelCounts();
+  renderInsights();
+  renderRadar();
+  renderTopBar();
+  renderTable();
+}
+
+// === 阶段 5: 复制 AI 检索提示词 ===
+function copyAiPrompt(btn) {
+  const el = document.getElementById('ai-search-prompt');
+  if (!el) return;
+  const prompt = el.textContent.trim();
+  const restore = () => {
+    btn.textContent = '📋 复制提示词';
+    btn.classList.remove('active');
+  };
+  navigator.clipboard.writeText(prompt).then(() => {
+    btn.textContent = '✅ 已复制';
+    btn.classList.add('active');
+    setTimeout(restore, 3000);
+  }).catch(err => {
+    console.error('复制失败', err);
+    showToast('❌ 复制失败,请手动复制', 3000);
+  });
+}
+
+// === 阶段 4: 批量录入 ===
+let batchPreviewState = { items: [], invalidIds: [], force: false };
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+
+function showToast(msg, ms) {
+  const el = document.getElementById('toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.remove('hidden');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.add('hidden'), ms || 2500);
+}
+
+function openBatchImport() {
+  document.getElementById('batch-import-overlay').classList.remove('hidden');
+  document.getElementById('batch-step-input').classList.remove('hidden');
+  document.getElementById('batch-step-preview').classList.add('hidden');
+  document.getElementById('batch-actions-input').classList.remove('hidden');
+  document.getElementById('batch-actions-preview').classList.add('hidden');
+  document.getElementById('batch-error').classList.add('hidden');
+  document.getElementById('batch-input-textarea').value = '';
+  batchPreviewState = { items: [], invalidIds: [], force: false };
+}
+
+function closeBatchImport(evt) {
+  if (evt && evt.target && evt.target.id !== 'batch-import-overlay') return;
+  document.getElementById('batch-import-overlay').classList.add('hidden');
+}
+
+function batchBackToEdit() {
+  document.getElementById('batch-step-input').classList.remove('hidden');
+  document.getElementById('batch-step-preview').classList.add('hidden');
+  document.getElementById('batch-actions-input').classList.remove('hidden');
+  document.getElementById('batch-actions-preview').classList.add('hidden');
+}
+
+function sanitizeStringInternalQuotes(s) {
+  let result = '';
+  let inString = false;
+  let escapeCount = 0;
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+    const prev = i > 0 ? s[i - 1] : '';
+    if (ch === '"' && prev !== '\\') {
+      if (!inString) {
+        inString = true;
+        result += ch;
+      } else {
+        let j = i + 1;
+        while (j < s.length && /\s/.test(s[j])) j++;
+        const next = j < s.length ? s[j] : '';
+        if (next === ',' || next === '}' || next === ']' || next === ':') {
+          inString = false;
+          result += ch;
+        } else {
+          escapeCount++;
+          result += '\\"';
+        }
+      }
+    } else {
+      result += ch;
+    }
+  }
+  return { result, escapeCount };
+}
+
+function sanitizeBatchJson(raw) {
+  let s = raw;
+  const changes = [];
+
+  let mdCount = 0;
+  s = s.replace(/\*\*([^*]+)\*\*/g, (_, inner) => { mdCount++; return inner; });
+  if (mdCount > 0) changes.push({ rule: 'markdown **粗体** 去除', count: mdCount });
+
+  const dq = (s.match(/[“”]/g) || []).length;
+  s = s.replace(/“/g, '「').replace(/”/g, '」');
+  if (dq > 0) changes.push({ rule: '中文双引号 → 「」', count: dq });
+
+  const sq = (s.match(/[‘’]/g) || []).length;
+  s = s.replace(/‘/g, '「').replace(/’/g, '」');
+  if (sq > 0) changes.push({ rule: '中文单引号 → 「」', count: sq });
+
+  let apCount = 0;
+  s = s.replace(/([A-Za-z])'(\d)|(\d)'([A-Za-z])/g, (_, a, b, c, d) => {
+    apCount++;
+    return a ? `${a} ${b}` : `${c} ${d}`;
+  });
+  if (apCount > 0) changes.push({ rule: "Dec'25 类英文单引号 → 空格", count: apCount });
+
+  let cnColon = 0;
+  s = s.replace(/"\s*：/g, () => { cnColon++; return '":'; });
+  if (cnColon > 0) changes.push({ rule: 'JSON 结构位置中文冒号 → :', count: cnColon });
+
+  const iq = sanitizeStringInternalQuotes(s);
+  if (iq.escapeCount > 0) {
+    s = iq.result;
+    changes.push({ rule: 'JSON 字符串内嵌英文双引号转义', count: iq.escapeCount });
+  }
+
+  return { cleaned: s, changes, hadChange: changes.length > 0 };
+}
+
+function parseBatchInput() {
+  const errorEl = document.getElementById('batch-error');
+  errorEl.classList.add('hidden');
+  errorEl.textContent = '';
+  const raw = document.getElementById('batch-input-textarea').value.trim();
+  if (!raw) {
+    errorEl.textContent = '请粘贴 JSON 数组';
+    errorEl.classList.remove('hidden');
+    return;
+  }
+
+  const sanitizeResult = sanitizeBatchJson(raw);
+  window._batchSanitizeInfo = sanitizeResult;
+
+  let parsed;
+  try {
+    parsed = JSON.parse(sanitizeResult.cleaned);
+  } catch (e) {
+    let msg = `JSON 解析失败:${e.message}`;
+    if (sanitizeResult.hadChange) {
+      const rulesText = sanitizeResult.changes.map(c => `${c.rule}×${c.count}`).join(', ');
+      msg += `(已尝试自动清洗 ${sanitizeResult.changes.length} 项:${rulesText},仍失败)`;
+    }
+    errorEl.textContent = msg;
+    errorEl.classList.remove('hidden');
+    return;
+  }
+  if (!Array.isArray(parsed)) {
+    errorEl.textContent = 'JSON 顶层必须是数组';
+    errorEl.classList.remove('hidden');
+    return;
+  }
+  if (parsed.length === 0) {
+    errorEl.textContent = '数组为空';
+    errorEl.classList.remove('hidden');
+    return;
+  }
+
+  const validIds = new Set(indicatorsData.map(i => i.n));
+  const items = [];
+  const invalidIds = [];
+
+  parsed.forEach((entry, idx) => {
+    if (typeof entry !== 'object' || entry === null) {
+      invalidIds.push(`[idx=${idx}] 非对象`);
+      return;
+    }
+    let n = entry.n;
+    if (typeof n === 'string') {
+      const asNum = Number(n);
+      if (!Number.isNaN(asNum)) n = asNum;
+    }
+    if (!validIds.has(n)) {
+      invalidIds.push(entry.n != null ? entry.n : `[idx=${idx}] 缺 n`);
+      return;
+    }
+
+    const item = {
+      n: n,
+      name: entry.name,
+      cur: entry.cur,
+      s: entry.s,
+      f: entry.f,
+      as_of: entry.as_of,
+      cite: entry.cite,
+      note: entry.note,
+      _warnings: [],
+      _error: null,
+      _selected: true,
+    };
+
+    const _target = indicatorsData.find(i => i.n === n);
+    if (entry.name && _target && entry.name !== _target.name) {
+      item._warnings.push(`name 不匹配:期望"${_target.name}",收到"${entry.name}"(按编号录入,不影响数据)`);
+    }
+
+    if (item.s !== null && item.s !== undefined) {
+      const sNum = Number(item.s);
+      if (!Number.isInteger(sNum) || sNum < 0 || sNum > 10) {
+        item._error = `s 必须 0-10 整数 或 null,得到:${JSON.stringify(item.s)}`;
+      } else {
+        item.s = sNum;
+      }
+    } else {
+      item.s = null;
+    }
+
+    if (!item._error && item.f !== null && item.f !== undefined && !['H','M','L'].includes(item.f)) {
+      item._error = `f 必须 "H" / "M" / "L" 或 null,得到:${JSON.stringify(item.f)}`;
+    }
+
+    if (!item._error) {
+      if (!item.as_of && item.f && item.f !== 'L') {
+        item._warnings.push(`缺 as_of,可信度从 ${item.f} 强制降为 L`);
+        item.f = 'L';
+      }
+      if (!item.cite && item.f === 'H') {
+        item._warnings.push('缺 cite,可信度从 H 降为 M');
+        item.f = 'M';
+      }
+    }
+
+    if (item._error) item._selected = false;
+    items.push(item);
+  });
+
+  batchPreviewState = { items, invalidIds, force: false };
+  renderBatchPreview();
+}
+
+function renderBatchPreview() {
+  document.getElementById('batch-step-input').classList.add('hidden');
+  document.getElementById('batch-step-preview').classList.remove('hidden');
+  document.getElementById('batch-actions-input').classList.add('hidden');
+  document.getElementById('batch-actions-preview').classList.remove('hidden');
+
+  const { items, invalidIds, force } = batchPreviewState;
+
+  // === 防御 3:影响范围摘要 ===
+  const _bsToday = Date.now();
+  const _bsDayMs = 86400000;
+  const _bsFRank = f => ({H:3,M:2,L:1}[f] || 0);
+  const _bsValid = items.filter(it => !it._error);
+  const totalCount = _bsValid.length;
+  let bigJumpCount = 0, staleCount = 0, fDowngradeCount = 0, nameMismatchCount = 0;
+  _bsValid.forEach(it => {
+    const t = indicatorsData.find(i => i.n === it.n);
+    if (!t) return;
+    if (typeof it.s === 'number' && typeof t.s === 'number' && Math.abs(it.s - t.s) >= 3) bigJumpCount++;
+    if (it.as_of) {
+      const d = new Date(it.as_of);
+      if (!isNaN(d) && (_bsToday - d.getTime()) / _bsDayMs > 30) staleCount++;
+    }
+    if (_bsFRank(it.f) < _bsFRank(t.f)) fDowngradeCount++;
+    if (it._warnings.some(w => w.includes('name 不匹配'))) nameMismatchCount++;
+  });
+  const invalidCount = invalidIds.length;
+  const _bsSani = window._batchSanitizeInfo;
+  const _bsCell = (n, label, cls) => `<div class="batch-summary-item${(cls && n > 0) ? ' ' + cls : ''}"><span class="bs-num">${n}</span><span class="bs-label">${label}</span></div>`;
+  let _bsHtml = `
+    <div class="batch-summary-title">📋 影响范围预览</div>
+    <div class="batch-summary-grid">
+      ${_bsCell(totalCount, '项即将更新(共 68 项)', null)}
+      ${_bsCell(bigJumpCount, '项评分变化 ≥3 分', 'bs-warn')}
+      ${_bsCell(staleCount, '项数据距今 >30 天', 'bs-warn')}
+      ${_bsCell(fDowngradeCount, '项可信度降档', 'bs-warn')}
+      ${_bsCell(invalidCount, '项编号无效(将丢弃)', 'bs-err')}
+      ${_bsCell(nameMismatchCount, '项 name 不匹配(警告保留)', 'bs-warn')}
+    </div>
+  `;
+  if (_bsSani && _bsSani.hadChange) {
+    const rulesText = _bsSani.changes.map(c => `${c.rule}×${c.count}`).join(', ');
+    _bsHtml += `<div class="batch-summary-sanitize">自动清洗了 ${_bsSani.changes.length} 项问题:${rulesText}</div>`;
+  }
+  const _bsEl = document.getElementById('batch-summary-banner');
+  if (_bsEl) _bsEl.innerHTML = _bsHtml;
+  // === 防御 3 end ===
+
+  const okCount = items.filter(it => !it._error).length;
+  const errCount = items.filter(it => it._error).length;
+  const warnCount = items.filter(it => it._warnings.length > 0 && !it._error).length;
+
+  const summaryEl = document.getElementById('batch-preview-summary');
+  let summaryHtml = `
+    <div class="batch-summary">
+      <span>共 <b>${items.length + invalidIds.length}</b> 项</span>
+      <span class="ok">✓ 合法 ${okCount}</span>
+      <span class="warn">⚠ 警告 ${warnCount}</span>
+      <span class="bad">✕ 字段错误 ${errCount}</span>
+      <span class="bad">⊘ 编号不匹配 ${invalidIds.length}</span>
+    </div>
+  `;
+
+  if (invalidIds.length > 0) {
+    summaryHtml += `
+      <div class="batch-warn-block">
+        ⚠ 检测到 <b>${invalidIds.length}</b> 项编号不在仪表盘 68 项指标范围内:
+        <code>[${invalidIds.map(escapeHtml).join(', ')}]</code><br>
+        <strong>严格模式默认整批拒绝。</strong>
+        如确认仅导入合法的 ${okCount} 项,请点击
+        <span class="force-link ${force ? 'active' : ''}" onclick="batchToggleForce()">${force ? '✓ 已启用强制导入合法项' : '⚠ 强制导入合法项(二次确认)'}</span>
+      </div>
+    `;
+  }
+  summaryEl.innerHTML = summaryHtml;
+
+  const tbody = document.getElementById('batch-preview-tbody');
+  let html = '';
+  items.forEach((it, idx) => {
+    const target = indicatorsData.find(i => i.n === it.n);
+    const oldS = (target.s == null) ? '—' : target.s;
+    const oldCur = (target.cur == null || target.cur === '') ? '—' : target.cur;
+    const newS = it._error ? '?' : ((it.s == null) ? '—' : it.s);
+    const newCur = (it.cur == null) ? '—' : it.cur;
+    const cred = getCredibilityBadge(it.f);
+    const rowClass = it._error ? 'row-bad' : (it._warnings.length ? 'row-warn' : '');
+    const numLabel = target.nLabel || target.n;
+    const checked = (!it._error && it._selected) ? 'checked' : '';
+    const disabled = it._error ? 'disabled' : '';
+
+    let issueHtml = '';
+    if (it._error) issueHtml += `<div class="row-error-text">✕ ${escapeHtml(it._error)}</div>`;
+    if (it._warnings.length) issueHtml += it._warnings.map(w => `<div class="row-warning-text">⚠ ${escapeHtml(w)}</div>`).join('');
+    if (!issueHtml) issueHtml = '<span style="color:var(--text-tertiary);font-size:10px;">—</span>';
+
+    html += `
+      <tr class="${rowClass}">
+        <td><input type="checkbox" data-idx="${idx}" ${checked} ${disabled} onchange="batchToggleItem(${idx}, this.checked)"></td>
+        <td><b>#${escapeHtml(String(numLabel))}</b><br><span style="color:var(--text-tertiary);font-size:10px;">${escapeHtml(target.name)}</span></td>
+        <td><span class="change-old">${escapeHtml(String(oldCur))} (s=${oldS})</span><span class="change-arrow">→</span><span class="change-new">${escapeHtml(String(newCur))} (s=${newS})</span></td>
+        <td><span class="cred-badge ${cred.cls}">${cred.label}</span></td>
+        <td>${issueHtml}</td>
+      </tr>
+    `;
+  });
+
+  invalidIds.forEach(id => {
+    html += `
+      <tr class="row-bad">
+        <td>—</td>
+        <td><b>n=${escapeHtml(String(id))}</b></td>
+        <td colspan="3"><span class="row-error-text">✕ 编号不在仪表盘指标范围,无法导入</span></td>
+      </tr>
+    `;
+  });
+
+  tbody.innerHTML = html;
+  updateBatchConfirmButton();
+}
+
+function batchToggleItem(idx, checked) {
+  if (batchPreviewState.items[idx]) {
+    batchPreviewState.items[idx]._selected = checked;
+    updateBatchConfirmButton();
+  }
+}
+
+function batchToggleForce() {
+  batchPreviewState.force = !batchPreviewState.force;
+  renderBatchPreview();
+}
+
+function updateBatchConfirmButton() {
+  const { items, invalidIds, force } = batchPreviewState;
+  const selectable = items.filter(it => !it._error && it._selected);
+  const btn = document.getElementById('batch-confirm-btn');
+  const countEl = document.getElementById('batch-confirm-count');
+  countEl.textContent = selectable.length;
+
+  if (invalidIds.length > 0 && !force) {
+    btn.disabled = true;
+    btn.title = '检测到不匹配编号。请先点击「⚠ 强制导入合法项」启用';
+  } else {
+    btn.disabled = selectable.length === 0;
+    btn.title = '';
+  }
+}
+
+function batchConfirmImport() {
+  const { items, invalidIds, force } = batchPreviewState;
+  if (invalidIds.length > 0 && !force) {
+    alert('严格模式下检测到不匹配编号,请先点击「⚠ 强制导入合法项」');
+    return;
+  }
+  const selectable = items.filter(it => !it._error && it._selected);
+  if (selectable.length === 0) {
+    alert('没有可导入的项');
+    return;
+  }
+  if (!confirm(`确认将 ${selectable.length} 项写入仪表盘?\n(自动保存快照,可在「历史快照」回滚)`)) return;
+
+  const today = new Date().toISOString().split('T')[0];
+  let count = 0;
+  selectable.forEach(it => {
+    const target = indicatorsData.find(i => i.n === it.n);
+    if (!target) return;
+    ['cur','s','f','as_of','cite','note'].forEach(k => {
+      if (it[k] !== undefined) target[k] = it[k];
+    });
+    target.fetched_at = today;
+    count++;
+  });
+
+  saveToLocalStorage();
+  saveSnapshot(null);
+  const prev = computePreviousSnapshot(0);
+  const insight = generateInsights(indicatorsData, prev);
+  renderWeeklyInsight(insight);
+  renderAll();
+  closeBatchImport();
+  showToast(`✅ 已导入 ${count} 项`);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadFromLocalStorage();
+  populateCategoryFilter();
+  setupSorting();
+  const prev = computePreviousSnapshot(0);
+  const insight = generateInsights(indicatorsData, prev);
+  renderWeeklyInsight(insight);
+  renderAll();
+  renderSnapshots();
+});
+
+// === 阶段 4: 本周解读引擎 v1 ===
+// 设计文档: docs/insights-engine-v1-spec.md
+
+const INSIGHT_THEMES = [
+  { id:"funding",   name:"💸 融资链条紧张", desc:"钱开始不好借了",
+    categories:["信用市场","私募市场"], threshold:2 },
+  { id:"supply",    name:"🏭 供给侧裂缝",   desc:"链条本身在松动",
+    categories:["芯片产能","英伟达","系统ODM"], threshold:2 },
+  { id:"demand",    name:"📉 需求侧降温",   desc:"客户开始降速",
+    categories:["应用层","模型公司"], threshold:2 },
+  { id:"valuation", name:"🎈 估值情绪过热", desc:"价格跑过基本面",
+    categories:["美股结构脆弱性","宏观情绪"], threshold:2 },
+  { id:"physical",  name:"⚡ 网络/电力卡口", desc:"物理瓶颈出现",
+    categories:["网络基建","电力基建"], threshold:2 }
+];
+
+const INSIGHT_EASY_DOMAINS = [
+  "slickcharts.com", "fred.stlouisfed.org", "stlouisfed.org",
+  "finance.yahoo.com", "finra.org", "sec.gov",
+  "tradingeconomics.com", "alphaquery.com", "schwab.com",
+  "bea.gov", "treasury.gov"
+];
+
+function isEasyCite(cite) {
+  if (!cite || typeof cite !== 'string') return false;
+  if (INSIGHT_EASY_DOMAINS.some(d => cite.includes(d))) return true;
+  if (/\.gov(\/|$|:)/.test(cite)) return true;
+  if (/\/\/(investor|investors|ir|news)\./.test(cite)) return true;
+  return false;
+}
+
+// === 阶段 4 v3: 文案翻译表(铁律:页面禁字母缩写 / 禁内部术语 / 必须说人话)===
+const WEIGHT_LABEL = { 1: '低权重', 2: '较低权重', 3: '中等权重', 4: '较高权重', 5: '最高权重' };
+function weightLabel(w) { return WEIGHT_LABEL[w] || `${w} 权重`; }
+
+function confidenceLabel(f) {
+  if (f === 'H') return '高可信度';
+  if (f === 'M') return '中等可信度';
+  if (f === 'L') return '低可信度';
+  return '';
+}
+
+function zoneLabel(s) {
+  if (s === null || s === undefined) return '';
+  if (s <= 2) return '健康';
+  if (s <= 5) return '黄灯';
+  if (s <= 7) return '警戒';
+  return '红灯严重';
+}
+
+function coverageStatusLabel(level) {
+  return { good: '状态良好', warning: '状态需关注', critical: '状态不足' }[level] || '';
+}
+
+function simplifyDataSource(url) {
+  if (!url || typeof url !== 'string') return '';
+  const u = url.toLowerCase();
+  if (u.includes('fred.stlouisfed.org') || u.includes('stlouisfed.org')) return 'FRED';
+  if (u.includes('finance.yahoo.com') || u.includes('yahoo.com')) return 'Yahoo Finance';
+  if (u.includes('slickcharts.com')) return 'SlickCharts';
+  if (u.includes('finra.org')) return 'FINRA';
+  if (u.includes('sec.gov')) return 'SEC';
+  if (u.includes('tradingeconomics.com')) return 'Trading Economics';
+  if (u.includes('alphaquery.com')) return 'AlphaQuery';
+  if (u.includes('schwab.com')) return 'Schwab';
+  if (u.includes('bea.gov')) return 'BEA';
+  if (u.includes('treasury.gov')) return '美国财政部';
+  if (/\/\/(investor|investors|ir|news)\./.test(url)) return '公司财报/IR';
+  if (/\.gov(\/|$|:)/.test(u)) return '政府数据库';
+  const match = url.match(/\/\/(?:www\.)?([^\/]+)/);
+  return match ? match[1] : url;
+}
+
+function computeCoverage(currentData) {
+  const filled = currentData.filter(it => it.s !== null && it.s !== undefined).length;
+  const total = currentData.length;
+  const percent = total === 0 ? 0 : (filled / total) * 100;
+  const w5Missing = currentData
+    .filter(it => it.w === 5 && (it.s === null || it.s === undefined))
+    .map(it => "#" + (it.nLabel || it.n));
+  let level;
+  if (percent >= 80) level = "good";
+  else if (percent >= 60) level = "warning";
+  else level = "critical";
+  return { filled, total, percent: Math.round(percent * 10) / 10, w5Missing, level };
+}
+
+function diffWithPrevious(currentData, previousSnapshot) {
+  if (!previousSnapshot) return null;
+  const result = { deteriorated: [], warning: [], improved: [], newData: [], lostData: [] };
+
+  currentData.forEach(item => {
+    const oldItem = previousSnapshot.find(p => p.n === item.n) || null;
+    const oldS = oldItem ? (oldItem.s ?? null) : null;
+    const newS = item.s ?? null;
+
+    const entry = {
+      n: item.nLabel || item.n,
+      nKey: String(item.n),
+      name: item.name,
+      oldS, newS,
+      category: item.c,
+      weight: item.w || 0
+    };
+
+    if (oldS !== null && newS !== null) {
+      const delta = newS - oldS;
+      // 优先级 1: 进入红灯严重区
+      if (newS >= 8 && oldS < 8) {
+        entry.reason = `从 ${oldS} 分上升到 ${newS} 分(Δ+${delta}),已进入红灯严重区`;
+        result.deteriorated.push(entry);
+      }
+      // 优先级 2: 跳变 ≥3
+      else if (delta >= 3) {
+        if (newS >= 6 && newS <= 7 && oldS <= 5) {
+          entry.reason = `从 ${oldS} 分上升到 ${newS} 分,首次进入警戒区`;
+          result.warning.push(entry);
+        } else {
+          entry.reason = `从 ${oldS} 分上升到 ${newS} 分(Δ+${delta})`;
+          result.deteriorated.push(entry);
+        }
+      }
+      // 优先级 3: 跨入警戒区 (delta <3)
+      else if (newS >= 6 && newS <= 7 && oldS <= 5) {
+        entry.reason = `从 ${oldS} 分上升到 ${newS} 分,首次进入警戒区`;
+        result.warning.push(entry);
+      }
+      // 优先级 4: 改善
+      else if (delta <= -2) {
+        entry.reason = `从 ${oldS} 分下降到 ${newS} 分,风险缓解`;
+        result.improved.push(entry);
+      }
+      // 其他: 微动或同区间内变化,不记录
+    } else if (oldS === null && newS !== null) {
+      if (newS >= 8) entry.reason = `首次录入数据,直接落入红灯严重区(${newS} 分)`;
+      else if (newS >= 6) entry.reason = `首次录入数据,直接进入警戒区(${newS} 分)`;
+      else if (newS >= 3) entry.reason = `首次录入数据,黄灯状态(${newS} 分)`;
+      else entry.reason = `首次录入数据,健康(${newS} 分)`;
+      result.newData.push(entry);
+    } else if (oldS !== null && newS === null) {
+      if (oldS >= 8) entry.reason = `本周无数据(上次为 ${oldS} 分严重,需注意盲区)`;
+      else if (oldS >= 6) entry.reason = `本周无数据(上次为 ${oldS} 分警戒,需注意盲区)`;
+      else entry.reason = `本周无数据`;
+      result.lostData.push(entry);
+    }
+  });
+
+  const sortFn = (a, b) => {
+    const dA = Math.abs((a.newS ?? 0) - (a.oldS ?? 0));
+    const dB = Math.abs((b.newS ?? 0) - (b.oldS ?? 0));
+    return (b.weight * dB) - (a.weight * dA);
+  };
+  Object.keys(result).forEach(k => result[k].sort(sortFn));
+
+  return result;
+}
+
+function detectThemes(currentData) {
+  const triggered = [];
+  INSIGHT_THEMES.forEach(theme => {
+    const contributors = currentData
+      .filter(it => theme.categories.includes(it.c) && (it.s ?? 0) >= 6)
+      .sort((a, b) => (b.s || 0) - (a.s || 0));
+    if (contributors.length >= theme.threshold) {
+      triggered.push({
+        id: theme.id,
+        name: theme.name,
+        desc: theme.desc,
+        contributors: contributors.map(it => ({
+          n: it.nLabel || it.n,
+          nKey: String(it.n),
+          name: it.name,
+          s: it.s,
+          category: it.c
+        }))
+      });
+    }
+  });
+
+  if (triggered.length >= 3) {
+    triggered.push({
+      id: "systemic",
+      name: "🚨 系统性信号",
+      desc: `${triggered.length} 个主题同时触发,跨链条共振`,
+      contributors: []
+    });
+  }
+
+  return triggered;
+}
+
+function computeTop3Risks(currentData) {
+  // H/M/L 显式映射;f === null → 0(明确"无来源");f === undefined → 0.7(字段未导入,默认按 M 处理,不应等同无数据)
+  const confidenceMul = { H: 1.0, M: 0.7, L: 0.4 };
+  return currentData
+    .map(it => {
+      let cm;
+      if (it.f === undefined) cm = 0.7;
+      else if (it.f === null) cm = 0;
+      else cm = confidenceMul[it.f] ?? 0;
+      const score = (it.w || 0) * (it.s || 0) * cm;
+      return {
+        n: it.nLabel || it.n,
+        nKey: String(it.n),
+        name: it.name,
+        category: it.c,
+        weight: it.w || 0,
+        s: it.s,
+        f: it.f,
+        cm,
+        score: Math.round(score * 10) / 10,
+        noteSnippet: (it.note || '').slice(0, 50)
+      };
+    })
+    .filter(x => x.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3);
+}
+
+function generateActionList(currentData, previousSnapshot) {
+  const nullItems = currentData.filter(it => it.s === null || it.s === undefined);
+
+  let backfill = [];
+  if (previousSnapshot) {
+    backfill = nullItems.filter(it => {
+      const prev = previousSnapshot.find(p => p.n === it.n);
+      return prev && isEasyCite(prev.cite);
+    });
+  }
+  if (backfill.length === 0) {
+    backfill = nullItems.filter(it => isEasyCite(it.cite));
+  }
+  backfill = backfill.slice(0, 5).map(it => ({
+    n: it.nLabel || it.n,
+    nKey: String(it.n),
+    name: it.name,
+    category: it.c,
+    weight: it.w || 0,
+    cite: it.cite ?? null,
+    srcUrl: it.srcUrl ?? null
+  }));
+
+  // 返回全部命中项,UI 层用 toggleChangeGroup('critical') 控制展开/收起
+  const critical = currentData
+    .filter(it => it.s !== null && it.s !== undefined && it.s >= 5 && it.s <= 7)
+    .sort((a, b) => (b.w || 0) - (a.w || 0))
+    .map(it => ({
+      n: it.nLabel || it.n,
+      nKey: String(it.n),
+      name: it.name,
+      category: it.c,
+      weight: it.w || 0,
+      s: it.s
+    }));
+
+  return { backfill, critical, watchWindow: null };
+}
+
+// 一句话头条 (优先级链,命中即停)
+function computeHeadline(coverage, themes, changes) {
+  // 1. 覆盖率 < 60% → 数据不足优先告警
+  if (coverage.percent < 60) {
+    return { level: 'warning', text: `⚠️ 数据覆盖率 ${coverage.percent}%,综合分采样不足,优先补数据` };
+  }
+  // 排除 meta 主题 "systemic",拿真实触发主题
+  const realThemes = themes.filter(t => t.id !== 'systemic');
+  // 2. ≥3 主题触发 → 系统性信号
+  if (realThemes.length >= 3) {
+    return { level: 'critical', text: `🚨 系统性信号:${realThemes.map(t => t.name).join(' / ')}` };
+  }
+  // 3. 1-2 主题触发
+  if (realThemes.length > 0) {
+    return { level: 'warning', text: `⚠️ 主题信号:${realThemes.map(t => t.name).join(',')}` };
+  }
+  // 4. 无主题但有显著恶化
+  if (changes && changes.deteriorated && changes.deteriorated.length > 0) {
+    const top = changes.deteriorated[0];
+    return { level: 'warning', text: `📈 局部恶化:${top.name}(${weightLabel(top.weight)},${top.oldS} 分升至 ${top.newS} 分)` };
+  }
+  // 5. 覆盖率 60-80% → 平稳但需补缺
+  if (coverage.percent < 80) {
+    return { level: 'info', text: `📊 数据健康度 ${coverage.percent}%,链条整体平稳,留意 W5 缺失项` };
+  }
+  // 6. 全绿
+  return { level: 'good', text: `✅ 链条整体健康,所有高权重指标在安全区` };
+}
+
+function generateInsights(currentData, previousSnapshot) {
+  const coverage = computeCoverage(currentData);
+  const changes = diffWithPrevious(currentData, previousSnapshot);
+  const themes = detectThemes(currentData);
+  const top3Risks = computeTop3Risks(currentData);
+  const actions = generateActionList(currentData, previousSnapshot);
+  const headline = computeHeadline(coverage, themes, changes);
+  return { headline, coverage, changes, themes, top3Risks, actions };
+}
+
+function computePreviousSnapshot(currentIdx) {
+  const snaps = JSON.parse(localStorage.getItem('aiChainSnapshots') || '[]');
+  return snaps[currentIdx + 1]?.indicators ?? null;
+}
+
+function toggleWeeklyInsight() {
+  const sec = document.getElementById('weekly-insight');
+  if (!sec) return;
+  sec.classList.toggle('collapsed');
+  const btn = sec.querySelector('.wi-toggle');
+  if (btn) btn.textContent = sec.classList.contains('collapsed') ? '展开' : '折叠';
+}
+
+// 通用展开/收起 (5 类 changes + critical 复用同一函数,用 data-group 选元素)
+function toggleChangeGroup(groupId) {
+  const group = document.querySelector(`#weekly-insight [data-group="${groupId}"]`);
+  if (!group) return;
+  group.classList.toggle('expanded');
+  const btn = group.querySelector('.wi-expand-btn');
+  if (!btn) return;
+  const count = btn.dataset.count;
+  btn.textContent = group.classList.contains('expanded') ? '折叠 ↑' : `展开剩余 ${count} 项 ↓`;
+}
+
+function renderWeeklyInsight(insight) {
+  const body = document.querySelector('#weekly-insight .wi-body');
+  if (!body) return;
+  if (!insight) {
+    body.innerHTML = '<div class="wi-empty wi-empty-init">尚未生成解读。请批量录入数据或加载历史快照。</div>';
+    return;
+  }
+
+  const cov = insight.coverage;
+  let html = '';
+
+  // 一句话头条
+  if (insight.headline) {
+    const hl = insight.headline;
+    html += `<div class="wi-headline wi-headline-${hl.level}">${escapeHtml(hl.text)}</div>`;
+  }
+
+  // 覆盖率告警条 (warning/critical)
+  if (cov.level !== 'good') {
+    const w5Note = cov.w5Missing.length > 0
+      ? ` · W5 缺失: ${cov.w5Missing.map(escapeHtml).join(' ')}`
+      : '';
+    const prefix = cov.level === 'critical' ? '⚠️ ' : '';
+    html += `<div class="wi-coverage-alert wi-alert-${cov.level}">${prefix}数据覆盖率 ${cov.percent}% (${cov.filled}/${cov.total})${w5Note}</div>`;
+  }
+
+  html += '<div class="wi-grid">';
+
+  // Block 1: 健康度 + Top 3
+  const statusText = coverageStatusLabel(cov.level);
+  html += `<div class="wi-block wi-block-1">
+    <h3 class="wi-h3">数据健康度</h3>
+    <div class="wi-coverage-number wi-coverage-${cov.level}">数据完整度 ${cov.filled}/${cov.total} 项(${cov.percent}%) · ${statusText}</div>
+    <h3 class="wi-h3">Top 3 风险点</h3>`;
+  if (insight.top3Risks.length === 0) {
+    html += '<div class="wi-empty wi-empty-sm">暂无评分项</div>';
+  } else {
+    html += '<ol class="wi-top3">';
+    insight.top3Risks.forEach((r, i) => {
+      const parts = [weightLabel(r.weight), `${r.s} 分(${zoneLabel(r.s)})`];
+      const cLabel = confidenceLabel(r.f);
+      if (cLabel) parts.push(cLabel);
+      const formula = parts.join(' · ');
+      html += `<li>
+        <div class="wi-top3-head">
+          <span class="wi-top3-rank">#${i + 1}</span>
+          <span class="wi-top3-name indicator-name" data-n="${escapeHtml(r.nKey)}" tabindex="0">${escapeHtml(r.name)}</span>
+          <span class="wi-top3-score">${r.score}</span>
+        </div>
+        <div class="wi-top3-formula">${escapeHtml(formula)}</div>
+        ${r.noteSnippet ? `<div class="wi-top3-note">${escapeHtml(r.noteSnippet)}</div>` : ''}
+      </li>`;
+    });
+    html += '</ol>';
+  }
+  html += '</div>';
+
+  // Block 2: 本周变化
+  html += '<div class="wi-block wi-block-2"><h3 class="wi-h3">本周变化</h3>';
+  if (!insight.changes) {
+    html += '<div class="wi-hint">📌 保存快照后,下周更新可看变化对比</div>';
+  } else {
+    const groups = [
+      { key: 'deteriorated', icon: '🔴', label: '显著恶化' },
+      { key: 'warning',      icon: '🟠', label: '进入警戒' },
+      { key: 'improved',     icon: '🟢', label: '改善' },
+      { key: 'newData',      icon: '⚪', label: '新增数据' },
+      { key: 'lostData',     icon: '⚫', label: '数据消失' }
+    ];
+    let hasAny = false;
+    groups.forEach(g => {
+      const items = insight.changes[g.key];
+      if (items.length === 0) return;
+      hasAny = true;
+      html += `<div class="wi-changes-group" data-group="${g.key}">
+        <span class="wi-badge wi-badge-${g.key}">${g.icon} ${g.label} (${items.length})</span>
+        <ul class="wi-change-list">`;
+      items.forEach((it, idx) => {
+        const extraCls = idx >= 5 ? ' wi-change-extra' : '';
+        html += `<li class="${extraCls.trim()}"><span class="wi-change-n">#${escapeHtml(String(it.n))}</span><span class="wi-change-name indicator-name" data-n="${escapeHtml(it.nKey)}" tabindex="0">${escapeHtml(it.name)}</span><span class="wi-change-sep">—</span><span class="wi-change-reason">${escapeHtml(it.reason)}</span></li>`;
+      });
+      html += '</ul>';
+      if (items.length > 5) {
+        const remain = items.length - 5;
+        html += `<button type="button" class="wi-expand-btn" data-count="${remain}" onclick="toggleChangeGroup('${g.key}')">展开剩余 ${remain} 项 ↓</button>`;
+      }
+      html += '</div>';
+    });
+    if (!hasAny) html += '<div class="wi-empty wi-empty-sm">本周无显著变化</div>';
+  }
+  html += '</div>';
+
+  // Block 3: 主题判断
+  html += '<div class="wi-block wi-block-3"><h3 class="wi-h3">主题判断</h3>';
+  if (insight.themes.length === 0) {
+    html += '<div class="wi-empty wi-empty-sm">无主题触发</div>';
+  } else {
+    html += '<div class="wi-themes">';
+    insight.themes.forEach(t => {
+      const cls = t.id === 'systemic' ? 'wi-theme-systemic' : 'wi-theme-triggered';
+      html += `<div class="wi-theme ${cls}">
+        <div class="wi-theme-head">
+          <span class="wi-theme-name">${escapeHtml(t.name)}</span>
+          <span class="wi-theme-desc">${escapeHtml(t.desc)}</span>
+        </div>`;
+      if (t.contributors.length > 0) {
+        html += '<ul class="wi-theme-indicators">';
+        t.contributors.forEach(c => {
+          html += `<li><span class="wi-theme-ind-n">#${escapeHtml(String(c.n))}</span><span class="wi-theme-ind-name indicator-name" data-n="${escapeHtml(c.nKey)}" tabindex="0">${escapeHtml(c.name)}</span><span class="wi-change-sep">—</span><span class="wi-theme-ind-s">${c.s} 分(${zoneLabel(c.s)})</span></li>`;
+        });
+        html += '</ul>';
+      }
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+  html += '</div>';
+
+  // Block 4: 下周行动
+  html += '<div class="wi-block wi-block-4"><h3 class="wi-h3">下周行动清单</h3>';
+
+  html += '<div class="wi-action-group"><span class="wi-action-label">📊 建议补的数据</span>';
+  if (insight.actions.backfill.length === 0) {
+    html += '<div class="wi-empty wi-empty-sm">✅ 该补的数据本周都补齐了</div>';
+  } else {
+    html += '<ul class="wi-action-list">';
+    insight.actions.backfill.forEach(it => {
+      const url = it.cite || it.srcUrl;
+      const sourceName = simplifyDataSource(url);
+      const sourceTag = sourceName
+        ? (url
+            ? `(数据源:<a href="${escapeHtml(url)}" target="_blank" rel="noopener" class="wi-action-link">${escapeHtml(sourceName)}</a>)`
+            : `(数据源:${escapeHtml(sourceName)})`)
+        : '';
+      html += `<li><span class="wi-action-n">#${escapeHtml(String(it.n))}</span><span class="wi-action-name indicator-name" data-n="${escapeHtml(it.nKey)}" tabindex="0">${escapeHtml(it.name)}</span><span class="wi-change-sep">—</span><span class="wi-action-detail">上次有数据,本周缺 ${sourceTag}</span></li>`;
+    });
+    html += '</ul>';
+  }
+  html += '</div>';
+
+  html += '<div class="wi-action-group" data-group="critical"><span class="wi-action-label">⚡ 即将变色的指标</span>';
+  html += '<div class="wi-action-subtitle">当前在黄/橙边界,下次更新可能跳档</div>';
+  if (insight.actions.critical.length === 0) {
+    html += '<div class="wi-empty wi-empty-sm">无即将变色的指标</div>';
+  } else {
+    html += '<ul class="wi-action-list">';
+    insight.actions.critical.forEach((it, idx) => {
+      const extraCls = idx >= 3 ? 'wi-action-extra' : '';
+      let stateText;
+      if (it.s === 5) stateText = `当前 5 分(黄灯顶部),下次再恶化将进入警戒区`;
+      else if (it.s === 6) stateText = `当前 6 分(警戒区底部),恶化将进入红灯`;
+      else if (it.s === 7) stateText = `当前 7 分(警戒区顶部),恶化即进红灯严重区`;
+      else stateText = `当前 ${it.s} 分`;
+      const wLabel = weightLabel(it.weight);
+      html += `<li class="${extraCls}"><span class="wi-action-n">#${escapeHtml(String(it.n))}</span><span class="wi-action-name indicator-name" data-n="${escapeHtml(it.nKey)}" tabindex="0">${escapeHtml(it.name)}</span><span class="wi-action-weight">[${escapeHtml(wLabel)}]</span><span class="wi-change-sep">—</span><span class="wi-action-detail">${escapeHtml(stateText)}</span></li>`;
+    });
+    html += '</ul>';
+    if (insight.actions.critical.length > 3) {
+      const remain = insight.actions.critical.length - 3;
+      html += `<button type="button" class="wi-expand-btn" data-count="${remain}" onclick="toggleChangeGroup('critical')">展开剩余 ${remain} 项 ↓</button>`;
+    }
+  }
+  html += '</div>';
+
+  html += '<div class="wi-action-placeholder">📅 已知观察窗口:待 v2 加入财报日历</div>';
+
+  html += '</div></div>'; // close block-4 + grid
+
+  body.innerHTML = html;
+}
+
+// === 阶段 4.1: 指标解释 tooltip ===
+let _INDICATOR_EXPL_CACHE = null;
+function getExplanations() {
+  if (_INDICATOR_EXPL_CACHE) return _INDICATOR_EXPL_CACHE;
+  const el = document.getElementById('indicator-explanations');
+  if (!el) { _INDICATOR_EXPL_CACHE = {}; return _INDICATOR_EXPL_CACHE; }
+  try { _INDICATOR_EXPL_CACHE = JSON.parse(el.textContent); }
+  catch (e) { console.error('解析指标解释失败', e); _INDICATOR_EXPL_CACHE = {}; }
+  return _INDICATOR_EXPL_CACHE;
+}
+function getExplanation(n) {
+  const data = getExplanations();
+  return data[String(n)] || null;
+}
+
+let _tooltipPinned = false; // 点击模式锁定;mouseleave 不会隐藏
+
+function showIndicatorTooltip(nKey, anchorEl) {
+  const tooltip = document.getElementById('indicator-tooltip');
+  if (!tooltip) return;
+  const expl = getExplanation(nKey);
+  if (!expl) {
+    tooltip.classList.add('hidden');
+    return;
+  }
+  const labelN = anchorEl?.closest('[data-n]')?.dataset.n || String(nKey);
+  tooltip.innerHTML = `
+    <div class="tt-head">
+      <span class="tt-num">#${escapeHtml(String(labelN))}</span>
+      <span class="tt-name">${escapeHtml(expl.name)}</span>
+    </div>
+    <div class="tt-row"><span class="tt-label">是什么:</span><span class="tt-text">${escapeHtml(expl.what)}</span></div>
+    <div class="tt-row"><span class="tt-label">为什么有风险:</span><span class="tt-text">${escapeHtml(expl.risk)}</span></div>
+    <div class="tt-row"><span class="tt-label">阈值:</span><span class="tt-text tt-text-mono">${escapeHtml(expl.threshold)}</span></div>
+  `;
+  tooltip.classList.remove('hidden');
+  positionIndicatorTooltip(anchorEl);
+}
+
+function positionIndicatorTooltip(anchorEl) {
+  const tooltip = document.getElementById('indicator-tooltip');
+  if (!tooltip || !anchorEl) return;
+  const rect = anchorEl.getBoundingClientRect();
+  const ttRect = tooltip.getBoundingClientRect();
+  const viewportH = window.innerHeight;
+  const viewportW = window.innerWidth;
+  const spaceBelow = viewportH - rect.bottom;
+  const spaceAbove = rect.top;
+  const margin = 8;
+
+  // 垂直: 优先下方;空间不足且上方更宽则上方
+  let top, placement;
+  if (spaceBelow >= ttRect.height + margin || spaceBelow >= spaceAbove) {
+    top = rect.bottom + margin + window.scrollY;
+    placement = 'below';
+  } else {
+    top = rect.top - ttRect.height - margin + window.scrollY;
+    placement = 'above';
+  }
+
+  // 水平: 与锚点左对齐,溢出右边则右对齐;最小左边距 8px
+  let left = rect.left + window.scrollX;
+  if (left + ttRect.width > viewportW - 8) left = viewportW - ttRect.width - 8 + window.scrollX;
+  if (left < 8 + window.scrollX) left = 8 + window.scrollX;
+
+  tooltip.style.top = `${top}px`;
+  tooltip.style.left = `${left}px`;
+  tooltip.dataset.placement = placement;
+}
+
+function hideIndicatorTooltip(force) {
+  if (_tooltipPinned && !force) return;
+  const tooltip = document.getElementById('indicator-tooltip');
+  if (!tooltip) return;
+  tooltip.classList.add('hidden');
+  _tooltipPinned = false;
+}
+
+document.addEventListener('mouseover', e => {
+  const el = e.target.closest('.indicator-name');
+  if (!el) return;
+  if (_tooltipPinned) return; // 已点击锁定,不响应 hover
+  showIndicatorTooltip(el.dataset.n, el);
+});
+
+document.addEventListener('mouseout', e => {
+  const el = e.target.closest('.indicator-name');
+  if (!el) return;
+  // 仅在离开指标名时隐藏(非锁定状态)
+  if (!_tooltipPinned) hideIndicatorTooltip();
+});
+
+document.addEventListener('click', e => {
+  const el = e.target.closest('.indicator-name');
+  const tooltipEl = e.target.closest('#indicator-tooltip');
+  if (el) {
+    // 点指标名: 切换 pinned
+    if (_tooltipPinned && document.getElementById('indicator-tooltip')?.dataset.lastAnchor === el.dataset.n) {
+      hideIndicatorTooltip(true);
+    } else {
+      _tooltipPinned = false; // 先解除上一锁定
+      showIndicatorTooltip(el.dataset.n, el);
+      _tooltipPinned = true;
+      const t = document.getElementById('indicator-tooltip');
+      if (t) t.dataset.lastAnchor = el.dataset.n;
+    }
+    e.stopPropagation();
+    return;
+  }
+  if (tooltipEl) return; // 点 tooltip 内部不关
+  // 点其他地方关
+  hideIndicatorTooltip(true);
+});
+
+window.addEventListener('scroll', () => hideIndicatorTooltip(true), { passive: true });
+window.addEventListener('resize', () => hideIndicatorTooltip(true));
+</script>
+
+<!-- === 阶段 5: AI 检索提示词(供「复制提示词」按钮读取) === -->
+<script type="text/plain" id="ai-search-prompt">
+# 任务
+
+协助维护 AI 链条系统风险监控仪表盘的本周数据更新。共 68 项指标(主评分 60 + 参考 8),逐项 web_search 最新数据并给出评分。完成后把严格 JSON 数组贴回我这边,我会用工具一键导入仪表盘。
+
+# 反幻觉硬性要求(违反一条整批作废)
+
+1. 每一项必须用 web_search 主动检索,不允许凭印象、记忆或推测生成
+2. cite 字段必须给具体含数据的页面 URL,不能给首页;若数据嵌在 PDF 内可附 PDF 链接
+3. as_of 必须 YYYY-MM-DD 格式具体日期,数据本身的发布或截止时点
+4. 每项 note 必须一句话写评分依据,要含具体数值 + 命中阈值区间
+
+# 反偷懒硬性要求(与反幻觉同等优先级,违反一条整批作废)
+
+1. **null 不是默认选项**。每一项至少穷尽 3 条独立路径才能填 null
+2. 标 null 必须在 note 里写清:试了哪些来源、各自为什么失败(404 / paywall / 该数据不存在 / 搜索关键词无结果)
+3. **"需 Bloomberg 终端 / 需付费数据库 / 公开页找不到" 不是合法 null 理由**,必须列出实际尝试的 3 个公开来源 URL
+4. 找不到一手数据时,以下三种代理是合法的,不要直接 null:
+   - **权威媒体二手转述**(The Information / Reuters / Bloomberg / FT / WSJ / SemiAnalysis / The Verge)→ f 标 M
+   - **用其他公开数据反推估算**(必须在 note 注明估算口径)→ f 降为 M
+   - **同类指标的代理变量**(必须在 note 注明代理逻辑)→ f 降为 L
+5. **事件型指标若真无事件**(如 #50 研究员离职),填 s=0(=无事件触发=绿),而非 null;note 注明扫了哪些来源关键词
+
+# 数据真实性三必须(与反幻觉同等优先级,违反一条整批作废)
+
+针对历史教训:Claude 凭印象编数字(如 H100 租金 $1.60 编造为 $2.35 真实值);Claude 不按 spec 评分(如 HBM 短缺 spec 写"绿"却评 10 红)。
+
+**必须 1:web_search 验证状态自报**
+- 每项 note 末尾必须有"web_search 验证:是"或"web_search 验证:否"
+- "否"的项强制 s=null f=null;不允许凭印象给数字
+- "是"的项前提是真的做过本次会话 web_search,凭训练数据回忆不算
+
+**必须 2:极端分双源交叉验证**
+- s ≥8(红)或 s ≤2(绿)的极端评分,必须双源交叉验证,note 注明两个独立源 URL
+- 单源极端评分自动降一档:s≥8 强制改为 s=6;s≤2 强制改为 s=3;且 f 强制降为 L
+- 双源不要求都是一手,但要是独立来源(SemiAnalysis 文章 + Reuters 报道算两源;同一作者两篇文章不算)
+
+**必须 3:反向证据强制项**
+- 每项 note 末尾必须有"反向证据:无"或"反向证据:[一句话]"
+- 反向证据 = 若有源持反向观点,简述这观点
+- 写"反向证据:无"的需注明扫了哪些反向关键词
+- 反向证据存在但被评 ≥8 或 ≤2 的极端分时,必须解释为什么不采信反向源
+
+# 难度分级(自我评估,不输出到 JSON)
+
+输出每一项前,先在心里给它打个难度标签:
+- **易**:有公开网页直接给数字(slickcharts / FRED / Yahoo Finance / 公司财报 PDF / 政府数据库)
+- **中**:需要从多个来源合成、精读 PDF 财报附注、或做简单估算
+- **难**:需要付费数据库或终端,只能找代理或二手转述
+
+**难度越高,fallback 路径越要穷尽。易项找不到 = 你没认真查,整批可能作废。**
+
+# 可信度评级规则(严格)
+
+- **H(高)**:一手官方源(财报/SEC/政府数据库/官方 IR/官方监管文件),数据时点 ≤14 天
+- **M(中)**:权威媒体(Bloomberg/Reuters/WSJ/FT/The Information)或专业分析机构(SemiAnalysis/TrendForce/Sacra/PitchBook 等);或一手源但时点 14-60 天;或估算/代理值
+- **L(低)**:社交媒体/Reddit/聚合站点;或时点 >60 天;或单一二手来源未交叉验证;或代理变量
+- **null**:穷尽 3 条公开路径仍完全找不到该项任何数据
+- **自动降级规则**(导入工具会强制执行):
+  - 无 as_of 且 f 不为 null → 强制降为 L
+  - 无 cite 但 f="H" → 强制降为 M
+  - 数据时点 >14 天但标 H → 自检时降为 M
+  - 数据时点 >60 天且 f 不为 L → 自检时降为 L
+  - 估算值/代理变量标 H → 自检时降为 M
+  - 单源 + 极端分(s≥8 或 s≤2)→ 强制降一档 + f=L(防御 1 新增)
+
+# 评分映射(每个指标后已直接标注「颜色(分数)」,以下为通用映射)
+
+- 0-2 绿:链条最健康/远离阈值
+- 3-5 黄:接近预警边缘但未触发
+- 6-7 橙:已触发警戒区间
+- 8-10 红:严重触发,临近断裂
+
+**注意:每个指标的具体阈值已经直接写明对应分数,不要凭直觉打分,严格对照阈值括号里的分数。**
+
+# 输出格式(严格 JSON,前后不要任何文字解释)
+
+[
+  {"n":1,"name":"...","cur":"...","s":4,"f":"H","as_of":"2026-05-09","cite":"https://...","note":"..."},
+  ...
+]
+
+字段说明:
+- n:数字。指标编号 1b 写 1.5,46b 写 46.5(不要写字符串)
+- name:指标名(便于人工核对)
+- cur:当前值简短字符串描述,例 "175 bps" / "92.5 美分" / "$2.30/h"
+- s:0-10 整数 或 null
+- f:"H" / "M" / "L" / null
+- as_of:"YYYY-MM-DD" 或 null
+- cite:具体含数据的页面 URL,或 null
+- note:**新格式(防御 1 升级)**,必须含以下四要素并按此顺序:
+  1. 评分依据:具体数值 + 命中阈值区间
+  2. 反向证据:无 / [一句话简述反向观点]
+  3. web_search 验证:是 / 否
+  示例:"Oracle 5Y CDS 5/15 = 198 bps,落 150-200 bps 黄区中段(5)。反向证据:无,扫了"Oracle CDS narrow"、"Oracle credit improve"无果。web_search 验证:是。"
+
+# 输出前自检(每批必须完成)
+
+JSON 数组生成完毕后,**不要立即输出**。先在心里走一遍:
+
+1. **null 项自检**:是否全部都在 note 里列出了 3 条试过的路径?若否,补查
+
+2. **打分自检**:每一项的 s 分数,是否与对应阈值区间括号里的分数严格对应?常见错误:
+   - 把「黄(3-5)」记成「橙」或反之
+   - 把「>35% 红」算成「35-40% 橙」
+   - 双因子取较严指标,只算了一个因子
+   - 双向告警指标(如 #62)按单向阈值算
+   - **状态型指标(如 #64 HBM 库存)忽略阈值方向,凭传统直觉打分**:严格按 spec 阈值括号里的分数,不要凭"库存少=危险"等通用直觉
+
+3. **方向自检(防御 1 新增)**:打分前回答自己一个问题——
+   - 这个数值变化对 AI 算力产业链整体景气是利好还是利空?
+   - 若答"利好"但你给红区(s≥8),停下重审阈值是否反向理解
+   - 若答"利空"但你给绿区(s≤2),停下重审阈值是否反向理解
+   - 典型陷阱:HBM 严重短缺=AI 需求超供给=景气利好=绿区(0-2),不是红区
+   - 典型陷阱:GPU 等待时间长=供不应求=利好=绿区,等待时间短=供过于求=利空=红区
+
+4. **可信度降级自检**:
+   - 数据时点 >14 天但标 H 的 → 降为 M
+   - 数据时点 >60 天但 f 不为 L 的 → 降为 L
+   - 估算/代理变量但 f 标 H 的 → 降为 M
+   - 双因子/双源指标缺一个因子 → f 降为 L
+   - 单源 + 极端分(s≥8 或 s≤2)→ 强制降一档 + f=L(防御 1 新增)
+
+5. **note 字段格式自检(防御 1 新增)**:每条 note 是否含三要素?
+   - 评分依据(数值 + 阈值区间)
+   - 反向证据(无 / [一句话])
+   - web_search 验证(是 / 否)
+   - 缺任一要素 → 补全后再输出
+
+6. **覆盖率自检**:本批 null 项数量。若 >20% → 大概率偷懒,重新审视每个 null 是否真的穷尽 3 路径
+
+7. **格式自检**:JSON 是否合法?前后是否有多余文字?
+
+自检通过后再输出。
+
+# 分批约定
+
+68 项一次输出超长,分三批:
+- 第一批 #1 到 #32(信用市场 6 / 私募 4 / 芯片产能前段 8 / 英伟达 4 / 系统 ODM 5 / 网络基建前 2 项)
+- 第二批 #33 到 #64(网络基建剩余 3 项 / 电力基建 5 ref / 模型公司 11 / 应用层 5 / 宏观情绪 6 项 / 芯片产能补 #63 #64)
+- 第三批 #65 到 #69(美股结构脆弱性 4 项 + 宏观情绪补 #69)
+
+每批输出后等我回"继续"再开始下一批。三批均为独立的严格 JSON 数组,不要合并。
+
+# 完整 68 项清单(n / 名称 / 权重·主或参考 / 阈值带分数 / 路径 ABC)
+
+## 信用市场(6 项,主总权重 25)
+
+### #1 Oracle 5 年期 CDS │ W3·主
+阈值:<150 绿(0-2) / 150-200 黄(3-5) / 200-250 橙(6-7) / >250 红(8-10)
+- 路径 A:S&P Global Market Intelligence "Oracle 5-year CDS spread basis points"
+- 路径 B:Bloomberg / Reuters Oracle CDS 季度跟踪文章
+- 路径 C:Oracle 5Y bond yield - 5Y Treasury yield 作 CDS 代理 (f 降 M)
+
+### #1b(n=1.5)AI 算力公司加权平均 CDS │ W5·主
+阈值同 #1,权重 Oracle×0.30 + CoreWeave×0.50 + Coherent×0.20;任一缺失整体标 L
+- 路径 A:S&P Global / Markit 公开页 CoreWeave、Coherent 5Y CDS
+- 路径 B:三家各自 5Y bond yield - 5Y Treasury 作代理算加权
+- 路径 C:Tech HY CDX index 作整体代理 (f 降 L)
+
+### #2 CoreWeave 债券价格 │ W5·主
+阈值:>95 美分 绿(0-2) / 90-95 黄(3-5) / 80-90 橙(6-7) / <80 红(8-10)
+- 路径 A:FINRA TRACE finra-markets.morningstar.com,搜 CoreWeave bond / CUSIP
+- 路径 B:cbonds.com、boerse-frankfurt.de
+- 路径 C:CoreWeave Q1 2026 10-Q 债务公允价值附注
+
+### #3 Oracle 信用评级 │ W5·主
+阈值:A 及以上 绿(0-2) / BBB+ 或负面展望 黄(3-5) / 下调一级 橙(6-7) / 跌破投资级 红(8-10)
+- 路径 A:S&P / Moody's / Fitch 官网 Oracle 评级页
+- 路径 B:Oracle 最新 SEC 招股说明书或 10-K 中评级披露
+- 路径 C:Bloomberg / Reuters 评级行动新闻
+
+### #4 高收益债利差(HY OAS) │ W3·主
+阈值:<350 绿(0-2) / 350-450 黄(3-5) / 450-550 橙(6-7) / >550 红(8-10)
+- 路径 A:FRED 'BAMLH0A0HYM2' 直接取最新值
+- 路径 B:ICE BofA US High Yield Index 官方页
+- 路径 C:Bloomberg / WSJ HY spread 周报
+
+### #5 美 10 年期国债 │ W4·主
+阈值:<4.5% 绿(0-2) / 4.5-5.0% 黄(3-5) / 5.0-5.5% 橙(6-7) / >5.5% 红(8-10)
+- 路径 A:FRED 'DGS10' 直接取最新值
+- 路径 B:tradingeconomics.com / investing.com 10Y yield
+- 路径 C:Treasury.gov daily yield curve
+
+## 私募市场(4 项,主总权重 19)
+
+### #6 Anthropic 二级估值 │ W5·主
+阈值:溢价/平价 绿(0-2) / 折价 0-10% 黄(3-5) / 10-25% 橙(6-7) / >25% 红(8-10)
+- 路径 A:Hiive、Forge Global "Anthropic secondary" 当前隐含估值
+- 路径 B:The Information / Bloomberg Anthropic tender offer 报道
+- 路径 C:Sacra 私募估值分析报告
+
+### #7 OpenAI 二级估值 │ W5·主
+阈值同 #6
+- 路径 A:Forge Global "openai_stock" 页面隐含估值
+- 路径 B:Hiive、The Information "OpenAI tender offer" 报道
+- 路径 C:Sacra、stockanalysis.com OpenAI 估值分析
+
+### #9 OpenAI 融资进展 │ W5·主
+阈值:按计划 绿(0-2) / 延期 ≤3 月 黄(3-5) / 延期 >3 月或降估值传闻 橙(6-7) / 正式宣布降估值或失败 红(8-10)
+- 路径 A:The Information / Bloomberg OpenAI funding round 最新进展
+- 路径 B:OpenAI 官方博客或 Sam Altman 公开声明
+- 路径 C:Reuters / FT 投资方表态
+
+### #10 中东主权基金 AI 投入 │ W4·主
+阈值:季度环比 平稳/上升 绿(0-2) / 降 0-30% 黄(3-5) / 30-40% 橙(6-7) / >40% 红(8-10)
+- 路径 A:数 MGX / PIF Q 当季 vs Q 上季各自宣布的 AI 投资金额加总
+- 路径 B:Reuters / Bloomberg / FT "MGX investment" + "PIF AI" 季度跟踪
+- 路径 C:Wam.ae(UAE 官媒)、saudipress.com 政府公告
+
+## 芯片产能(12 项,主总权重 51)
+
+### #11 台积电月营收增速 │ W5·主
+阈值:vs 过去 4 月平均同比增速差 ≥+5pp 绿(0-2) / 0-5pp 黄(3-5) / -5-0pp 橙(6-7) / <-5pp 红(8-10)
+- 路径 A:tsmc.com/en IR monthly revenue 当月 + 前 4 月数据自算
+- 路径 B:DigiTimes、focustaiwan.tw TSMC 月报报道
+- 路径 C:Reuters / Bloomberg TSMC 月度营收分析
+
+### #12 ASML 季度订单 │ W5·主
+阈值:持平/上升 绿(0-2) / 环比降 0-30% 黄(3-5) / 30-50% 橙(6-7) / >50% 红(8-10)
+- 路径 A:ASML Q 当季 earnings release + earnings call transcript 中 CFO 定性指引
+- 路径 B:SemiAnalysis、Bernstein 财报后估算文章
+- 路径 C:对比 ASML 给的全年指引环比变化作代理 (f 降 M)
+
+### #13 SK Hynix HBM 营收 QoQ │ W4·主
+阈值:>25% 绿(0-2) / 10-25% 黄(3-5) / 0-10% 橙(6-7) / <0% 红(8-10)
+- 路径 A:SK Hynix 季报英文版 PDF (news.skhynix.com) 精读 HBM 拆分
+- 路径 B:用 DRAM 总营收 × HBM 占比反推 (f 降 M)
+- 路径 C:TrendForce、Reuters SK Hynix HBM 季报报道
+
+### #14 SK 海力士 HBM 收入 YoY │ W4·主
+阈值:>100% 绿(0-2) / 50-100% 黄(3-5) / 20-50% 橙(6-7) / <20% 红(8-10)
+- 路径 A:SK Hynix 季报英文版 HBM YoY 直接披露
+- 路径 B:Yonhap / Korea Herald HBM 营收同比报道
+- 路径 C:TrendForce HBM market share 报告反推
+
+### #15 美光 DRAM 收入 │ W3·主
+阈值:同比 >50% 绿(0-2) / 20-50% 黄(3-5) / 0-20% 橙(6-7) / 同比下滑 红(8-10)
+- 路径 A:Micron 当季财报 DRAM segment YoY (investors.micron.com)
+- 路径 B:SEC EDGAR Micron 10-Q
+- 路径 C:Reuters / Bloomberg Micron 季报报道
+
+### #16 台积电 CoWoS 利用率 │ W3·主
+阈值:>95% 绿(0-2) / 90-95% 黄(3-5) / 80-90% 橙(6-7) / <80% 红(8-10)
+- 路径 A:TrendForce "CoWoS utilization" 月度报道
+- 路径 B:SemiAnalysis CoWoS capacity 跟踪文章
+- 路径 C:DigiTimes、台积电法说会 Q&A 中 CoWoS 定性描述
+
+### #17 H100 一年期租金 │ W5·主
+阈值:>$2.50/h 绿(0-2) / $2.00-2.50 黄(3-5) / $1.50-2.00 橙(6-7) / <$1.50 红(8-10)
+- 路径 A:SemiAnalysis "GPU rental capacity" 最新 issue
+- 路径 B:vast.ai marketplace、runpod.io H100 1Y 合约价
+- 路径 C:shadeform.ai、compute.exchange 公开报价
+
+### #18 H100/H200 折扣率 │ W5·主
+阈值:H100 二手价 / H200 同期新品价 ≥60% 绿(0-2) / 50-60% 黄(3-5) / 40-50% 橙(6-7) / <40% 红(8-10)
+- 路径 A:compute.exchange、SemiAnalysis H100 二手 vs H200 新品对比
+- 路径 B:vast.ai 上 H100 二手报价 / runpod H200 报价自算
+- 路径 C:eBay / 二手企业市场 H100 整机价 vs Dell/Supermicro H200 报价
+
+### #19 GPU 等待时间 │ W4·主
+阈值:>6 月 绿(0-2) / 4-6 月 黄(3-5) / 2-4 月 橙(6-7) / <2 月 红(8-10)
+- 路径 A:SemiAnalysis、The Information GPU lead time 最新报道
+- 路径 B:hyperscaler 财报会 Q&A 中 capacity 表述
+- 路径 C:CoreWeave / Lambda / Crusoe 官方 lead time 公告
+
+### #20 Broadcom AI 收入占比 │ W5·主
+阈值:同比 >100% 绿(0-2) / 60-100% 黄(3-5) / 30-60% 橙(6-7) / <30% 红(8-10)
+- 路径 A:Broadcom 当季财报 AI segment YoY (SEC EDGAR / investors.broadcom.com)
+- 路径 B:Reuters / Bloomberg Broadcom 季报 AI 营收报道
+- 路径 C:Hock Tan 财报会发言中 AI 营收数字
+
+### #63 英伟达成品库存周转天数 │ W4·主
+阈值:<60 天 绿(0-2) / 60-90 黄(3-5) / 90-120 橙(6-7) / >120 红(8-10)
+- 路径 A:NVDA 最新 10-Q (SEC EDGAR) inventory 附注中 finished goods 单独披露
+- 路径 B:用总库存 × finished goods 历史占比估算 (f 降 M)
+- 路径 C:SemiAnalysis、Reuters NVDA 库存分析文章
+
+### #64 HBM 渠道库存(状态型) │ W3·主
+阈值:严重短缺 绿(0-2) / 紧张 黄(3-5) / 正常 橙(6-7) / 过剩 红(8-10)
+**方向说明**:此为状态型指标,景气视角下"短缺=需求超供给=利好=绿区","过剩=需求转弱=利空=红区"。严格按 spec 评分,不要凭传统制造业"库存少=危险"直觉反向打分。
+- 路径 A:TrendForce HBM 月报中 channel inventory 定性描述
+- 路径 B:DRAMeXchange、Korea Herald HBM 供需文章
+- 路径 C:SK Hynix / Micron / Samsung 财报会 HBM 供需定性表述
+
+## 英伟达(4 项,主总权重 18)
+
+### #21 英伟达 DSO │ W5·主
+阈值:<50 天 绿(0-2) / 50-60 黄(3-5) / 60-70 橙(6-7) / 70-80 红(8-10) / >80 重红
+- 路径 A:NVDA 10-Q CFO Commentary 直接披露
+- 路径 B:用 AR / Quarterly Revenue × 90 自算
+- 路径 C:macrotrends.net NVDA DSO 历史序列
+
+### #22 对循环客户应收(双因子取较严) │ W5·主
+A = 前 2 大客户占应收比 / B = 应收增速 - 营收增速差
+阈值:A<35% 且 B≤0 绿(0-2) / A 35-45% 或 B 0-25% 黄(3-5) / A 45-55% 或 B 25-50% 橙(6-7) / A≥55% 或 B>50% 红(8-10)
+- 路径 A:NVDA 10-K 客户附注前 2 大客户占应收比 + AR/Rev YoY 自算
+- 路径 B:10-Q 季度更新数据
+- 路径 C:The Information / Reuters NVDA 客户集中度分析
+
+### #23 英伟达期权 P/C 比率 │ W4·主
+阈值:<0.6 绿(0-2) / 0.6-0.9 黄(3-5) / 0.9-1.2 橙(6-7) / >1.2 红(8-10)
+- 路径 A:alphaquery.com NVDA 30-day put-call ratio
+- 路径 B:CBOE 当日 NVDA P/C 数据
+- 路径 C:Yahoo Finance NVDA options chain 自算
+
+### #24 AMD 数据中心收入 │ W4·主
+阈值:同比 >80% 绿(0-2) / 40-80% 黄(3-5) / 20-40% 橙(6-7) / <20% 红(8-10)
+- 路径 A:AMD 当季财报 DCG segment YoY (SEC EDGAR)
+- 路径 B:Lisa Su 财报会发言 + 投资人 deck
+- 路径 C:Reuters / Bloomberg AMD 数据中心季报报道
+
+## 系统 ODM(5 项,主总权重 17)
+
+### #26 Super Micro 订单 │ W3·主
+阈值:订单环比 >0% 绿(0-2) / 0~-10% 黄(3-5) / -10~-20% 橙(6-7) / <-20% 红(8-10)
+- 路径 A:SMCI 当季 backlog / book-to-bill (SEC EDGAR 10-Q)
+- 路径 B:SMCI 财报会 Charles Liang 订单表述
+- 路径 C:Reuters / Bloomberg SMCI 订单分析
+
+### #27 Dell ISG 同比增速 │ W3·主
+阈值:同比 >25% 绿(0-2) / 10-25% 黄(3-5) / 0-10% 橙(6-7) / 同比下滑 红(8-10)
+- 路径 A:Dell 当季财报 ISG segment YoY (SEC EDGAR)
+- 路径 B:Dell IR earnings release
+- 路径 C:Reuters / Bloomberg Dell ISG 季报
+
+### #28 鸿海 AI 服务器收入 │ W4·主
+阈值:同比 >50% 绿(0-2) / 30-50% 黄(3-5) / 10-30% 橙(6-7) / <10% 红(8-10)
+- 路径 A:foxconn.com IR 月度营收 + AI server 定性占比
+- 路径 B:DigiTimes、Reuters 鸿海 AI server 出货报道
+- 路径 C:鸿海投资人简报中 AI server 同比表述
+
+### #29 广达月度营收 │ W4·主
+阈值:同比 >40% 绿(0-2) / 30-40% 黄(3-5) / 10-30% 橙(6-7) / <10% 红(8-10)
+- 路径 A:quantatw.com IR 月度营收
+- 路径 B:DigiTimes 广达月报报道
+- 路径 C:Smartkarma 广达季报分析
+
+### #30 纬创月度营收 │ W3·主,阈值同 #29
+- 路径 A:wistron.com IR 月度营收
+- 路径 B:DigiTimes 纬创月报报道
+- 路径 C:Reuters 纬创 AI server 报道
+
+## 网络基建(5 项,主总权重 16)
+
+### #31 Arista Networks 收入 │ W3·主
+阈值:同比 >30% 绿(0-2) / 20-30% 黄(3-5) / 10-20% 橙(6-7) / <10% 红(8-10)
+- 路径 A:ANET 当季财报 cloud titans 表述 (SEC EDGAR)
+- 路径 B:Arista IR earnings call
+- 路径 C:Reuters / Bloomberg ANET 季报报道
+
+### #32 中际旭创月度营收 │ W4·主
+阈值:同比 >80% 绿(0-2) / 40-80% 黄(3-5) / 20-40% 橙(6-7) / <20% 红(8-10)
+- 路径 A:巨潮资讯网 cninfo.com.cn 搜 "300308 主要经营情况"
+- 路径 B:东方财富 eastmoney.com 300308 公告
+- 路径 C:雪球、和讯 300308 月度营收报道
+
+### #33 Coherent 光模块 │ W3·主
+阈值:同比 >50% 绿(0-2) / 25-50% 黄(3-5) / 10-25% 橙(6-7) / <10% 红(8-10)
+- 路径 A:COHR 当季财报 Datacom transceiver segment (SEC EDGAR)
+- 路径 B:Coherent IR earnings release
+- 路径 C:LightCounting Coherent 季报分析
+
+### #34 Vertiv 订单 │ W3·主
+阈值:订单同比 >40% 绿(0-2) / 20-40% 黄(3-5) / 10-20% 橙(6-7) / <10% 红(8-10)
+- 路径 A:VRT 当季财报 organic orders YoY (SEC EDGAR)
+- 路径 B:Vertiv IR earnings release
+- 路径 C:Reuters Vertiv 订单报道
+
+### #35 Eaton 数据中心 │ W3·主
+阈值:同比 >30% 绿(0-2) / 15-30% 黄(3-5) / 5-15% 橙(6-7) / <5% 红(8-10)
+- 路径 A:ETN 当季财报 Electrical Americas / data center segment YoY
+- 路径 B:Eaton IR earnings call data center 表述
+- 路径 C:Reuters / Bloomberg Eaton 数据中心订单报道
+
+## 电力基建(5 项,全 ref 不参与综合分,W2)
+
+### #36 Dominion 数据中心队列 │ W2·参考
+阈值:净增 绿(0-2) / 增长放缓 黄(3-5) / 1-2 起取消 橙(6-7) / ≥3 起或大单(>500MW)取消 红(8-10)
+- 路径 A:Dominion Energy interconnection queue PJM Virginia
+- 路径 B:virginiamercury.com / utilitydive.com Dominion 队列报道
+- 路径 C:Virginia SCC 备案文件
+
+### #37 Texas ERCOT 签约 │ W2·参考
+阈值:季度新增大用户 >2 GW 绿(0-2) / 1-2 黄(3-5) / 0.5-1 橙(6-7) / <0.5 红(8-10)
+- 路径 A:ERCOT large load interconnection queue 官方页
+- 路径 B:utilitydive.com ERCOT 数据中心负荷报道
+- 路径 C:Houston Chronicle、Texas Tribune ERCOT 报道
+
+### #38 Constellation 长期合同 │ W2·参考
+阈值:季度 ≥1 起新签 绿(0-2) / 0 起 黄(3-5) / 1 起取消 橙(6-7) / ≥2 起取消 红(8-10)
+- 路径 A:Constellation Energy IR quarterly PPA 公告
+- 路径 B:Constellation 8-K SEC 申报 hyperscaler PPA
+- 路径 C:utilitydive.com / latitudemedia.com PPA 跟踪报道
+
+### #39 Equinix 入住率 │ W2·参考
+阈值:≥85% 绿(0-2) / 80-85% 黄(3-5) / 75-80% 橙(6-7) / <75% 红(8-10)
+- 路径 A:Equinix 当季财报 worldwide cabinet utilization
+- 路径 B:Equinix earnings call 利用率表述
+- 路径 C:DatacenterDynamics Equinix 季报分析
+
+### #40 PPA 签约速度 │ W2·参考
+阈值:季度 持平/上升 绿(0-2) / 减 0-50% 黄(3-5) / 50-75% 橙(6-7) / 出现取消或减 >75% 红(8-10)
+- 路径 A:LevelTen Energy 季度 PPA Price Index 报告
+- 路径 B:Bloomberg NEF Corporate Energy Market Outlook
+- 路径 C:S&P Global Commodity Insights data center PPA 跟踪
+
+## 模型公司(11 项:8 主 + 3 参考,主总权重 36)
+
+### #41 Anthropic 收入增速 │ W5·主
+阈值:同比倍数 >10x 绿(0-2) / 5-10x 黄(3-5) / 3-5x 橙(6-7) / <3x 红(8-10)
+- 路径 A:Sacra、The Information、Reuters Anthropic ARR 最新报道
+- 路径 B:Anthropic 官方博客或 Dario Amodei 公开访谈
+- 路径 C:VentureBeat / Fortune Anthropic 营收里程碑文章
+
+### #42 Anthropic 烧钱率 │ W5·主
+阈值:亏损/收入 <50% 绿(0-2) / 50-75% 黄(3-5) / 75-100% 橙(6-7) / >100% 红(8-10)
+- 路径 A:The Information / Fortune / WSJ Anthropic 亏损/现金消耗近 6 月报道
+- 路径 B:用累计融资 - 估算账上现金反推已消耗 (f 降 M)
+- 路径 C:SaaStr / Tanay's Substack 烧钱率分析
+
+### #43 Anthropic 企业 NRR │ W2·参考
+阈值:>120% 绿(0-2) / 110-120% 黄(3-5) / 100-110% 橙(6-7) / <100% 红(8-10)
+- 路径 A:Sacra、Tanay's Substack Anthropic enterprise retention 分析
+- 路径 B:用 enterprise client >$1M 数翻倍 + 单客户 ACV 增长反推 (f 降 M)
+- 路径 C:参考同阶段 Snowflake/Databricks NRR 区间(120-150%)估算 (f 降 L)
+
+### #44 OpenAI 收入增速 │ W5·主
+阈值:>3x 绿(0-2) / 2-3x 黄(3-5) / 1.5-2x 橙(6-7) / <1.5x 红(8-10)
+- 路径 A:Sacra、WSJ、Bloomberg OpenAI ARR 最新
+- 路径 B:The Information OpenAI 营收里程碑
+- 路径 C:Sam Altman 公开访谈中营收数字
+
+### #45 OpenAI 烧钱率 │ W5·主,阈值同 #42
+- 路径 A:The Information / Fortune OpenAI 亏损/现金消耗近 6 月报道
+- 路径 B:用累计融资 - 估算账上现金反推 (f 降 M)
+- 路径 C:SaaStr / Sacra OpenAI 烧钱率分析
+
+### #46 企业 AI 市场总规模增速 │ W5·主
+阈值:同比 TAM >100% 绿(0-2) / 50-100% 黄(3-5) / 25-50% 橙(6-7) / <25% 红(8-10)
+- 路径 A:Stanford AI Index 2025 报告免费 PDF (hai.stanford.edu/ai-index)
+- 路径 B:IDC Worldwide AI Spending Guide 最新新闻摘要
+- 路径 C:Gartner、McKinsey State of AI enterprise spend YoY
+
+### #46b(n=46.5)企业 AI 份额集中度 │ W2·参考
+以 OpenAI 份额为代理:≥25% 绿(0-2) / 20-25% 黄(3-5) / 15-20% 橙(6-7) / <15% 红(8-10)
+- 路径 A:Menlo Ventures State of Generative AI Enterprise OpenAI 份额
+- 路径 B:Sacra OpenAI 企业市场份额估算
+- 路径 C:用 OpenAI ARR / 总 enterprise AI spend 自算
+
+### #47 ChatGPT 流量份额 │ W2·参考
+阈值:≥70% 绿(0-2) / 60-70% 黄(3-5) / 50-60% 橙(6-7) / <50% 红(8-10)
+- 路径 A:Similarweb ChatGPT vs Claude vs Gemini 月度访问
+- 路径 B:Semrush AI chatbot 流量份额报告
+- 路径 C:getpanto.ai、demandsage AI 统计聚合
+
+### #48 中美 SWE-Bench 对比 │ W5·主
+阈值:美闭源 vs 中开源最强 pp 差 ≥10pp 绿(0-2) / 5-10pp 黄(3-5) / 0-5pp 橙(6-7) / 中国反超 红(8-10)
+- 路径 A:swebench.com 官方 leaderboard
+- 路径 B:Hugging Face SWE-bench Verified 排行
+- 路径 C:Twitter/X Qwen3 / DeepSeek / Kimi K2 最新 SWE-Bench 发布
+
+### #49 ARC-AGI-3 进展速度 │ W4·主
+阈值:季度 ≥10pp 绿(0-2) / 5-10pp 黄(3-5) / 半年 <5pp 橙(6-7) / 半年 0pp 或退步 红(8-10)
+- 路径 A:arcprize.org leaderboard 当前最高 vs 季度初最高
+- 路径 B:Twitter/X "ARC-AGI-3" 近季度突破帖
+- 路径 C:Hugging Face arc-agi 相关榜单
+
+### #50 顶级研究员离职(事件型) │ W3·主
+阈值:无关键人物 绿(0-2) / 非核心研究员 黄(3-5) / 研究负责人级别 橙(6-7) / Co-founder 或 Chief Scientist 红(8-10)
+- 路径 A:近一周 The Information / Bloomberg / Reuters 搜 "OpenAI departure" / "Anthropic resignation" / "Google DeepMind leave"
+- 路径 B:LinkedIn 头部研究员状态变更
+- 路径 C:若真无事件,note 注明扫了哪些来源关键词,s=0(=无事件=绿)
+
+## 应用层(5 项,主总权重 18)
+
+### #51 Salesforce Agentforce ARR │ W4·主
+阈值:同比 ≥150% 绿(0-2) / 80-150% 黄(3-5) / 30-80% 橙(6-7) / <30% 红(8-10)
+- 路径 A:Salesforce 当季财报 Agentforce ARR (SEC EDGAR)
+- 路径 B:Salesforce IR earnings release
+- 路径 C:Reuters Salesforce Agentforce 季报
+
+### #52 ServiceNow Now Assist │ W4·主
+阈值:同比 ≥100% 绿(0-2) / 50-100% 黄(3-5) / 20-50% 橙(6-7) / <20% 红(8-10)
+- 路径 A:ServiceNow 当季财报 Now Assist ACV
+- 路径 B:ServiceNow IR earnings call
+- 路径 C:Reuters ServiceNow AI ACV 报道
+
+### #53 Microsoft Copilot ARR(事件型) │ W4·主
+阈值:披露具体数字 绿(0-2) / 仅披露百分比 黄(3-5) / 减少披露 橙(6-7) / 公开下调指引 红(8-10)
+- 路径 A:Microsoft 当季财报 Copilot ARR + CFO Hood 发言 (news.microsoft.com)
+- 路径 B:Satya Nadella 财报会 Copilot 表述
+- 路径 C:Reuters / The Verge Microsoft Copilot 季报报道
+
+### #54 AI 应用层融资速度 │ W3·主
+阈值:季度环比 ±20% 内 绿(0-2) / 减 20-35% 黄(3-5) / 35-50% 橙(6-7) / >50% 红(8-10)
+- 路径 A:Crunchbase News AI funding 月度回顾
+- 路径 B:CB Insights State of AI 免费摘要、TechCrunch AI funding roundup
+- 路径 C:PitchBook Q 当季 AI report 新闻稿
+
+### #55 财富 500 AI 使用率 │ W3·主
+阈值:≥90% 绿(0-2) / 80-90% 黄(3-5) / 70-80% 橙(6-7) / <70% 红(8-10)
+- 路径 A:Gartner CIO Survey 最新 enterprise AI deployment %
+- 路径 B:McKinsey State of AI 最新版大企业渗透率
+- 路径 C:Deloitte Tech Trends AI 章节、Stanford AI Index 企业使用率
+
+## 宏观情绪(7 项,主总权重 29)
+
+### #56 软银股价 9984.T │ W5·主·weekly
+阈值:周变动 涨/持平 绿(0-2) / 跌 0-10% 黄(3-5) / 10-20% 橙(6-7) / >20% 红(8-10)
+- 路径 A:Yahoo Finance 9984.T weekly close
+- 路径 B:Investing.com / TradingView 9984 周变动
+- 路径 C:Nikkei Asia / Reuters SoftBank 周报道
+
+### #57 USD/CNY │ W3·主
+阈值:<7.2 绿(0-2) / 7.2-7.5 黄(3-5) / 7.5-7.8 橙(6-7) / >7.8 红(8-10)
+- 路径 A:tradingeconomics.com/china/currency
+- 路径 B:investing.com USD CNY
+- 路径 C:Reuters / Bloomberg USD CNY 周报道
+
+### #58 七巨头股价分化(QQEW vs QQQ) │ W4·主
+阈值:季度收益差(QQEW − QQQ)≥0 绿(0-2) / -5~0pp 黄(3-5) / -10~-5pp 橙(6-7) / <-10pp 红(8-10)
+- 路径 A:Yahoo Finance 查 QQQ 和 QQEW 各自 QTD return,相减得 pp 差
+- 路径 B:Bloomberg / Morningstar QQQ vs QQEW 季度对比
+- 路径 C:ETF.com QQEW 表现页面
+
+### #60 Microsoft Azure capex 指引 │ W5·主
+阈值:上调 绿(0-2) / 持平 黄(3-5) / 下调 0-10% 橙(6-7) / 下调 >10% 或不再披露 红(8-10)
+- 路径 A:Microsoft 当季财报 capex 指引 + CFO Hood 财报会发言
+- 路径 B:Microsoft IR investor day capex 表述
+- 路径 C:Reuters / Bloomberg Microsoft capex 报道
+
+### #61 AI 主题 ETF 资金流 │ W4·主
+阈值:月净流入 绿(0-2) / 单月净流出 黄(3-5) / 连续 2 月净流出 橙(6-7) / 连续 ≥3 月 红(8-10)
+- 路径 A:etf.com fund flows tool 查 BOTZ + CHAT + AIQ + ROBO 近 30 天净流入合计
+- 路径 B:VettaFi、ETF Database fund flows
+- 路径 C:Bloomberg ETF flows 文章
+
+### #62 标普 500 AI 集中度(Mag 7,**双向告警**) │ W5·主
+阈值:Mag 7 占 SPX 比 30-33% 绿(0-2) / 上方 33-35% 或下方 25-30% 黄(3-5) / >35% 橙(6-7) / >37% 红(8-10)
+- 路径 A:slickcharts.com/sp500 把 NVDA+AAPL+MSFT+AMZN+GOOG/GOOGL+META+TSLA 权重相加
+- 路径 B:S&P Dow Jones Indices 月度报告
+- 路径 C:Visual Capitalist、CNBC 季度 Mag 7 集中度文章
+
+### #69 5 年通胀预期(双源取较严) │ W3·主
+A=UMich 5Y, B=FRED T5YIE; 取较严的那个代入阈值
+阈值:两者均<2.5% 绿(0-2) / 任一 2.5-3.0% 黄(3-5) / 任一 3.0-3.5% 橙(6-7) / 任一 >3.5% 红(8-10)
+- 路径 A:UMich Consumer Sentiment 月报 (sca.isr.umich.edu) + FRED T5YIE
+- 路径 B:Reuters / Bloomberg UMich + breakeven 综合报道
+- 路径 C:Atlanta Fed inflation expectations dashboard
+
+## 美股结构脆弱性(4 项,主总权重 18)
+
+### #65 标普新高日 breadth(双因子取较严) │ W5·主·earliest
+A=SPX>200DMA%, B=SPX 触52W低%; 取较严的代入
+阈值:A≥70% 且 B<2% 绿(0-2) / A 60-70% 或 B 2-4% 黄(3-5) / A 50-60% 或 B 4-6% 橙(6-7) / A<50% 或 B>6% 红(8-10)
+- 路径 A:Schwab Research / Bespoke Investment 周报 SPX breadth
+- 路径 B:barchart.com / stockcharts.com 200DMA % + 52W low %
+- 路径 C:Yfinance 自算(SPX 成分股逐一)
+
+### #66 FINRA 保证金债务 / GDP │ W5·主
+阈值:<2% 绿(0-2) / 2-3% 黄(3-5) / 3-4% 橙(6-7) / >4% 红(8-10)
+- 路径 A:FINRA monthly margin statistics + BEA quarterly GDP 自算
+- 路径 B:GuruFocus / Atwater Malick "Margin Debt to GDP" 历史图
+- 路径 C:Advisor Perspectives margin debt 月度分析
+
+### #67 Mag 7 盈利占 SP500 总盈利比 │ W4·主
+阈值:<20% 绿(0-2) / 20-28% 黄(3-5) / 28-35% 橙(6-7) / >35% 红(8-10)
+- 路径 A:FactSet Earnings Insight 季度 Mag 7 vs SPX earnings 占比
+- 路径 B:Bloomberg / Reuters Mag 7 季度盈利贡献文章
+- 路径 C:用 Mag 7 各家季度净利润加总 / SPX 总净利润自算
+
+### #68 半导体板块占 SPX 权重 │ W4·主
+阈值:<10% 绿(0-2) / 10-14% 黄(3-5) / 14-18% 橙(6-7) / >18% 红(8-10)
+- 路径 A:slickcharts.com/sp500 + GICS Semiconductors & Semiconductor Equipment 子行业逐一相加(NVDA + AVGO + AMD + MU + QCOM + AMAT + LRCX + KLA + ADI + TXN 等)
+- 路径 B:S&P Dow Jones Indices GICS Semi sub-industry 权重报告
+- 路径 C:XSD / SOXX ETF 占 SPY 比例反推
+
+# 提醒
+
+输出 JSON 数组前后不要写任何解释,我会直接复制粘贴到导入工具。分三批输出:第一批 #1-#32 共 32 项;第二批 #33-#64 共 30 项;第三批 #65-#69 共 5 项。每批完成后停下等"继续",再开始下一批。
+
+**最重要的两条原则,生成每一项前都默念一次:**
+1. **null 是最后退路,不是默认选项**:穷尽 ABC 三路径才能 null
+2. **打分严格按括号里的分数**:不要凭直觉给"中间值",阈值括号写多少就是多少
+
+**防御 1 新增的三条数据真实性原则,每一项前也要默念:**
+3. **note 三要素齐全**:评分依据 / 反向证据 / web_search 验证
+4. **极端分必须双源**:s≥8 或 s≤2 单源时,自动降一档 + f=L
+5. **方向自检**:利好利空判断与 s 分方向矛盾时停下重审阈值
+</script>
+
+<!-- === 阶段 4: 批量录入模态框 === -->
+<div id="batch-import-overlay" class="modal-overlay hidden" onclick="closeBatchImport(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3>批量录入数据 · Claude.ai 返回的 JSON</h3>
+      <button class="modal-close" onclick="closeBatchImport()" aria-label="关闭">×</button>
+    </div>
+
+    <div class="modal-body" id="batch-step-input">
+      <textarea id="batch-input-textarea" spellcheck="false" placeholder='粘贴严格 JSON 数组,例:&#10;[&#10;  {"n":1,"name":"Oracle 5 年期 CDS","cur":"175 bps","s":4,"f":"H","as_of":"2026-05-09","cite":"https://www.spglobal.com/...","note":"175 bps 介于 150-200 黄区间"},&#10;  ...&#10;]'></textarea>
+      <div class="batch-helper">提示:n 必须是数字(1b 写 1.5,46b 写 46.5);s 是 0-10 整数 或 null;f 是 "H" / "M" / "L" / null。</div>
+      <div id="batch-error" class="batch-error hidden"></div>
+    </div>
+
+    <div class="modal-body hidden" id="batch-step-preview">
+      <div id="batch-summary-banner" class="batch-summary-banner"></div>
+      <div id="batch-preview-summary"></div>
+      <table class="batch-preview-table">
+        <thead>
+          <tr>
+            <th style="width:48px;">导入</th>
+            <th style="width:200px;">指标</th>
+            <th>变更(旧 → 新)</th>
+            <th style="width:80px;">可信度</th>
+            <th>说明 / 警告</th>
+          </tr>
+        </thead>
+        <tbody id="batch-preview-tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="modal-footer">
+      <div class="modal-footer-actions" id="batch-actions-input">
+        <button class="btn" onclick="closeBatchImport()">取消</button>
+        <button class="btn primary" onclick="parseBatchInput()">预览解析</button>
+      </div>
+      <div class="modal-footer-actions hidden" id="batch-actions-preview">
+        <button class="btn" onclick="batchBackToEdit()">← 返回编辑</button>
+        <button class="btn primary" id="batch-confirm-btn" onclick="batchConfirmImport()">确认导入 <span id="batch-confirm-count">0</span> 项</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- === Toast === -->
+<div id="toast" class="toast hidden"></div>
+
+
+<!-- === 阶段 4.1: 指标解释 tooltip 数据 + 容器 === -->
+<script type="application/json" id="indicator-explanations">
+{
+  "1": {
+    "name": "Oracle 5 年期 CDS",
+    "what": "Oracle 公司 5 年期信用违约掉期价格,反映市场对 Oracle 违约风险的定价",
+    "risk": "Oracle 是 AI 基础设施大客户,其信用恶化会传导到整个 AI 算力供给链融资成本",
+    "threshold": "<150 bps 健康 / 150-200 黄灯 / 200-250 警戒 / >250 红灯"
+  },
+  "1.5": {
+    "name": "AI 算力公司加权平均 CDS",
+    "what": "Oracle + CoreWeave + Coherent 三家 AI 算力公司 CDS 的加权平均",
+    "risk": "比单一公司 CDS 更全面反映 AI 算力链整体信用状况,任一公司爆雷会同步推高",
+    "threshold": "<150 bps 健康 / 150-200 黄灯 / 200-250 警戒 / >250 红灯"
+  },
+  "2": {
+    "name": "CoreWeave 债券价格",
+    "what": "CoreWeave(英伟达最大客户之一)发行债券的市场成交价格,以面值百分比计",
+    "risk": "债券价跌破 90 说明市场不信它能还钱,会动摇英伟达大客户应收账款质量",
+    "threshold": ">95 美分健康 / 90-95 黄灯 / 80-90 警戒 / <80 红灯"
+  },
+  "3": {
+    "name": "Oracle 信用评级",
+    "what": "标普/穆迪/惠誉三大评级机构对 Oracle 偿债能力的打分",
+    "risk": "评级下调会推高 Oracle 融资成本,削弱其建 AI 数据中心的能力",
+    "threshold": "A 及以上健康 / BBB+ 或负面展望黄灯 / 下调一级警戒 / 跌破投资级红灯"
+  },
+  "4": {
+    "name": "高收益债利差(HY OAS)",
+    "what": "美国垃圾债相对于国债的收益率溢价,反映整体高风险企业融资环境",
+    "risk": "利差走阔说明市场避险,AI 公司这类高风险高估值标的融资成本同步上升",
+    "threshold": "<350 bps 健康 / 350-450 黄灯 / 450-550 警戒 / >550 红灯"
+  },
+  "5": {
+    "name": "美 10 年期国债",
+    "what": "美国 10 年期国债收益率,无风险利率的基准",
+    "risk": "10Y 走高会压制成长股估值(贴现率上升),AI 龙头估值首当其冲",
+    "threshold": "<4.5% 健康 / 4.5-5.0% 黄灯 / 5.0-5.5% 警戒 / >5.5% 红灯"
+  },
+  "6": {
+    "name": "Anthropic 二级估值",
+    "what": "Anthropic 股份在二级市场(Hiive/Forge)的隐含估值,相对一级融资估值的溢价或折价",
+    "risk": "二级折价说明持有者抛售意愿强,是 AI 头部公司估值见顶的早期信号",
+    "threshold": "溢价/平价健康 / 折价 0-10% 黄灯 / 10-25% 警戒 / >25% 红灯"
+  },
+  "7": {
+    "name": "OpenAI 二级估值",
+    "what": "OpenAI 股份在二级市场的隐含估值,相对一级估值的溢价或折价",
+    "risk": "OpenAI 是 AI 行业风向标,二级折价会引发整个 AI 私募估值重估",
+    "threshold": "溢价/平价健康 / 折价 0-10% 黄灯 / 10-25% 警戒 / >25% 红灯"
+  },
+  "9": {
+    "name": "OpenAI 融资进展",
+    "what": "OpenAI 当前融资轮的实际进展,对比原定计划和估值目标",
+    "risk": "延期或降估值会瞬间冷却整个 AI 资本市场情绪",
+    "threshold": "按计划健康 / 延期 ≤3 月黄灯 / 延期 >3 月或降估值警戒 / 失败红灯"
+  },
+  "10": {
+    "name": "中东主权基金 AI 投入",
+    "what": "MGX、PIF 等中东主权基金每季度公布的 AI 投资金额合计",
+    "risk": "中东资金是 AI 巨型项目(如 Stargate)关键金主,环比骤降说明长期资金撤出",
+    "threshold": "环比平稳/上升健康 / 降 0-30% 黄灯 / 30-40% 警戒 / >40% 红灯"
+  },
+  "11": {
+    "name": "台积电月营收增速",
+    "what": "台积电月度营收同比,对比过去 4 个月的同比增速均值",
+    "risk": "台积电是 AI 芯片产能源头,增速断崖式下降是整个 AI 供给侧降温的最早信号",
+    "threshold": "差 ≥+5pp 健康 / 0-5pp 黄灯 / -5-0pp 警戒 / <-5pp 红灯"
+  },
+  "12": {
+    "name": "ASML 季度订单",
+    "what": "ASML 季度净订单环比变化,反映芯片厂未来 1-2 年扩产意愿",
+    "risk": "订单骤降说明芯片厂对 AI 需求长期预期转弱,先于实际产能出现",
+    "threshold": "持平/上升健康 / 环比降 0-30% 黄灯 / 30-50% 警戒 / >50% 红灯"
+  },
+  "13": {
+    "name": "SK Hynix HBM 营收 QoQ",
+    "what": "SK Hynix HBM 高带宽内存季度营收环比变化",
+    "risk": "HBM 是 AI 芯片核心组件,环比转负说明终端需求出现拐点",
+    "threshold": ">25% 健康 / 10-25% 黄灯 / 0-10% 警戒 / <0% 红灯"
+  },
+  "14": {
+    "name": "SK 海力士 HBM 收入 YoY",
+    "what": "SK Hynix HBM 业务同比增速",
+    "risk": "同比从 100%+ 跌到 50% 以下,说明 AI 内存超级周期在退潮",
+    "threshold": ">100% 健康 / 50-100% 黄灯 / 20-50% 警戒 / <20% 红灯"
+  },
+  "15": {
+    "name": "美光 DRAM 收入",
+    "what": "美光 DRAM 业务同比增速,反映存储芯片整体景气度",
+    "risk": "DRAM 同比转负是存储周期见顶的明确信号",
+    "threshold": ">50% 健康 / 20-50% 黄灯 / 0-20% 警戒 / 同比下滑红灯"
+  },
+  "16": {
+    "name": "台积电 CoWoS 利用率",
+    "what": "台积电先进封装(CoWoS)产能利用率,AI 芯片量产的核心瓶颈",
+    "risk": "利用率从满产掉到 80% 以下,说明 AI 芯片需求实际出货已经放缓",
+    "threshold": ">95% 满产健康 / 90-95% 黄灯 / 80-90% 警戒 / <80% 红灯"
+  },
+  "17": {
+    "name": "H100 一年期租金",
+    "what": "云厂商出租 H100 GPU 一年期合约价",
+    "risk": "租金跌穿 $2/h 说明 GPU 供给超过需求,算力市场拐点",
+    "threshold": ">$2.50/h 健康 / $2.00-2.50 黄灯 / $1.50-2.00 警戒 / <$1.50 红灯"
+  },
+  "18": {
+    "name": "H100/H200 折扣率",
+    "what": "二手 H100 相对 H200 新品的价格比率,反映上一代芯片的残值",
+    "risk": "残值急跌说明用户加速换代,但也说明 H100 库存过剩,GPU 通缩",
+    "threshold": "≥60% 健康 / 50-60% 黄灯 / 40-50% 警戒 / <40% 红灯"
+  },
+  "19": {
+    "name": "GPU 等待时间",
+    "what": "客户下单 GPU 到实际拿货的等待月数",
+    "risk": "等待时间缩短说明供需逆转,英伟达定价权动摇",
+    "threshold": ">6 月健康(供不应求)/ 4-6 月黄灯 / 2-4 月警戒 / <2 月红灯(供过于求)"
+  },
+  "20": {
+    "name": "Broadcom AI 收入占比",
+    "what": "博通 AI 半导体业务同比增速,反映定制 ASIC 需求",
+    "risk": "AI 业务同比掉到 30% 以下,说明大客户(谷歌、Meta)自研芯片需求降温",
+    "threshold": ">100% 健康 / 60-100% 黄灯 / 30-60% 警戒 / <30% 红灯"
+  },
+  "21": {
+    "name": "英伟达 DSO",
+    "what": "英伟达应收账款周转天数,反映客户付款速度",
+    "risk": "DSO 飙升说明客户在拖延付款,可能是大客户现金流紧张前兆",
+    "threshold": "<50 天健康 / 50-60 黄灯 / 60-70 警戒 / 70-80 红灯 / >80 重红"
+  },
+  "22": {
+    "name": "对循环客户应收(双因子)",
+    "what": "英伟达前 2 大客户占应收比 + 应收增速减营收增速差,双因子取较严",
+    "risk": "高度集中+应收快于营收=英伟达可能在给少数大客户压货,典型周期顶部特征",
+    "threshold": "A<35% 且 B≤0 健康 / A 35-45% 或 B 0-25% 黄灯 / A 45-55% 或 B 25-50% 警戒 / A≥55% 或 B>50% 红灯"
+  },
+  "23": {
+    "name": "英伟达期权 P/C 比率",
+    "what": "英伟达期权市场看跌/看涨成交比,反映对冲需求",
+    "risk": "P/C 走高说明聪明钱在买保险,可能是回调先行指标",
+    "threshold": "<0.6 健康(看多) / 0.6-0.9 黄灯 / 0.9-1.2 警戒 / >1.2 红灯(看空主导)"
+  },
+  "24": {
+    "name": "AMD 数据中心收入",
+    "what": "AMD 数据中心业务同比增速,AI 芯片第二供应商景气度",
+    "risk": "AMD 数据中心降温通常滞后英伟达 1-2 季度,确认 AI 资本开支拐点",
+    "threshold": ">80% 健康 / 40-80% 黄灯 / 20-40% 警戒 / <20% 红灯"
+  },
+  "26": {
+    "name": "Super Micro 订单",
+    "what": "超微电脑订单环比变化,AI 服务器 ODM 前瞻指标",
+    "risk": "订单环比下滑通常领先服务器出货 1 季度,AI 资本开支降温的最早信号之一",
+    "threshold": "环比 >0% 健康 / 0~-10% 黄灯 / -10~-20% 警戒 / <-20% 红灯"
+  },
+  "27": {
+    "name": "Dell ISG 同比增速",
+    "what": "Dell 基础设施事业部同比增速,AI 服务器需求主力供应商",
+    "risk": "Dell ISG 增速骤降说明企业级 AI 部署降温,而非云厂商",
+    "threshold": ">25% 健康 / 10-25% 黄灯 / 0-10% 警戒 / 同比下滑红灯"
+  },
+  "28": {
+    "name": "鸿海 AI 服务器收入",
+    "what": "鸿海(富士康)AI 服务器业务同比增速,代工巨头视角看出货",
+    "risk": "鸿海是 AI 服务器主代工,出货增速直接反映终端实际部署",
+    "threshold": ">50% 健康 / 30-50% 黄灯 / 10-30% 警戒 / <10% 红灯"
+  },
+  "29": {
+    "name": "广达月度营收",
+    "what": "广达月度营收同比,服务器代工龙头",
+    "risk": "广达单月营收骤降通常领先美国云厂商财报 1-2 月",
+    "threshold": ">40% 健康 / 30-40% 黄灯 / 10-30% 警戒 / <10% 红灯"
+  },
+  "30": {
+    "name": "纬创月度营收",
+    "what": "纬创月度营收同比,服务器代工第二阵营",
+    "risk": "与广达对比,可识别行业分化(份额迁移 vs 整体下滑)",
+    "threshold": ">40% 健康 / 30-40% 黄灯 / 10-30% 警戒 / <10% 红灯"
+  },
+  "31": {
+    "name": "Arista Networks 收入",
+    "what": "Arista(数据中心交换机龙头)同比增速,云客户网络扩张速度",
+    "risk": "Arista 增速骤降说明云厂商网络资本支出降温",
+    "threshold": ">30% 健康 / 20-30% 黄灯 / 10-20% 警戒 / <10% 红灯"
+  },
+  "32": {
+    "name": "中际旭创月度营收",
+    "what": "中际旭创(光模块龙头)月度营收同比,400G/800G 光模块出货量",
+    "risk": "光模块是数据中心互联核心,营收骤降说明 AI 集群建设放缓",
+    "threshold": ">80% 健康 / 40-80% 黄灯 / 20-40% 警戒 / <20% 红灯"
+  },
+  "33": {
+    "name": "Coherent 光模块",
+    "what": "Coherent(II-VI)光模块业务同比增速,北美光模块供应商",
+    "risk": "与中际旭创对比可识别区域分化,北美 AI 数据中心需求晴雨表",
+    "threshold": ">50% 健康 / 25-50% 黄灯 / 10-25% 警戒 / <10% 红灯"
+  },
+  "34": {
+    "name": "Vertiv 订单",
+    "what": "Vertiv(数据中心电源/冷却龙头)订单同比",
+    "risk": "电源冷却订单领先服务器出货,是 AI 数据中心建设最前瞻指标之一",
+    "threshold": ">40% 健康 / 20-40% 黄灯 / 10-20% 警戒 / <10% 红灯"
+  },
+  "35": {
+    "name": "Eaton 数据中心",
+    "what": "Eaton 数据中心相关业务同比增速,电力基础设施厂商",
+    "risk": "Eaton 增速降温说明电力侧的数据中心建设需求放缓",
+    "threshold": ">30% 健康 / 15-30% 黄灯 / 5-15% 警戒 / <5% 红灯"
+  },
+  "36": {
+    "name": "Dominion 数据中心队列",
+    "what": "Dominion(弗吉尼亚电力公司)数据中心并网申请队列变化",
+    "risk": "出现大单取消是 AI 数据中心需求见顶的硬信号,弗吉尼亚是全美数据中心首都",
+    "threshold": "净增健康 / 增长放缓黄灯 / 1-2 起取消警戒 / ≥3 起或大单取消红灯"
+  },
+  "37": {
+    "name": "Texas ERCOT 签约",
+    "what": "德州 ERCOT 大用户(>10MW)新签约容量,数据中心是主力",
+    "risk": "签约量骤降说明新数据中心规划停滞,长期建设管道枯竭",
+    "threshold": "季度新增 >2 GW 健康 / 1-2 黄灯 / 0.5-1 警戒 / <0.5 红灯"
+  },
+  "38": {
+    "name": "Constellation 长期合同",
+    "what": "Constellation Energy 与超大规模云厂商签的长期电力购买协议(PPA)",
+    "risk": "PPA 取消是云厂商 AI 资本开支战略调整的最严重信号",
+    "threshold": "季度 ≥1 起新签健康 / 0 起黄灯 / 1 起取消警戒 / ≥2 起取消红灯"
+  },
+  "39": {
+    "name": "Equinix 入住率",
+    "what": "Equinix(全球第一数据中心运营商)机柜入住率",
+    "risk": "入住率持续下滑说明数据中心供过于求,泡沫征兆",
+    "threshold": "≥85% 健康 / 80-85% 黄灯 / 75-80% 警戒 / <75% 红灯"
+  },
+  "40": {
+    "name": "PPA 签约速度",
+    "what": "整体数据中心相关电力购买协议签约节奏,行业级指标",
+    "risk": "签约骤降或出现取消,是 AI 数据中心需求见顶的综合信号",
+    "threshold": "持平/上升健康 / 减 0-50% 黄灯 / 50-75% 警戒 / 出现取消或减 >75% 红灯"
+  },
+  "41": {
+    "name": "Anthropic 收入增速",
+    "what": "Anthropic 年化收入同比倍数,顶级 AI 公司商业化进度",
+    "risk": "增速从 10x+ 跌到 3x 以下,说明 AI 应用变现遇到天花板",
+    "threshold": ">10x 健康 / 5-10x 黄灯 / 3-5x 警戒 / <3x 红灯"
+  },
+  "42": {
+    "name": "Anthropic 烧钱率",
+    "what": "Anthropic 亏损/收入比例,衡量烧钱速度",
+    "risk": "烧钱率超过 100% 说明全靠融资续命,融不到就崩",
+    "threshold": "<50% 健康 / 50-75% 黄灯 / 75-100% 警戒 / >100% 红灯"
+  },
+  "43": {
+    "name": "Anthropic 企业 NRR",
+    "what": "Anthropic 企业客户净收入留存率,反映续约+扩展情况",
+    "risk": "NRR 跌破 100% 说明老客户在缩减用量,AI 产品价值未确认",
+    "threshold": ">120% 健康 / 110-120% 黄灯 / 100-110% 警戒 / <100% 红灯"
+  },
+  "44": {
+    "name": "OpenAI 收入增速",
+    "what": "OpenAI 年化收入同比倍数",
+    "risk": "OpenAI 增速降到 1.5x 以下,是整个 AI 应用层降温的标志",
+    "threshold": ">3x 健康 / 2-3x 黄灯 / 1.5-2x 警戒 / <1.5x 红灯"
+  },
+  "45": {
+    "name": "OpenAI 烧钱率",
+    "what": "OpenAI 亏损/收入比例",
+    "risk": "OpenAI 烧钱率超过 100% 配合融资困难,会引发系统性 AI 估值重估",
+    "threshold": "<50% 健康 / 50-75% 黄灯 / 75-100% 警戒 / >100% 红灯"
+  },
+  "46": {
+    "name": "企业 AI 市场总规模增速",
+    "what": "企业级 AI 支出同比增速,反映 B 端需求景气度",
+    "risk": "TAM 增速从 100%+ 跌到 25% 以下,AI 应用层全行业降温",
+    "threshold": ">100% 健康 / 50-100% 黄灯 / 25-50% 警戒 / <25% 红灯"
+  },
+  "46.5": {
+    "name": "企业 AI 份额集中度",
+    "what": "OpenAI 在企业 AI 支出中的份额,作为集中度代理",
+    "risk": "份额下降说明竞争格局分散,可能预示行业利润率压力",
+    "threshold": "≥25% 健康(寡头格局) / 20-25% 黄灯 / 15-20% 警戒 / <15% 红灯(碎片化)"
+  },
+  "47": {
+    "name": "ChatGPT 流量份额",
+    "what": "ChatGPT 在 AI 聊天机器人月访问中的份额",
+    "risk": "流量份额跌破 70% 说明 OpenAI C 端护城河松动",
+    "threshold": "≥70% 健康 / 60-70% 黄灯 / 50-60% 警戒 / <50% 红灯"
+  },
+  "48": {
+    "name": "中美 SWE-Bench 对比",
+    "what": "美国闭源最强模型与中国开源最强模型在 SWE-Bench(软件工程任务)的分数差",
+    "risk": "差距收窄甚至中国反超=美国 AI 龙头估值基础动摇,$ 美闭源溢价消失",
+    "threshold": "≥10pp 健康 / 5-10pp 黄灯 / 0-5pp 警戒 / 中国反超红灯"
+  },
+  "49": {
+    "name": "ARC-AGI-3 进展速度",
+    "what": "ARC-AGI-3 公开榜单顶级模型分数的季度进展",
+    "risk": "进展停滞说明前沿模型能力曲线放缓,AI 估值核心叙事动摇",
+    "threshold": "季度 ≥10pp 健康 / 5-10pp 黄灯 / 半年 <5pp 警戒 / 半年 0pp 或退步红灯"
+  },
+  "50": {
+    "name": "顶级研究员离职(事件型)",
+    "what": "OpenAI/Anthropic/Google DeepMind 等顶级研究员跳槽事件",
+    "risk": "Co-founder 或 Chief Scientist 级人物离职=技术路线分歧或公司前景动摇",
+    "threshold": "无关键人物健康 / 非核心研究员黄灯 / 研究负责人警戒 / Co-founder/Chief Scientist 红灯"
+  },
+  "51": {
+    "name": "Salesforce Agentforce ARR",
+    "what": "Salesforce AI 代理产品 Agentforce 的年化收入同比",
+    "risk": "Agentforce 增速骤降说明大型 SaaS 公司 AI 货币化遇阻",
+    "threshold": "≥150% 健康 / 80-150% 黄灯 / 30-80% 警戒 / <30% 红灯"
+  },
+  "52": {
+    "name": "ServiceNow Now Assist",
+    "what": "ServiceNow AI 助手 Now Assist 的 ACV 同比",
+    "risk": "与 Salesforce 同观察,验证企业 AI 助手类产品的实际采用率",
+    "threshold": "≥100% 健康 / 50-100% 黄灯 / 20-50% 警戒 / <20% 红灯"
+  },
+  "53": {
+    "name": "Microsoft Copilot ARR(事件型)",
+    "what": "微软是否仍然定期披露 Copilot 具体收入数字",
+    "risk": "从披露数字→改披露百分比→不再披露,是公司对自家 AI 产品信心退潮的迹象",
+    "threshold": "披露具体数字健康 / 仅披露百分比黄灯 / 减少披露警戒 / 公开下调指引红灯"
+  },
+  "54": {
+    "name": "AI 应用层融资速度",
+    "what": "AI 应用类初创公司季度融资总额环比",
+    "risk": "融资骤降是 VC 失去信心的明确信号,泡沫破裂前奏",
+    "threshold": "环比 ±20% 内健康 / 减 20-35% 黄灯 / 35-50% 警戒 / >50% 红灯"
+  },
+  "55": {
+    "name": "财富 500 AI 使用率",
+    "what": "财富 500 大企业中部署 AI 的占比",
+    "risk": "渗透率下降罕见但发生即为强信号,说明大企业开始撤回试点",
+    "threshold": "≥90% 健康 / 80-90% 黄灯 / 70-80% 警戒 / <70% 红灯"
+  },
+  "56": {
+    "name": "软银股价 9984.T",
+    "what": "软银集团股价周变化,日本 AI 杠杆代理",
+    "risk": "软银重仓 ARM、OpenAI、Stargate,股价骤跌反映 AI 杠杆撤离日本资金",
+    "threshold": "涨/持平健康 / 跌 0-10% 黄灯 / 10-20% 警戒 / >20% 红灯"
+  },
+  "57": {
+    "name": "USD/CNY",
+    "what": "人民币兑美元汇率,中国资本流向代理",
+    "risk": "人民币贬值压力大会迫使中国资本撤离美股 AI 头寸,推动估值回归",
+    "threshold": "<7.2 健康 / 7.2-7.5 黄灯 / 7.5-7.8 警戒 / >7.8 红灯"
+  },
+  "58": {
+    "name": "七巨头股价分化(QQEW vs QQQ)",
+    "what": "纳指等权重 vs 市值加权 ETF 的季度回报差,衡量大盘股集中度",
+    "risk": "市值加权远远跑赢等权重=只有少数大票拉指数,典型顶部窄幅领涨",
+    "threshold": "QQEW 落后 0-5pp 健康 / 跑赢 0-5pp 黄灯 / 5-10pp 警戒 / >10pp 红灯"
+  },
+  "60": {
+    "name": "Microsoft Azure capex 指引",
+    "what": "微软 Azure 资本支出指引方向(上调/持平/下调)",
+    "risk": "微软是 AI 资本开支风向标,下调或不再披露=AI 基础设施需求见顶的硬信号",
+    "threshold": "上调健康 / 持平黄灯 / 下调 0-10% 警戒 / 下调 >10% 或不再披露红灯"
+  },
+  "61": {
+    "name": "AI 主题 ETF 资金流",
+    "what": "BOTZ+CHAT+AIQ+ROBO 四大 AI 主题 ETF 月度净流入合计",
+    "risk": "连续多月净流出说明散户和被动资金在撤离 AI 主题",
+    "threshold": "月净流入健康 / 单月净流出黄灯 / 连续 2 月净流出警戒 / 连续 ≥3 月红灯"
+  },
+  "62": {
+    "name": "标普 500 AI 集中度(Mag 7,双向告警)",
+    "what": "Mag 7 七巨头市值占标普 500 的比例。双向告警:既怕太高也怕异常下跌",
+    "risk": "比例太高(>35%)=集中度太大,7 家任一出事整个市场崩;低于 25%=大票在跌也异常",
+    "threshold": "30-33% 健康 / 上方 33-35% 或下方 25-30% 黄灯 / >35% 警戒 / >37% 红灯"
+  },
+  "63": {
+    "name": "英伟达成品库存周转天数",
+    "what": "英伟达成品库存除以日均成本×90,衡量积压程度",
+    "risk": "周转天数 >90 天说明渠道开始积压,英伟达可能在压货给客户",
+    "threshold": "<60 天健康 / 60-90 黄灯 / 90-120 警戒 / >120 红灯"
+  },
+  "64": {
+    "name": "HBM 渠道库存(状态型)",
+    "what": "HBM 高带宽内存在渠道中的供需状态",
+    "risk": "从严重短缺→正常→过剩,反映 AI 内存超级周期的位置",
+    "threshold": "严重短缺健康 / 紧张黄灯 / 正常警戒 / 过剩红灯"
+  },
+  "65": {
+    "name": "标普新高日 breadth(双因子取较严)",
+    "what": "标普 500 创新高时,实际站上 200 日均线的成分股占比 + 触 52 周低的占比",
+    "risk": "比例越低说明只有少数大票在拉指数,大多数股票其实在跌——典型顶部窄幅领涨",
+    "threshold": "A≥70% 且 B<2% 健康 / A 60-70% 或 B 2-4% 黄灯 / A 50-60% 或 B 4-6% 警戒 / A<50% 或 B>6% 红灯"
+  },
+  "66": {
+    "name": "FINRA 保证金债务 / GDP",
+    "what": "美股投资者通过券商借钱炒股的总规模占 GDP 的比例",
+    "risk": "借钱越多越接近顶部——历史上每次股市见顶都伴随这个比例创新高(2000、2007、2021)",
+    "threshold": "<2% 健康 / 2-3% 黄灯 / 3-4% 警戒 / >4% 红灯"
+  },
+  "67": {
+    "name": "Mag 7 盈利占 SP500 总盈利比",
+    "what": "7 巨头(NVDA/AAPL/MSFT/GOOG/META/AMZN/TSLA)的利润占整个标普 500 的比例",
+    "risk": "过高说明市场盈利来源极度集中,一旦这 7 家任一出问题整个指数都会显著回撤",
+    "threshold": "<20% 健康 / 20-28% 黄灯 / 28-35% 警戒 / >35% 红灯"
+  },
+  "68": {
+    "name": "半导体板块占 SPX 权重",
+    "what": "半导体行业总市值占标普 500 的比例",
+    "risk": "AI 泡沫时这个比例会异常高,历史上半导体占比 >14% 通常对应行业周期顶部",
+    "threshold": "<10% 健康 / 10-14% 黄灯 / 14-18% 警戒 / >18% 红灯"
+  },
+  "69": {
+    "name": "5 年通胀预期(双源取较严)",
+    "what": "密歇根大学消费者 5 年通胀预期 + FRED 市场 5 年盈亏平衡通胀,取较严的值",
+    "risk": "通胀预期脱锚(>3%)会逼美联储继续加息,直接打击成长股估值——AI 龙头首当其冲",
+    "threshold": "两者均<2.5% 健康 / 任一 2.5-3.0% 黄灯 / 任一 3.0-3.5% 警戒 / 任一 >3.5% 红灯"
+  }
+}
+</script>
+<div id="indicator-tooltip" class="indicator-tooltip hidden" role="tooltip" aria-hidden="true"></div>
+</body>
+</html>

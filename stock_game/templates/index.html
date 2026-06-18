@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>股票交易模拟游戏</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0a0e14; --card: #0f141c; --border: #1e2530; --input: #1a2030;
+  --text: #e4e6eb; --dim: #6b7480; --red: #f44336; --green: #4caf50;
+  --blue: #2196F3; --orange: #ff9800; --teal: #00bcd4; --purple: #9c27b0; --pink: #e91e63;
+}
+body { font-family: -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+.container { max-width: 1500px; margin: 0 auto; padding: 12px; }
+.header { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); margin-bottom: 10px; }
+.header h1 { font-size: 18px; }
+.btn { padding: 6px 16px; border: none; border-radius: 4px; font-size: 13px; cursor: pointer; font-weight: 500; }
+.btn:hover { opacity: 0.85; } .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-green { background: var(--green); color: #fff; } .btn-blue { background: var(--blue); color: #fff; }
+.btn-red { background: var(--red); color: #fff; } .btn-yellow { background: var(--orange); color: #fff; }
+.btn-gray { background: #444; color: #ccc; }
+.btn-xs { padding: 3px 10px; font-size: 11px; }
+.tag { display: inline-block; padding: 2px 7px; border-radius: 3px; font-size: 11px; background: var(--border); color: var(--dim); margin: 0 2px; }
+.tag.active { background: #1b3a1b; color: var(--green); }
+input, select { background: var(--input); border: 1px solid #2a3545; color: var(--text); padding: 6px 10px; border-radius: 4px; font-size: 13px; }
+
+.setup-panel { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin-bottom: 10px; }
+.setup-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+.setup-row:last-child { margin-bottom: 0; }
+.setup-row label { font-size: 12px; color: var(--dim); min-width: 55px; }
+.setup-row input[type="text"] { width: 100px; }
+.setup-row input[type="date"] { width: 145px; }
+
+.game-area { display: none; }
+.game-area.active { display: block; }
+.top-bar { display: flex; gap: 10px; margin-bottom: 8px; }
+.stat-card { flex: 1; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 10px; text-align: center; }
+.stat-card .label { font-size: 10px; color: var(--dim); margin-bottom: 3px; }
+.stat-card .value { font-size: 17px; font-weight: 700; }
+.positive { color: var(--red); } .negative { color: var(--green); }
+.stat-card .sub { font-size: 10px; color: var(--dim); margin-top: 1px; }
+
+.date-bar { display: flex; align-items: center; gap: 10px; padding: 8px 14px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; }
+.date-bar .date-label { font-size: 14px; font-weight: 600; min-width: 90px; }
+.progress { flex: 1; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--blue); border-radius: 3px; }
+.day-info { font-size: 11px; color: var(--dim); white-space: nowrap; }
+
+.add-in-game { display: flex; gap: 6px; align-items: center; padding: 6px 14px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; }
+.add-in-game input { width: 90px; font-size: 12px; padding: 4px 8px; }
+
+.main-grid { display: grid; grid-template-columns: 1fr 340px; gap: 10px; }
+.chart-panel { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
+.chart-tabs { display: flex; gap: 5px; margin-bottom: 8px; flex-wrap: wrap; }
+.tab { padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; background: var(--input); border: 1px solid #2a3545; color: var(--dim); display: inline-flex; align-items: center; gap: 4px; }
+.tab.active { background: #1b3a1b; border-color: var(--green); color: var(--green); }
+.tab .del { cursor: pointer; opacity: 0.5; font-size: 13px; line-height: 1; }
+.tab .del:hover { opacity: 1; color: #fff; }
+.ma-legend { display: flex; gap: 12px; margin-top: 4px; font-size: 10px; flex-wrap: wrap; }
+.ma-item { display: flex; align-items: center; gap: 4px; }
+.ma-dot { width: 8px; height: 2px; border-radius: 1px; }
+
+.side-panel { display: flex; flex-direction: column; gap: 8px; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 10px; }
+.card h3 { font-size: 11px; color: var(--dim); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px; }
+.holding-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--input); font-size: 12px; }
+.holding-row:last-child { border-bottom: none; }
+.trade-panel .trade-row { display: flex; gap: 5px; margin-bottom: 5px; }
+.trade-panel .trade-row:last-child { margin-bottom: 0; }
+.trade-panel input[type="number"] { flex: 1; }
+.transaction-item { font-size: 11px; padding: 4px 0; border-bottom: 1px solid var(--input); }
+.t-buy { color: var(--red); font-weight: 600; } .t-sell { color: var(--green); font-weight: 600; }
+.t-date { color: var(--dim); }
+
+.toast { position: fixed; top: 16px; right: 16px; padding: 8px 16px; border-radius: 6px; font-size: 12px; z-index: 999; animation: slide .3s; }
+.toast.ok { background: #1b3a1b; border: 1px solid var(--green); color: var(--green); }
+.toast.err { background: #3a1b1b; border: 1px solid var(--red); color: var(--red); }
+@keyframes slide { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>股票交易模拟游戏</h1>
+    <span class="tag active" id="statusTag">等待设置</span>
+  </div>
+
+  <div class="setup-panel" id="setupPanel">
+    <div class="setup-row">
+      <label>股票代码:</label>
+      <input type="text" id="stockCode" placeholder="600519">
+      <button class="btn btn-blue btn-xs" onclick="addStock()">添加</button>
+      <span style="font-size:11px;color:var(--dim)">可多次添加</span>
+    </div>
+    <div class="setup-row" id="stockList"><span style="color:var(--dim);font-size:11px">等待添加</span></div>
+    <div class="setup-row">
+      <label>起始日期:</label>
+      <input type="date" id="startDate" value="2018-01-01">
+      <label>初始资金:</label>
+      <input type="text" id="initCash" value="100000" style="width:80px">
+      <span style="font-size:11px;color:var(--dim)">元</span>
+      <label style="margin-left:12px">K线:</label>
+      <select id="chartDays" style="width:80px">
+        <option value="50">50天</option>
+        <option value="100" selected>100天</option>
+        <option value="150">150天</option>
+        <option value="200">200天</option>
+      </select>
+    </div>
+    <div class="setup-row">
+      <button class="btn btn-green" id="startBtn" disabled onclick="startGame()">开始游戏</button>
+      <button class="btn btn-red btn-xs" onclick="resetGame()">重置</button>
+    </div>
+  </div>
+
+  <div class="game-area" id="gameArea">
+    <div class="top-bar">
+      <div class="stat-card"><div class="label">总资产</div><div class="value" id="totalValue">--</div><div class="sub" id="pnlInfo">--</div></div>
+      <div class="stat-card"><div class="label">现金</div><div class="value" id="cashValue">--</div></div>
+      <div class="stat-card"><div class="label">持仓市值</div><div class="value" id="stockValue">--</div><div class="sub" id="holdingInfo">--</div></div>
+      <div class="stat-card"><div class="label">总盈亏</div><div class="value" id="pnlValue">--</div><div class="sub" id="pnlPct">--</div></div>
+      <div class="stat-card"><div class="label">等权基准</div><div class="value" id="benchValue">--</div><div class="sub" style="color:var(--dim)">持有不动收益</div></div>
+      <div class="stat-card"><div class="label" id="dailyStockName" style="color:var(--blue)">--</div><div class="value" id="dailyChange">--</div><div class="sub" id="dailyPrice">--</div></div>
+      <div class="stat-card" id="dailyCard2" style="display:none"><div class="label" id="dailyStockName2">--</div><div class="value" id="dailyChange2">--</div><div class="sub" id="dailyPrice2">--</div></div>
+    </div>
+
+    <div class="date-bar">
+      <span class="date-label" id="currentDate">----</span>
+      <div class="progress"><div class="progress-fill" id="progressFill"></div></div>
+      <span class="day-info" id="dayInfo">--</span>
+      <button class="btn btn-yellow btn-xs" onclick="skipDay()">▶ 1天</button>
+      <button class="btn btn-blue btn-xs" onclick="skipDays(5)">5天</button>
+      <button class="btn btn-blue btn-xs" onclick="skipDays(20)">20天</button>
+      <button class="btn btn-blue btn-xs" onclick="skipDays(100)">100天</button>
+      <select id="autoStrategy" onchange="toggleAuto()" style="width:120px;margin-left:6px;font-size:11px;padding:4px">
+        <option value="off">托管: 关闭</option>
+        <option value="unified">纯量化S10</option>
+      </select>
+      <span id="strategyInfo" style="font-size:10px;color:var(--dim);margin-left:4px;cursor:help" title=""></span>
+      <script>
+      document.getElementById('strategyInfo').title = 'S10纯量化(批量回测冠军):\n买入: 量化>68 全仓\n卖出: 量化<35 清仓\n15只股票平均超额+49.5% | 胜率73%';
+      document.getElementById('strategyInfo').innerHTML = '&#x24D8;';
+      </script>
+      <button class="btn btn-red btn-xs" onclick="endGame()">结束</button>
+    </div>
+
+    <div class="add-in-game">
+      <span style="font-size:11px;color:var(--dim)">添加新股:</span>
+      <input type="text" id="addCodeGame" placeholder="代码" style="width:80px">
+      <button class="btn btn-blue btn-xs" onclick="addStockInGame()">添加</button>
+      <span style="font-size:11px;color:var(--dim)">游戏中途也可添加</span>
+    </div>
+
+    <div class="main-grid">
+      <div class="chart-panel">
+        <div class="chart-tabs" id="chartTabs"></div>
+        <canvas id="chartCanvas" style="width:100%;height:480px"></canvas>
+        <div class="ma-legend" id="maLegend"></div>
+      </div>
+
+      <div class="side-panel">
+        <div class="card"><h3>持仓</h3><div id="holdings"></div></div>
+        <div class="card trade-panel">
+          <h3>交易</h3>
+          <div class="trade-row"><select id="tradeStock" style="flex:1"><option>-- 选股 --</option></select></div>
+          <div class="trade-row"><input type="number" id="tradeAmount" placeholder="金额(元)" style="flex:1"></div>
+          <div class="trade-row">
+            <input type="number" id="tradeLots" placeholder="买入/卖出手数" style="flex:1" min="1" step="1" value="1">
+            <span style="font-size:11px;color:var(--dim);white-space:nowrap">1手=100股</span>
+          </div>
+          <div class="trade-row">
+            <button class="btn btn-green" onclick="doTrade('buy')" style="flex:1">买入</button>
+            <button class="btn btn-red" onclick="doTrade('sell')" style="flex:1">卖出</button>
+            <button class="btn btn-gray btn-xs" onclick="doSellAll()">清仓</button>
+          </div>
+          <div class="trade-row" style="margin-top:2px;flex-wrap:wrap">
+            <button class="btn btn-gray btn-xs" onclick="quickBuy(1)">全仓买</button>
+            <button class="btn btn-gray btn-xs" onclick="quickBuy(0.5)">半仓买</button>
+            <button class="btn btn-gray btn-xs" onclick="quickBuy(0.33)">1/3买</button>
+            <button class="btn btn-gray btn-xs" onclick="quickBuy(0.25)">1/4买</button>
+            <button class="btn btn-gray btn-xs" onclick="quickSell(1)" style="margin-left:4px">全卖</button>
+            <button class="btn btn-gray btn-xs" onclick="quickSell(0.5)">半卖</button>
+            <button class="btn btn-gray btn-xs" onclick="quickSell(0.33)">1/3卖</button>
+            <button class="btn btn-gray btn-xs" onclick="quickSell(0.25)">1/4卖</button>
+          </div>
+        </div>
+        <div class="card"><h3>交易记录</h3><div id="transactions"></div></div>
+        <div class="card" id="strategyLogCard" style="display:none"><h3>策略日志</h3><div id="strategyLog"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="toastContainer"></div>
+
+<script>
+let addedStocks = [], gameState = null, selectedChartCode = null;
+const MA_COLORS = ['#e91e63','#9c27b0','#ff9800','#00bcd4','#4caf50'];
+const MA_NAMES = ['MA5','MA10','MA20','MA30','MA60'];
+const MA_PERIODS = [5,10,20,30,60];
+
+function toast(m, t) { const c = document.getElementById('toastContainer'), d = document.createElement('div'); d.className = 'toast ' + (t || 'ok'); d.textContent = m; c.appendChild(d); setTimeout(() => d.remove(), 3000); }
+async function api(url, data) { const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data||{}) }); return r.json(); }
+
+// ====== ADD STOCK ======
+async function addStock(code, fromGame) {
+  if (!code) code = document.getElementById('stockCode').value.trim();
+  if (!code || code.length !== 6) { toast('请输入6位代码','err'); return; }
+  const r = await api('/api/add_stock', { code });
+  if (r.success) {
+    addedStocks.push({ code, name: r.message.split('(')[0] });
+    updateStockList();
+    if (!fromGame) document.getElementById('stockCode').value = '';
+    toast(r.message, 'ok');
+  } else { toast(r.message, 'err'); }
+}
+
+async function addStockInGame() {
+  const code = document.getElementById('addCodeGame').value.trim();
+  await addStock(code, true);
+  document.getElementById('addCodeGame').value = '';
+  if (gameState && gameState.game_started) refreshAll();
+}
+
+function updateStockList() {
+  const el = document.getElementById('stockList'), btn = document.getElementById('startBtn');
+  if (addedStocks.length === 0) { el.innerHTML = '<span style="color:var(--dim);font-size:11px">等待添加</span>'; btn.disabled = true; }
+  else { el.innerHTML = addedStocks.map(s => `<span class="tag active">${s.code} ${s.name}</span>`).join(' '); btn.disabled = false; }
+}
+
+// ====== GAME ======
+async function startGame() {
+  const sd = document.getElementById('startDate').value;
+  const ic = parseFloat(document.getElementById('initCash').value) || 100000;
+  const lb = parseInt(document.getElementById('chartDays').value) || 100;
+  if (!sd) { toast('请选起始日期','err'); return; }
+  const r = await api('/api/start_game', { start_date: sd, init_cash: ic, chart_lookback: lb });
+  if (!r.success) { toast(r.message,'err'); return; }
+  document.getElementById('setupPanel').style.display = 'none';
+  document.getElementById('gameArea').classList.add('active');
+  document.getElementById('statusTag').textContent = '游戏中';
+  toast(r.message,'ok');
+  refreshAll();
+}
+
+async function refreshAll() {
+  const r = await fetch('/api/state'); gameState = await r.json();
+  if (!gameState || !gameState.game_started) return;
+  updateDisplay(); updateChart();
+}
+
+function fmt(n) { return Math.abs(n).toLocaleString('zh-CN',{maximumFractionDigits:0}); }
+
+function updateDisplay() {
+  const pv = gameState.portfolio_value;
+  document.getElementById('totalValue').textContent = '¥' + fmt(pv.total);
+  document.getElementById('cashValue').textContent = '¥' + fmt(pv.cash);
+  document.getElementById('stockValue').textContent = '¥' + fmt(pv.stock_value);
+  document.getElementById('pnlInfo').textContent = '初始 ¥' + fmt(gameState.initial_cash);
+  document.getElementById('holdingInfo').textContent = Object.keys(gameState.portfolio||{}).length + '只';
+
+  const pf = gameState.portfolio || {}, prices = gameState.prices || {};
+
+  // Daily change
+  const stks = Object.entries(gameState.stocks || {});
+  for (let si = 0; si < 2; si++) {
+    const nameEl = document.getElementById(si === 0 ? 'dailyStockName' : 'dailyStockName2');
+    const changeEl = document.getElementById(si === 0 ? 'dailyChange' : 'dailyChange2');
+    const priceEl = document.getElementById(si === 0 ? 'dailyPrice' : 'dailyPrice2');
+    const cardBox = si === 1 ? document.getElementById('dailyCard2') : null;
+    if (si < stks.length) {
+      const [code, s] = stks[si];
+      const p2 = prices[code];
+      if (p2) {
+        nameEl.textContent = s.name;
+        const dChg = p2.prev_close > 0 ? ((p2.close - p2.prev_close) / p2.prev_close * 100) : 0;
+        changeEl.textContent = (dChg >= 0 ? '+' : '') + dChg.toFixed(2) + '%';
+        changeEl.className = 'value ' + (dChg >= 0 ? 'positive' : 'negative');
+        priceEl.textContent = '¥' + p2.close.toFixed(2);
+        if (cardBox) cardBox.style.display = 'block';
+      }
+    } else {
+      nameEl.textContent = '--';
+      changeEl.textContent = '--';
+      changeEl.className = 'value';
+      priceEl.textContent = '--';
+      if (cardBox) cardBox.style.display = 'none';
+    }
+  }
+
+  const p = document.getElementById('pnlValue');
+  p.textContent = (pv.pnl>=0?'+':'') + '¥' + fmt(Math.abs(pv.pnl));
+  p.className = 'value ' + (pv.pnl>=0?'positive':'negative');
+  document.getElementById('pnlPct').textContent = (pv.pnl_pct>=0?'+':'') + pv.pnl_pct.toFixed(2) + '%';
+  
+  // Benchmark
+  const bv = document.getElementById('benchValue');
+  const bp = pv.benchmark_pct || 0;
+  bv.textContent = (bp>=0?'+':'') + bp.toFixed(2) + '%';
+  bv.className = 'value ' + (bp>=0?'positive':'negative');
+  
+  document.getElementById('currentDate').textContent = gameState.current_date || '----';
+  const prog = gameState.total_days>1 ? gameState.current_day/(gameState.total_days-1)*100 : 0;
+  document.getElementById('progressFill').style.width = prog + '%';
+  document.getElementById('dayInfo').textContent = '第 '+ (gameState.current_day+1) +' / '+ gameState.total_days +' 天';
+  if (gameState.game_over) { document.getElementById('statusTag').textContent = '已结束'; document.getElementById('statusTag').className = 'tag'; }
+  document.getElementById('holdings').innerHTML = Object.keys(pf).length === 0
+    ? '<span style="color:var(--dim);font-size:11px">空仓</span>'
+    : Object.entries(pf).map(([c,h])=>{
+      const p = prices[c]; if(!p) return '';
+      const mv=h.shares*p.close, cost=h.cost_basis, pnl=mv-h.shares*cost, pp=cost>0?(p.close-cost)/cost*100:0;
+      const cls=pnl>=0?'positive':'negative';
+      return `<div class="holding-row"><div><b>${p.name}</b><br><span style="color:var(--dim);font-size:10px">${h.shares}股 @${p.close.toFixed(2)}</span></div><div style="text-align:right"><span class="${cls}">${pnl>=0?'+':''}¥${fmt(Math.abs(pnl))}</span><br><span class="${cls}" style="font-size:10px">${pp>=0?'+':''}${pp.toFixed(1)}%</span></div></div>`;
+    }).join('');
+  const sel = document.getElementById('tradeStock');
+  sel.innerHTML = '<option>-- 选股 --</option>';
+  if (gameState.stocks) Object.entries(gameState.stocks).forEach(([c,s])=>{
+    const p = prices[c];
+    const sc = (gameState.quant_scores||{})[c];
+    const scStr = sc ? ' Q'+sc.score.toFixed(0) : '';
+    sel.innerHTML += `<option value="${c}">${s.name}${p ? ' ¥'+p.close.toFixed(2) : ' (当日无数据)'}${scStr}</option>`;
+  });
+  // Auto-select viewed stock in trade dropdown
+  if (selectedChartCode) sel.value = selectedChartCode;
+  
+  const tabs = document.getElementById('chartTabs'); tabs.innerHTML = '';
+  if (gameState.stocks) {
+    let firstTab = !selectedChartCode || !gameState.stocks[selectedChartCode];
+    Object.entries(gameState.stocks).forEach(([c,s])=>{
+      const isActive = c === selectedChartCode;
+      const sc = (gameState.quant_scores||{})[c];
+      const scStr2 = sc ? ' ' + sc.score.toFixed(0) : '';
+      const t=document.createElement('span');
+      t.className='tab' + (isActive ? ' active' : '');
+      t.innerHTML = s.name + scStr2 + ' <span class="del" title="删除">×</span>';
+      t.querySelector('.del').onclick = function(e) {
+        e.stopPropagation();
+        removeStock(c);
+      };
+      t.onclick = function() {
+        document.querySelectorAll('#chartTabs .tab').forEach(x=>x.classList.remove('active'));
+        this.classList.add('active');
+        selectedChartCode = c;
+        updateChart(c);
+      };
+      tabs.appendChild(t);
+    });
+    if (!selectedChartCode || !gameState.stocks[selectedChartCode]) {
+      selectedChartCode = Object.keys(gameState.stocks)[0];
+    }
+  }
+  const txns=gameState.recent_transactions||[];
+  document.getElementById('transactions').innerHTML = txns.length===0
+    ? '<span style="color:var(--dim);font-size:11px">暂无</span>'
+    : txns.slice().reverse().map(t=>`<div class="transaction-item"><span class="t-date">${t.date}</span> <span class="${t.type==='BUY'?'t-buy':'t-sell'}">${t.type==='BUY'?'买':'卖'}</span> ${t.name} ${t.shares}股 @${t.price.toFixed(2)} ¥${fmt(t.amount)}${t.fee?'<span style=\"color:var(--dim);font-size:10px\"> 费¥'+fmt(t.fee)+'</span>':''}</div>`).join('');
+  
+  // Strategy log
+  const slog = gameState.strategy_log || [];
+  const scard = document.getElementById('strategyLogCard');
+  const sdiv = document.getElementById('strategyLog');
+  if (slog.length > 0) {
+    scard.style.display = 'block';
+    sdiv.innerHTML = slog.slice().reverse().map(sl =>
+      `<div style="margin-bottom:4px;padding:3px 0;border-bottom:1px solid #1a2030">
+        <span style="color:var(--dim);font-size:10px">${sl.date}</span>
+        ${sl.logs.map(l => {
+          let cls = 'color:var(--dim)';
+          if (l.startsWith('[买]')) cls = 'color:#f44336;font-weight:600';
+          if (l.startsWith('[卖]')) cls = 'color:#4caf50;font-weight:600';
+          return `<div style="font-size:11px;margin-left:8px;${cls}">${l}</div>`;
+        }).join('')}
+      </div>`
+    ).join('');
+  } else {
+    scard.style.display = 'none';
+  }
+}
+
+// ====== CANDLESTICK CHART ======
+let chartHoverIdx = -1;
+
+function drawBaseChart(ctx, data, pad, cw, ch, xStep, candleW, min, max, range, volMax, volBase, volH, w, h) {
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = '#0f141c'; ctx.fillRect(0, 0, w, h);
+
+  // Volume
+  data.forEach((d, i) => {
+    const x = pad.left + xStep * i - candleW / 2;
+    ctx.fillStyle = d.close >= d.open ? 'rgba(244,67,54,0.45)' : 'rgba(76,175,80,0.45)';
+    ctx.fillRect(x, volBase + volH - d.volume / volMax * volH, candleW, d.volume / volMax * volH);
+  });
+  ctx.fillStyle = '#6b7480'; ctx.font = '9px monospace'; ctx.textAlign = 'right';
+  ctx.fillText((volMax / 10000).toFixed(0) + '万手', pad.left - 4, volBase + 2);
+
+  // Grid
+  ctx.strokeStyle = '#1a2030'; ctx.lineWidth = 0.5;
+  for (let i = 0; i <= 5; i++) {
+    const y = pad.top + ch / 5 * i;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(w - pad.right, y); ctx.stroke();
+    ctx.fillStyle = '#6b7480'; ctx.font = '10px monospace'; ctx.textAlign = 'right';
+    ctx.fillText((max - range / 5 * i).toFixed(2), pad.left - 8, y + 3);
+  }
+
+  // Date labels
+  ctx.textAlign = 'center'; ctx.fillStyle = '#6b7480'; ctx.font = '9px sans-serif';
+  const nLabels = Math.min(8, data.length);
+  for (let i = 0; i < nLabels; i++) {
+    const idx = Math.floor(i * (data.length - 1) / (nLabels - 1));
+    ctx.fillText(data[idx].date.slice(5), pad.left + xStep * idx, h - pad.bottom + 15);
+  }
+
+  // Candlesticks
+  data.forEach((d, i) => {
+    const x = pad.left + xStep * i;
+    const oy = pad.top + ch * (1 - (d.open - min) / range);
+    const cy = pad.top + ch * (1 - (d.close - min) / range);
+    const hy = pad.top + ch * (1 - (d.high - min) / range);
+    const ly = pad.top + ch * (1 - (d.low - min) / range);
+    const isUp = d.close >= d.open;
+    ctx.strokeStyle = isUp ? '#ef5350' : '#26a69a'; ctx.lineWidth = 0.8;
+    ctx.beginPath(); ctx.moveTo(x, hy); ctx.lineTo(x, Math.min(oy, cy)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x, Math.max(oy, cy)); ctx.lineTo(x, ly); ctx.stroke();
+    ctx.fillStyle = isUp ? '#ef5350' : '#26a69a';
+    ctx.fillRect(x - candleW / 2, Math.min(oy, cy), candleW, Math.max(0.5, Math.abs(cy - oy)));
+  });
+
+  // MA lines
+  let maVals = [];
+  [5, 10, 20, 30, 60].forEach((p, pi) => {
+    ctx.strokeStyle = MA_COLORS[pi]; ctx.lineWidth = 1.1; ctx.beginPath();
+    let started = false, lastX, lastY, lastVal = 0;
+    for (let i = p - 1; i < data.length; i++) {
+      const ma = data.slice(i - p + 1, i + 1).reduce((a, b) => a + b.close, 0) / p;
+      lastVal = ma;
+      const x = pad.left + xStep * i, y = pad.top + ch * (1 - (ma - min) / range);
+      if (!started) { ctx.moveTo(x, y); started = true; }
+      else ctx.lineTo(x, y);
+      lastX = x; lastY = y;
+    }
+    ctx.stroke();
+    maVals.push(lastVal);
+    if (started) {
+      ctx.fillStyle = MA_COLORS[pi]; ctx.font = 'bold 9px monospace'; ctx.textAlign = 'left';
+      ctx.fillText('MA' + p, lastX + 2, lastY + 2);
+    }
+  });
+
+  // Legend
+  document.getElementById('maLegend').innerHTML =
+    '<span class="ma-item"><span style="color:#f44336">■</span> 阳</span>' +
+    '<span class="ma-item"><span style="color:#4caf50">■</span> 阴</span>' +
+    [5, 10, 20, 30, 60].map((p, i) =>
+      '<span class="ma-item"><span class="ma-dot" style="background:' + MA_COLORS[i] + ';width:12px"></span> MA' + p + ' ' + (maVals[i] || 0).toFixed(2) + '</span>'
+    ).join('');
+
+  return maVals;
+}
+
+function drawTooltip(ctx, d, cx, pad, ch, min, range, w) {
+  const boxW = 130, boxH = 76, bx = Math.min(cx + 10, w - pad.right - boxW - 10), by = pad.top + 5;
+  ctx.fillStyle = 'rgba(0,0,0,0.9)'; ctx.strokeStyle = '#666'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.rect(bx, by, boxW, boxH); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 10px monospace'; ctx.textAlign = 'left';
+  ctx.fillText(d.date, bx + 6, by + 16);
+  ctx.fillStyle = '#ddd'; ctx.font = '10px monospace';
+  ctx.fillText('O:' + d.open.toFixed(2) + ' H:' + d.high.toFixed(2), bx + 6, by + 30);
+  ctx.fillText('L:' + d.low.toFixed(2) + ' C:' + d.close.toFixed(2), bx + 6, by + 43);
+  const chg = ((d.close - d.open) / d.open * 100).toFixed(2);
+  ctx.fillStyle = d.close >= d.open ? '#f44336' : '#4caf50';
+  ctx.fillText((chg >= 0 ? '+' : '') + chg + '%', bx + 6, by + 56);
+  ctx.fillStyle = '#aaa'; ctx.font = '9px monospace';
+  ctx.fillText('量:' + (d.volume / 10000).toFixed(1) + '万手', bx + 6, by + 69);
+  // Crosshair line
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 0.5; ctx.setLineDash([3, 3]);
+  ctx.beginPath(); ctx.moveTo(cx, pad.top); ctx.lineTo(cx, pad.top + ch); ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+let chartState = {};
+
+async function updateChart(code) {
+  if (!code) code = selectedChartCode; if (!code) return;
+  selectedChartCode = code;
+  const lb = gameState._chart_lookback || parseInt(document.getElementById('chartDays')?.value) || 100;
+  const r = await api('/api/chart_data', { code, lookback: lb });
+  const data = r.data || [];
+  if (data.length < 2) return;
+
+  const canvas = document.getElementById('chartCanvas');
+  const dpr = window.devicePixelRatio || 1;
+  const cssW = canvas.parentElement.clientWidth - 24;
+  const CSS_H = 480;
+  canvas.width = Math.floor(cssW * dpr);
+  canvas.height = Math.floor(CSS_H * dpr);
+  canvas.style.width = cssW + 'px';
+  canvas.style.height = CSS_H + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const w = cssW, h = CSS_H;
+  const pad = { top: 20, right: 40, bottom: 65, left: 68 };
+  const cw = w - pad.left - pad.right, ch = h - pad.top - pad.bottom - 50;
+  const xStep = cw / (data.length - 1), candleW = Math.max(1, Math.min(xStep * 0.7, 8));
+  const closes = data.map(d => d.close), highs = data.map(d => d.high), lows = data.map(d => d.low);
+  const allVals = [...closes, ...highs, ...lows];
+  const min = Math.min(...allVals) * 0.96, max = Math.max(...allVals) * 1.04, range = max - min || 1;
+  const volMax = Math.max(...data.map(d => d.volume)), volBase = pad.top + ch + 5, volH = Math.min(45, ch * 0.15);
+
+  // Save state for hover
+  chartState = { ctx, data, pad, cw, ch, xStep, candleW, min, max, range, volMax, volBase, volH, w, h };
+
+  // Draw base
+  const maVals = drawBaseChart(ctx, data, pad, cw, ch, xStep, candleW, min, max, range, volMax, volBase, volH, w, h);
+
+  // Hover handler
+  canvas.onmousemove = function (e) {
+    const mx = (e.clientX - canvas.getBoundingClientRect().left);
+    const idx = Math.round((mx - pad.left) / xStep);
+    if (idx < 0 || idx >= data.length) return;
+    const d = data[idx], cx = pad.left + xStep * idx;
+    drawBaseChart(ctx, data, pad, cw, ch, xStep, candleW, min, max, range, volMax, volBase, volH, w, h);
+    drawTooltip(ctx, d, cx, pad, ch, min, range, w);
+  };
+  canvas.onmouseleave = function () {
+    drawBaseChart(ctx, data, pad, cw, ch, xStep, candleW, min, max, range, volMax, volBase, volH, w, h);
+  };
+  // Draw B/S trade markers
+  const markers = gameState.trade_markers || [];
+  markers.forEach(m => {
+    if (m.code !== code) return;
+    const idx = data.findIndex(d => d.date === m.date);
+    if (idx < 0) return;
+    const x = pad.left + xStep * idx;
+    const y = pad.top + ch * (1 - (data[idx].high - min) / range) - 15;
+    ctx.fillStyle = m.type === 'BUY' ? '#f44336' : '#4caf50';
+    ctx.font = 'bold 12px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(m.type === 'BUY' ? 'B' : 'S', x, y);
+  });
+  
+  // Update legend with MA values
+  document.getElementById('maLegend').innerHTML =
+    '<span class="ma-item"><span style="color:#f44336">■</span> 阳</span>' +
+    '<span class="ma-item"><span style="color:#4caf50">■</span> 阴</span>' +
+    [5, 10, 20, 30, 60].map((p, i) =>
+      '<span class="ma-item"><span class="ma-dot" style="background:' + MA_COLORS[i] + ';width:12px"></span> MA' + p + ' ' + (maVals[i] || 0).toFixed(2) + '</span>'
+    ).join('');
+}
+
+async function skipDay() { await api('/api/skip'); refreshAll(); }
+async function skipDays(n) {
+  const strat = document.getElementById('autoStrategy').value;
+  if (strat !== 'off') {
+    await api('/api/advance', { days: n, auto_strategy: strat });
+  } else {
+    await api('/api/advance', { days: n });
+  }
+  refreshAll();
+}
+
+function toggleAuto() {
+  const strat = document.getElementById('autoStrategy').value;
+  const sname = document.getElementById('autoStrategy').selectedOptions[0].text;
+  if (strat !== 'off') {
+    fetch('/api/auto_pilot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ strategy: strat }) });
+    toast('托管: ' + sname, 'ok');
+  } else {
+    fetch('/api/auto_pilot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ strategy: 'off' }) });
+  }
+}
+
+// Strategy info tooltip is set inline in the HTML
+async function endGame() { await api('/api/advance',{days:99999}); refreshAll(); toast('游戏结束'); }
+async function doTrade(type) {
+  const code=document.getElementById('tradeStock').value;
+  const lots=parseInt(document.getElementById('tradeLots').value) || 0;
+  if(!code||code.startsWith('--')){toast('选股','err');return;}
+  if(lots<=0){toast('输入手数','err');return;}
+  const r=await api('/api/'+(type==='buy'?'buy':'sell'),{code,amount:lots});
+  toast(r.message,r.success?'ok':'err'); if(r.success)document.getElementById('tradeLots').value=''; refreshAll();
+}
+async function doSellAll() { const code=document.getElementById('tradeStock').value; if(!code||code.startsWith('--')){toast('选股','err');return;} const r=await api('/api/sell',{code,amount:0}); toast(r.message,r.success?'ok':'err'); refreshAll(); }
+
+async function removeStock(code) {
+  if (!confirm('确定删除该股票吗？有持仓需先卖出。')) return;
+  await api('/api/remove_stock', { code });
+  if (selectedChartCode === code) selectedChartCode = null;
+  refreshAll();
+  toast('已删除', 'ok');
+}
+
+async function quickBuy(fraction) {
+  const code = document.getElementById('tradeStock').value;
+  if (!code || code.startsWith('--')) { toast('请先选择股票', 'err'); return; }
+  const price = (gameState.prices||{})[code]?.close;
+  if (!price) { toast('该股票当前日期无行情(可能停牌或后续日期才有数据)，请先推进日期', 'err'); return; }
+  const maxLots = Math.floor((gameState.cash * fraction) / (price * 100));
+  if (maxLots <= 0) { toast('资金不足买1手(需¥'+(price*100).toFixed(0)+')', 'err'); return; }
+  document.getElementById('tradeLots').value = maxLots;
+  doTrade('buy');
+}
+
+async function quickSell(fraction) {
+  const code = document.getElementById('tradeStock').value;
+  if (!code || code.startsWith('--')) { toast('选股', 'err'); return; }
+  const h = (gameState.portfolio||{})[code];
+  if (!h || h.shares <= 0) { toast('无持仓', 'err'); return; }
+  const lots = Math.max(1, Math.floor(h.shares / 100 * fraction));
+  document.getElementById('tradeLots').value = lots;
+  doTrade('sell');
+}
+async function resetGame() { await api('/api/reset'); addedStocks=[];gameState=null;selectedChartCode=null; updateStockList(); document.getElementById('setupPanel').style.display='block'; document.getElementById('gameArea').classList.remove('active'); document.getElementById('statusTag').textContent='等待设置'; document.getElementById('statusTag').className='tag active'; document.getElementById('stockCode').value=''; document.getElementById('initCash').value='100000'; toast('已重置'); }
+document.addEventListener('keydown',e=>{ if((e.key==='ArrowRight'||e.key===' ')&&gameState&&gameState.game_started&&!gameState.game_over){e.preventDefault();skipDay();} });
+// Handle window resize - redraw chart
+let resizeTimer;
+window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { if (selectedChartCode) updateChart(selectedChartCode); }, 300); });
+</script>
+</body>
+</html>

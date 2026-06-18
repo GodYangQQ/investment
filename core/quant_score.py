@@ -568,6 +568,23 @@ def calc_fundamental_auto_score(quote: dict, financials: dict | None) -> dict:
             score -= 0.5
             items.append(f"PE={pe:.1f}(>80) -0.5")
 
+    # PEG = PE / 净利增速
+    net_profit_yoy = financials.get("净利润同比增长率") or financials.get("归母净利润同比增长率")
+    if pe > 0 and net_profit_yoy is not None and net_profit_yoy > 0:
+        peg = pe / net_profit_yoy
+        if peg < 0.5:
+            score += 0.5
+            items.append(f"PEG={peg:.2f}(<0.5,极度低估) +0.5")
+        elif peg < 1.0:
+            score += 0.3
+            items.append(f"PEG={peg:.2f}(<1,低估) +0.3")
+        elif peg > 3.0:
+            score -= 0.5
+            items.append(f"PEG={peg:.2f}(>3,严重高估) -0.5")
+        elif peg > 2.0:
+            score -= 0.3
+            items.append(f"PEG={peg:.2f}(>2,高估) -0.3")
+
     # 现金流/净利比
     cashflow = financials.get("经营现金流量净额")
     profit = financials.get("归母净利润")
@@ -628,15 +645,15 @@ def calc_total_score(signals: dict) -> dict:
 
     # 可买度判定（阈值收紧，因为连续化后分数更分散）
     if total >= 78:
-        buyability = "🟢 强烈推荐"
+        buyability = "[强烈推荐]"
     elif total >= 68:
-        buyability = "🟢 推荐"
+        buyability = "[推荐]"
     elif total >= 55:
-        buyability = "🟡 关注"
+        buyability = "[关注]"
     elif total >= 40:
-        buyability = "🟠 偏弱"
+        buyability = "[偏弱]"
     else:
-        buyability = "🔴 回避"
+        buyability = "[回避]"
 
     return {
         "factors": {
@@ -702,19 +719,19 @@ def apply_cost_correction(
     # 5B.1 盈亏状态
     pnl_pct = (price - cost_price) / cost_price * 100
     if pnl_pct > 20:
-        pnl_label = "🟢🟢 大幅浮盈"
+        pnl_label = "大幅浮盈++"
     elif pnl_pct >= 10:
-        pnl_label = "🟢 中等浮盈"
+        pnl_label = "中等浮盈+"
     elif pnl_pct >= 3:
-        pnl_label = "🟡 小幅浮盈"
+        pnl_label = "小幅浮盈"
     elif pnl_pct >= -3:
-        pnl_label = "⚪ 成本附近"
+        pnl_label = "成本附近"
     elif pnl_pct >= -8:
-        pnl_label = "🟠 小幅浮亏"
+        pnl_label = "小幅浮亏"
     elif pnl_pct >= -15:
-        pnl_label = "🔴 中等浮亏"
+        pnl_label = "中等浮亏"
     else:
-        pnl_label = "🔴🔴 大幅浮亏"
+        pnl_label = "大幅浮亏--"
 
     # 5B.2 持仓时间
     hold_days = 0
@@ -766,35 +783,35 @@ def apply_cost_correction(
         if pnl_pct >= 0:
             multiplier = 1.5 if hold_days < 20 else 1.3
             final_pct = base_pct * multiplier
-            op = f"🟢 加仓（原{base_pct:.0f}% → {final_pct:.0f}%）"
+            op = f"[加仓] 加仓（原{base_pct:.0f}% → {final_pct:.0f}%）"
         else:
             multiplier = 1.2 if hold_days < 20 else 1.5
             final_pct = base_pct * multiplier
-            op = f"🟢 加仓摊薄（原{base_pct:.0f}% → {final_pct:.0f}%）"
+            op = f"[加仓] 加仓摊薄（原{base_pct:.0f}% → {final_pct:.0f}%）"
     elif total >= 65:
         if pnl_pct >= 0:
             final_pct = base_pct * (1.1 if hold_days >= 20 else 1.0)
-            op = f"🟡 {'轻仓加仓' if hold_days >= 20 else '持有'}（{final_pct:.0f}%）"
+            op = f"[持有] {'轻仓加仓' if hold_days >= 20 else '持有'}（{final_pct:.0f}%）"
         else:
             final_pct = base_pct
-            op = f"🟡 持有观察（{final_pct:.0f}%）"
+            op = f"[持有] 持有观察（{final_pct:.0f}%）"
     elif total >= 50:
         if pnl_pct >= 0:
             final_pct = base_pct * (0.7 if hold_days >= 20 else 1.0)
-            op = f"🟡 {'减仓30%' if hold_days >= 20 else '持有，上移止损至成本价'}（{final_pct:.0f}%）" if base_pct > 0 else "观望"
+            op = f"[减仓] {'减仓30%' if hold_days >= 20 else '持有，上移止损至成本价'}（{final_pct:.0f}%）" if base_pct > 0 else "观望"
         else:
             final_pct = base_pct * 0.5
-            op = f"🟠 减仓50%（弱势+被套）→ {final_pct:.0f}%"
+            op = f"[减仓] 减仓50%（弱势+被套）→ {final_pct:.0f}%"
     elif total >= 35:
         if base_pct > 0:
             final_pct = base_pct * (0.3 if hold_days < 20 else 0)
-            op = f"🔴 {'减仓70%' if hold_days < 20 else '清仓'}"
+            op = f"[清仓] {'减仓70%' if hold_days < 20 else '清仓'}"
         else:
             final_pct = 0
             op = "不买"
     else:
         final_pct = -1
-        op = "🔴 清仓"
+        op = "[清仓] 清仓"
 
     final_pct = max(-1, min(30, final_pct))
 
@@ -841,12 +858,13 @@ def format_score_output(
     rsi_detail: dict | None = None,
     fundamental_auto: dict | None = None,
     grade: dict | None = None,
+    supply_demand: dict | None = None,
 ) -> str:
     """格式化为 agent 可直接消费的结构化文本。"""
     lines = []
     lines.append(f"## 量化多因子评分 — {name}({code})")
     lines.append(f"> 计算时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} | 数据截止: T-1日 | 零未来函数")
-    lines.append(f"> ⚠️ 以下所有数值由 Python 脚本精确计算，AI 不需重新计算。")
+    lines.append(f"> [!] 以下所有数值由 Python 脚本精确计算，AI 不需重新计算。")
     lines.append("")
 
     # 基本信息
@@ -902,11 +920,11 @@ def format_score_output(
     # 基本面自动初评（脚本计算，供AI修正）
     if fundamental_auto and fundamental_auto.get("data_available"):
         lines.append("### 基本面自动初评（脚本计算，AI可修正）")
-        lines.append(f"- 自动评分: ⭐{fundamental_auto['score']}/5")
+        lines.append(f"- 自动评分: *{fundamental_auto['score']}/5")
         if fundamental_auto.get("breakdown"):
             for item in fundamental_auto["breakdown"]:
                 lines.append(f"  - {item}")
-        lines.append(f"- ⚠️ 此评分为机器初评，不含概念/行业地位判断，AI 需结合财报细节修正")
+        lines.append(f"- [!] 此评分为机器初评，不含概念/行业地位判断，AI 需结合财报细节修正")
         lines.append("")
 
     # 成本修正（如有）
@@ -928,12 +946,27 @@ def format_score_output(
         lines.append(f"**建议仓位**: {base_label}")
         lines.append("")
 
+    # 供需评估
+    if supply_demand and supply_demand.get("star", 0) > 0:
+        lines.append("### 供需评估（脚本自动计算，6项硬指标）")
+        sd = supply_demand
+        star = sd.get("star", 0)
+        star_str = "*" * star + "-" * (5 - star)
+        lines.append(f"- 供需评级: {star_str} ({star}/5) | 总供需分: {sd.get('total_score', 0):.0f}/100")
+        lines.append(f"- 需求端: {sd.get('demand_score', 0):.0f}/50 | 供给端: {sd.get('supply_score', 0):.0f}/50")
+        lines.append(f"- {sd.get('summary', '')}")
+        details = sd.get("details", {})
+        if details:
+            for key, d in details.items():
+                lines.append(f"  - {key}: {d['score']}/{d['max']} {d['label']} ({d.get('detail', '')})")
+        lines.append("")
+
     # 必填提醒
     lines.append("---")
-    lines.append("> ⚠️ **AI 必须继续输出以下内容（脚本不计算，需AI判断）：**")
+    lines.append("> [!] **AI 必须继续输出以下内容（脚本不计算，需AI判断）：**")
     lines.append("> 1. **最优买入点**（突破买入价 / 触底买入价 + 触发条件）")
     lines.append("> 2. **止盈止损表**（具体价格，按标的等级分档）")
-    lines.append("> 3. **概念⭐评分(1-5)** 和 **最终基本面⭐(1-5)**（可在自动初评基础上修正）")
+    lines.append("> 3. **概念*(1-5)评级** 和 **最终基本面*(1-5)**（可在自动初评基础上修正）")
     lines.append("> 4. **关键价位**（阻力位/支撑位）")
     lines.append("> 5. **操作理由+风险提示**")
 
@@ -983,19 +1016,19 @@ def fetch_index_risk() -> dict:
         # 仓位上限
         if ma60 and last_close > ma60:
             position_cap = 100
-            status = "🟢 强势（上证>MA60）"
+            status = "[强势] 上证>MA60"
             max_stocks = "5-8只"
         elif ma200 and last_close > ma200:
             position_cap = 50
-            status = "🟡 震荡（MA60>上证>MA200）"
+            status = "[震荡] MA60>上证>MA200"
             max_stocks = "2-3只"
         elif ma200:
             position_cap = 30
-            status = "🔴 弱势（上证<MA200）"
+            status = "[弱势] 上证<MA200"
             max_stocks = "1-2只（仅核心池最高分）"
         else:
             position_cap = 80
-            status = "⚠️ 数据不足"
+            status = "[!] 数据不足"
             max_stocks = "4-6只"
     except Exception as e:
         return {"error": f"K线计算失败: {e}", "idx_price": idx_price, "idx_pct": idx_pct}
@@ -1014,7 +1047,7 @@ def fetch_index_risk() -> dict:
 
 def format_index_output(risk: dict) -> str:
     if "error" in risk:
-        return f"⚠️ 大盘风控: {risk['error']}"
+        return f"[!] 大盘风控: {risk['error']}"
     lines = [
         "## 大盘风控",
         f"- 上证指数: {risk['idx_price']:.2f} ({risk['idx_pct']:+.2f}%)",
@@ -1085,7 +1118,7 @@ def score_single_stock(
         fundamental_auto["gross_margin"] = round(financials["毛利率"], 1) if financials.get("毛利率") else None
         fundamental_auto["net_margin"] = round(financials["销售净利率"], 1) if financials.get("销售净利率") else None
         fundamental_auto["revenue_yoy"] = round(financials["营业总收入同比"], 1) if financials.get("营业总收入同比") else None
-        fundamental_auto["net_profit_yoy"] = round(financials["归母净利润同比增长率"], 1) if financials.get("归母净利润同比增长率") else None
+        fundamental_auto["net_profit_yoy"] = round(financials["净利润同比增长率"], 1) if financials.get("净利润同比增长率") else None
         fundamental_auto["debt_ratio"] = round(financials["资产负债率"], 1) if financials.get("资产负债率") else None
         rev = financials.get("营业总收入") or 0
         fundamental_auto["cf_ratio"] = round(financials.get("经营现金流量净额", 0) / rev, 3) if rev > 0 and financials.get("经营现金流量净额") else None
@@ -1094,6 +1127,20 @@ def score_single_stock(
     f_star = fundamental_star if fundamental_star is not None else fundamental_auto.get("score")
     c_star = concept_star  # 概念⭐只能人工标注，不自动计算
     grade_info = calc_stock_grade(f_star, c_star)
+
+    # == 新增：供需评估 ==
+    supply_demand = None
+    if _HAS_AKSHARE:
+        try:
+            from supply_demand import fetch_supply_demand_data, calc_supply_demand, merge_pe_into_peg
+            sd_data = fetch_supply_demand_data(code)
+            supply_demand = calc_supply_demand(sd_data)
+            if sd_data.get("quarters") and sd_data["quarters"][0].get("profit_yoy"):
+                supply_demand["profit_yoy"] = sd_data["quarters"][0]["profit_yoy"]
+                supply_demand = merge_pe_into_peg(supply_demand, quote.get("pe_ttm", 0))
+            supply_demand["quarters"] = sd_data.get("quarters", [])
+        except Exception:
+            supply_demand = None
 
     return {
         "code": code,
@@ -1107,6 +1154,7 @@ def score_single_stock(
         "rsi_detail": rsi_detail,
         "fundamental_auto": fundamental_auto,
         "grade": grade_info,
+        "supply_demand": supply_demand,
     }
 
 
@@ -1161,6 +1209,7 @@ def main():
                     result["score"], result["cost_correction"], tier,
                     result.get("momentum"), result.get("rsi_detail"),
                     result.get("fundamental_auto"), result.get("grade"),
+                    result.get("supply_demand"),
                 ))
                 print()
             except Exception as e:
@@ -1178,6 +1227,7 @@ def main():
             result["score"], result["cost_correction"], args.tier,
             result.get("momentum"), result.get("rsi_detail"),
             result.get("fundamental_auto"), result.get("grade"),
+            result.get("supply_demand"),
         ))
 
         if args.output:

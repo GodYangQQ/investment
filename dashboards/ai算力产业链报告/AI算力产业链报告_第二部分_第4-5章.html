@@ -1,0 +1,1426 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI算力产业链深度研究报告 — 第二部分:第4-5章</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0e14;
+  --bg-card: #131820;
+  --bg-card-hover: #1a212c;
+  --border: #2a323f;
+  --border-bright: #3d4a5c;
+  --text: #e8eaed;
+  --text-dim: #9aa3b2;
+  --text-faint: #6b7384;
+  --accent: #d4a574;
+  --accent-bright: #f5c896;
+  --gold: #c9a961;
+  --red: #d4644a;
+  --green: #6da479;
+  --blue: #6a8cb5;
+  --purple: #9c7eb0;
+  --serif: 'Noto Serif SC', 'Cormorant Garamond', Georgia, serif;
+  --display: 'Cormorant Garamond', 'Noto Serif SC', serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--serif);
+  font-weight: 400;
+  line-height: 1.75;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  background-image: 
+    radial-gradient(ellipse at 20% 0%, rgba(212, 165, 116, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 100%, rgba(106, 140, 181, 0.04) 0%, transparent 50%);
+  background-attachment: fixed;
+}
+
+.container { max-width: 1100px; margin: 0 auto; padding: 0 40px; }
+
+/* ====== Part 标题 ====== */
+.part-header {
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 80px 40px;
+  position: relative;
+  border-bottom: 1px solid var(--border);
+}
+.part-header::before {
+  content: '';
+  position: absolute;
+  top: 40px; right: 40px; bottom: 40px; left: 40px;
+  border: 1px solid var(--border);
+  pointer-events: none;
+}
+.part-tag {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 40px;
+  padding-left: 20px;
+  border-left: 2px solid var(--accent);
+}
+.part-title {
+  font-family: var(--display);
+  font-size: clamp(48px, 7vw, 80px);
+  font-weight: 300;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  margin-bottom: 20px;
+}
+.part-title .em { font-style: italic; color: var(--accent); }
+.part-subtitle {
+  font-size: 20px;
+  font-weight: 300;
+  color: var(--text-dim);
+  max-width: 700px;
+  line-height: 1.6;
+  margin-bottom: 60px;
+}
+.part-toc {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  padding-top: 40px;
+  border-top: 1px solid var(--border);
+}
+.part-toc-item {
+  padding: 16px 0;
+  border-left: 2px solid var(--border);
+  padding-left: 16px;
+}
+.part-toc-item.current { border-left-color: var(--accent); }
+.part-toc-item .num {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.part-toc-item.current .num { color: var(--accent); }
+.part-toc-item .name {
+  font-size: 15px;
+  color: var(--text);
+  line-height: 1.4;
+}
+.part-toc-item .name small {
+  display: block;
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* ====== 章节 ====== */
+.chapter {
+  padding: 120px 0 80px;
+  border-bottom: 1px solid var(--border);
+}
+.chapter-num {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.3em;
+  color: var(--accent);
+  margin-bottom: 20px;
+  text-transform: uppercase;
+}
+.chapter-title {
+  font-family: var(--display);
+  font-size: clamp(40px, 5vw, 64px);
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  margin-bottom: 24px;
+}
+.chapter-title .em { font-style: italic; color: var(--accent); }
+.chapter-lead {
+  font-size: 19px;
+  color: var(--text-dim);
+  max-width: 800px;
+  margin-bottom: 60px;
+  line-height: 1.7;
+  font-weight: 300;
+}
+
+h3.section-title {
+  font-family: var(--serif);
+  font-size: 28px;
+  font-weight: 500;
+  margin: 60px 0 24px;
+  color: var(--text);
+  position: relative;
+  padding-left: 24px;
+}
+h3.section-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 14px;
+  width: 12px;
+  height: 1px;
+  background: var(--accent);
+}
+
+h4.sub-title {
+  font-family: var(--serif);
+  font-size: 21px;
+  font-weight: 500;
+  margin: 40px 0 16px;
+  color: var(--accent-bright);
+}
+
+p {
+  margin-bottom: 18px;
+  color: var(--text);
+}
+p.dim { color: var(--text-dim); }
+strong, b { color: var(--accent-bright); font-weight: 600; }
+
+.lead {
+  font-size: 18px;
+  color: var(--text-dim);
+  margin-bottom: 24px;
+  line-height: 1.75;
+}
+
+/* ====== 卡片样式 ====== */
+.highlight-box {
+  background: linear-gradient(135deg, rgba(212,165,116,0.08), rgba(212,165,116,0.02));
+  border-left: 3px solid var(--accent);
+  padding: 28px 32px;
+  margin: 32px 0;
+  border-radius: 0 4px 4px 0;
+}
+.highlight-box .tag {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.highlight-box p:last-child { margin-bottom: 0; }
+
+.warning-box {
+  background: linear-gradient(135deg, rgba(212,100,74,0.08), rgba(212,100,74,0.02));
+  border-left: 3px solid var(--red);
+  padding: 28px 32px;
+  margin: 32px 0;
+  border-radius: 0 4px 4px 0;
+}
+.warning-box .tag {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--red);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.analogy-box {
+  background: rgba(106,140,181,0.06);
+  border: 1px solid rgba(106,140,181,0.2);
+  padding: 24px 28px;
+  margin: 24px 0;
+  border-radius: 4px;
+}
+.analogy-box .tag {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--blue);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.analogy-box h5 {
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--accent-bright);
+  margin-bottom: 8px;
+}
+
+.bias-box {
+  background: linear-gradient(135deg, rgba(156,126,176,0.08), rgba(156,126,176,0.02));
+  border-left: 3px solid var(--purple);
+  padding: 28px 32px;
+  margin: 32px 0;
+  border-radius: 0 4px 4px 0;
+}
+.bias-box .tag {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--purple);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.bias-box h5 {
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+
+/* ====== 数据卡片 ====== */
+.data-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+  margin: 32px 0;
+}
+.data-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 24px 22px;
+  border-radius: 4px;
+  transition: all 0.3s;
+}
+.data-card:hover {
+  border-color: var(--border-bright);
+  transform: translateY(-2px);
+}
+.data-card .label {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.data-card .value {
+  font-family: var(--display);
+  font-size: 38px;
+  font-weight: 500;
+  color: var(--accent);
+  line-height: 1.1;
+  margin-bottom: 8px;
+}
+.data-card .value .unit {
+  font-size: 16px;
+  color: var(--text-dim);
+  margin-left: 4px;
+}
+.data-card .desc {
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+/* ====== 表格 ====== */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 24px 0;
+  font-size: 14px;
+}
+table thead {
+  background: var(--bg-card);
+  border-top: 1px solid var(--border-bright);
+  border-bottom: 1px solid var(--border-bright);
+}
+table th {
+  padding: 14px 16px;
+  text-align: left;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  color: var(--accent);
+  text-transform: uppercase;
+  font-weight: 500;
+}
+table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+table tr:hover td { background: rgba(255,255,255,0.02); }
+.num { font-family: var(--mono); color: var(--accent-bright); font-weight: 500; }
+.num.red { color: var(--red); }
+.num.green { color: var(--green); }
+.num.blue { color: var(--blue); }
+.num.gray { color: var(--text-dim); }
+
+/* ====== SVG 容器 ====== */
+.figure {
+  margin: 48px 0;
+  padding: 32px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+.figure-title {
+  font-family: var(--display);
+  font-size: 24px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 8px;
+  text-align: center;
+}
+.figure-subtitle {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  text-align: center;
+  margin-bottom: 32px;
+}
+.figure svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.figure-caption {
+  margin-top: 24px;
+  font-size: 13px;
+  color: var(--text-dim);
+  text-align: center;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+/* ====== 公司分析卡片 ====== */
+.company-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 32px;
+  margin: 24px 0;
+  position: relative;
+}
+.company-card.core {
+  border-left: 4px solid var(--accent);
+}
+.company-card.subcore {
+  border-left: 4px solid var(--blue);
+}
+.company-card.warning {
+  border-left: 4px solid var(--red);
+}
+.company-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.company-name {
+  font-family: var(--serif);
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--text);
+}
+.company-name .code {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text-faint);
+  margin-left: 12px;
+  letter-spacing: 0.1em;
+}
+.company-tier {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  padding: 6px 12px;
+  border-radius: 2px;
+  text-transform: uppercase;
+}
+.company-tier.core {
+  background: rgba(212,165,116,0.15);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+.company-tier.subcore {
+  background: rgba(106,140,181,0.15);
+  color: var(--blue);
+  border: 1px solid var(--blue);
+}
+.company-tier.satellite {
+  background: rgba(156,126,176,0.15);
+  color: var(--purple);
+  border: 1px solid var(--purple);
+}
+.company-tier.warning {
+  background: rgba(212,100,74,0.15);
+  color: var(--red);
+  border: 1px solid var(--red);
+}
+.company-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 16px;
+  margin: 20px 0;
+  padding: 16px;
+  background: rgba(255,255,255,0.02);
+  border-radius: 2px;
+}
+.company-stat {
+  font-family: var(--mono);
+}
+.company-stat .label {
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.company-stat .value {
+  font-size: 16px;
+  color: var(--accent-bright);
+  font-weight: 500;
+}
+.company-logic h6 {
+  font-family: var(--serif);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-top: 16px;
+  margin-bottom: 8px;
+}
+.company-logic p {
+  font-size: 15px;
+  color: var(--text-dim);
+  line-height: 1.65;
+  margin-bottom: 12px;
+}
+
+/* ====== 引用 ====== */
+.quote {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 24px;
+  line-height: 1.5;
+  color: var(--text);
+  padding: 32px 0 32px 32px;
+  border-left: 2px solid var(--accent);
+  margin: 40px 0;
+  max-width: 800px;
+}
+.quote .source {
+  font-family: var(--mono);
+  font-style: normal;
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  margin-top: 16px;
+  display: block;
+}
+
+/* ====== Footer ====== */
+.footer {
+  padding: 60px 0 80px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--text-faint);
+  text-transform: uppercase;
+}
+.footer .ornament {
+  width: 40px;
+  height: 1px;
+  background: var(--accent);
+  margin: 0 auto 24px;
+}
+
+@media (max-width: 768px) {
+  .container { padding: 0 20px; }
+  .part-toc { grid-template-columns: 1fr; }
+  .data-grid { grid-template-columns: 1fr; }
+  .figure { padding: 16px; }
+  .company-card { padding: 20px; }
+}
+
+.svg-text { font-family: var(--mono); fill: var(--text); }
+.svg-text-dim { font-family: var(--mono); fill: var(--text-dim); }
+.svg-text-accent { font-family: var(--serif); fill: var(--accent); font-weight: 500; }
+.svg-line { stroke: var(--border-bright); stroke-width: 1; fill: none; }
+.svg-line-accent { stroke: var(--accent); stroke-width: 1.5; fill: none; }
+</style>
+</head>
+<body>
+
+<!-- ====== Part II 标题页 ====== -->
+<section class="part-header">
+  <div class="part-tag">PART II · INDUSTRY DEEP DIVE</div>
+  <h1 class="part-title">六条产业链<br><span class="em">深度拆解</span></h1>
+  <p class="part-subtitle">从光通信到MLCC,六条产业链的完整技术原理、卡位龙头与认知偏差。本部分包含第4-9章,每条产业链一章,合计约80页深度内容。</p>
+  
+  <div class="part-toc">
+    <div class="part-toc-item current">
+      <div class="num">CHAPTER 04</div>
+      <div class="name">光通信产业链<small>本次提交 · 含光模块、CPO、激光器、设备</small></div>
+    </div>
+    <div class="part-toc-item current">
+      <div class="num">CHAPTER 05</div>
+      <div class="name">PCB与覆铜板<small>本次提交 · 含M7→M8→M9升级</small></div>
+    </div>
+    <div class="part-toc-item">
+      <div class="num">CHAPTER 06</div>
+      <div class="name">PCB上游材料<small>下次提交 · 玻纤布、树脂、铜箔</small></div>
+    </div>
+    <div class="part-toc-item">
+      <div class="num">CHAPTER 07</div>
+      <div class="name">ABF载板<small>下次提交 · 味之素垄断与国产替代</small></div>
+    </div>
+    <div class="part-toc-item">
+      <div class="num">CHAPTER 08</div>
+      <div class="name">CPU产业链<small>第三次提交 · 内存接口、连接器、电感</small></div>
+    </div>
+    <div class="part-toc-item">
+      <div class="num">CHAPTER 09</div>
+      <div class="name">MLCC<small>第三次提交 · 电子工业的大米</small></div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ====== 第4章:光通信 ====== -->
+<div class="container">
+<section class="chapter" id="ch4">
+  <div class="chapter-num">CHAPTER 04</div>
+  <h2 class="chapter-title">光通信<span class="em">产业链</span></h2>
+  <p class="chapter-lead">从GPU到GPU的对话,需要跨越机柜、跨越机房、跨越数据中心。当电信号无法满足这种距离和速度时,光就成了唯一选择。光通信产业链是AI算力时代<strong>第一个被市场充分认知</strong>的板块,也是产业α最硬、机构覆盖最深的赛道。</p>
+
+  <h3 class="section-title">光通信到底解决什么问题</h3>
+  
+  <p class="lead">一台AI服务器机柜里有72颗GPU。当ChatGPT回答一个问题时,这72颗GPU需要<strong>同时协作</strong>——A颗GPU算到一半的结果要传给B颗GPU继续算,B颗的结果再传给C颗。如果传输速度跟不上,72颗GPU等于只用了1颗。</p>
+  
+  <p>问题来了:GPU之间怎么传数据?</p>
+  
+  <p><strong>在同一台机柜内</strong>:用铜线、铜缆、PCB走线,叫做"电信号传输"。<strong>在不同机柜之间</strong>:距离一拉长,铜线的损耗就指数级增加。这时候必须用光纤——把电信号转换成光信号,在光纤里传几公里,再转换回电信号。</p>
+  
+  <p><strong>这个"电信号⇄光信号"的转换装置,就是光模块</strong>。它是AI服务器集群的"翻译官",每秒钟做几亿次电光转换。</p>
+
+  <div class="analogy-box">
+    <div class="tag">类比讲解</div>
+    <h5>光模块 = 录音机+播放器的组合</h5>
+    <p>你给朋友打电话,你的声音(电信号)先被手机转换成无线电波(光信号),传到对方手机后再转换回声音。光模块做的是同样的事——一端是"录音机"(把电信号转成光),另一端是"播放器"(把光信号转回电)。</p>
+    <p>AI服务器每多一颗GPU,就需要至少多一组"录音机+播放器"。Rubin机柜72颗GPU,需要的光模块数量是GB200时代的<strong>4-6倍</strong>。这就是为什么中际旭创Q1营收194.96亿同比+192%——是物理需求拉动,不是叙事。</p>
+  </div>
+
+  <h3 class="section-title">光通信产业链的完整图谱</h3>
+
+  <div class="figure">
+    <div class="figure-title">光通信产业链上下游结构</div>
+    <div class="figure-subtitle">FROM RAW MATERIALS TO LIGHT</div>
+    
+    <svg viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="lightGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#d4a574" stop-opacity="0.5"/>
+          <stop offset="100%" stop-color="#f5c896" stop-opacity="0.1"/>
+        </linearGradient>
+      </defs>
+      
+      <!-- 标题 -->
+      <text x="500" y="30" class="svg-text-accent" font-size="16" text-anchor="middle" font-weight="600">光通信产业链 — 从材料到光模块到数据中心</text>
+      
+      <!-- 第一层:最上游材料 -->
+      <g transform="translate(0, 65)">
+        <text x="20" y="0" class="svg-text-accent" font-size="12">第一层 · 最上游材料</text>
+        <line x1="160" y1="-4" x2="1000" y2="-4" stroke="#2a323f"/>
+        
+        <rect x="20" y="20" width="140" height="60" fill="#1a212c" stroke="#3d4a5c" rx="2"/>
+        <text x="90" y="42" class="svg-text" font-size="11" text-anchor="middle">磷化铟衬底</text>
+        <text x="90" y="58" class="svg-text-dim" font-size="9" text-anchor="middle">InP wafer</text>
+        <text x="90" y="72" class="svg-text-dim" font-size="9" text-anchor="middle">海外住友/Coherent</text>
+        
+        <rect x="180" y="20" width="140" height="60" fill="#1a212c" stroke="#3d4a5c" rx="2"/>
+        <text x="250" y="42" class="svg-text" font-size="11" text-anchor="middle">钒酸钇晶体</text>
+        <text x="250" y="58" class="svg-text-dim" font-size="9" text-anchor="middle">隔离器材料</text>
+        <text x="250" y="72" class="svg-text-dim" font-size="9" text-anchor="middle" fill="#f5c896">腾景科技</text>
+        
+        <rect x="340" y="20" width="140" height="60" fill="#1a212c" stroke="#3d4a5c" rx="2"/>
+        <text x="410" y="42" class="svg-text" font-size="11" text-anchor="middle">光学玻璃</text>
+        <text x="410" y="58" class="svg-text-dim" font-size="9" text-anchor="middle">透镜·棱镜</text>
+        <text x="410" y="72" class="svg-text-dim" font-size="9" text-anchor="middle" fill="#f5c896">蓝特光学</text>
+        
+        <rect x="500" y="20" width="140" height="60" fill="#1a212c" stroke="#3d4a5c" rx="2"/>
+        <text x="570" y="42" class="svg-text" font-size="11" text-anchor="middle">光纤预制棒</text>
+        <text x="570" y="58" class="svg-text-dim" font-size="9" text-anchor="middle">长距传输</text>
+        <text x="570" y="72" class="svg-text-dim" font-size="9" text-anchor="middle" fill="#f5c896">长飞光纤</text>
+      </g>
+      
+      <!-- 第二层:光芯片与器件 -->
+      <g transform="translate(0, 175)">
+        <text x="20" y="0" class="svg-text-accent" font-size="12">第二层 · 光芯片与器件</text>
+        <line x1="220" y1="-4" x2="1000" y2="-4" stroke="#2a323f"/>
+        
+        <rect x="20" y="20" width="180" height="60" fill="#1a212c" stroke="#d4a574" rx="2"/>
+        <text x="110" y="42" class="svg-text" font-size="11" text-anchor="middle" fill="#f5c896">EML/CW激光器芯片</text>
+        <text x="110" y="58" class="svg-text-dim" font-size="9" text-anchor="middle">CW良率决定CPO供应</text>
+        <text x="110" y="72" class="svg-text-dim" font-size="9" text-anchor="middle" fill="#f5c896">源杰★ / 东山-索尔思★</text>
+        
+        <rect x="220" y="20" width="180" height="60" fill="#1a212c" stroke="#3d4a5c" rx="2"/>
+        <text x="310" y="42" class="svg-text" font-size="11" text-anchor="middle">FAU/ELSFP/OE组件</text>
+        <text x="310" y="58" class="svg-text-dim" font-size="9" text-anchor="middle">光器件封装</text>
+        <text x="310" y="72" class="svg-text-dim" font-size="9" text-anchor="middle" fill="#f5c896">天孚通信</text>
+        
+        <rect x="420" y="20" width="180" height="60" fill="#1a212c" stroke="#3d4a5c" rx="2"/>
+        <text x="510" y="42" class="svg-text" font-size="11" text-anchor="middle">DSP芯片</text>
+        <text x="510" y="58" class="svg-text-dim" font-size="9" text-anchor="middle">信号处理大脑</text>
+        <text x="510" y="72" class="svg-text-dim" font-size="9" text-anchor="middle">海外Marvell·BCM主导</text>
+        
+        <rect x="620" y="20" width="180" height="60" fill="#1a212c" stroke="#3d4a5c" rx="2"/>
+        <text x="710" y="42" class="svg-text" font-size="11" text-anchor="middle">连接器/CAGE</text>
+        <text x="710" y="58" class="svg-text-dim" font-size="9" text-anchor="middle">液冷连接器爆发</text>
+        <text x="710" y="72" class="svg-text-dim" font-size="9" text-anchor="middle" fill="#f5c896">鼎通科技</text>
+      </g>
+      
+      <!-- 第三层:光模块成品 -->
+      <g transform="translate(0, 285)">
+        <text x="20" y="0" class="svg-text-accent" font-size="12">第三层 · 光模块成品(800G / 1.6T / CPO)</text>
+        <line x1="380" y1="-4" x2="1000" y2="-4" stroke="#2a323f"/>
+        
+        <rect x="20" y="20" width="200" height="80" fill="url(#lightGrad)" stroke="#d4a574" stroke-width="1.5" rx="2"/>
+        <text x="120" y="44" class="svg-text-accent" font-size="14" text-anchor="middle" font-weight="600">中际旭创★</text>
+        <text x="120" y="62" class="svg-text-dim" font-size="9" text-anchor="middle">全球光模块第一</text>
+        <text x="120" y="76" class="svg-text-dim" font-size="9" text-anchor="middle">2025市占率35%+</text>
+        <text x="120" y="90" class="svg-text-dim" font-size="9" text-anchor="middle">订单到2027</text>
+        
+        <rect x="240" y="20" width="200" height="80" fill="url(#lightGrad)" stroke="#d4a574" stroke-width="1.5" rx="2"/>
+        <text x="340" y="44" class="svg-text-accent" font-size="14" text-anchor="middle" font-weight="600">新易盛★</text>
+        <text x="340" y="62" class="svg-text-dim" font-size="9" text-anchor="middle">光模块全球前三</text>
+        <text x="340" y="76" class="svg-text-dim" font-size="9" text-anchor="middle">LPO/CPO双路线</text>
+        <text x="340" y="90" class="svg-text-dim" font-size="9" text-anchor="middle">受卡料拖累但订单足</text>
+        
+        <rect x="460" y="20" width="200" height="80" fill="url(#lightGrad)" stroke="#d4a574" stroke-width="1.5" rx="2"/>
+        <text x="560" y="44" class="svg-text-accent" font-size="14" text-anchor="middle" font-weight="600">东山精密★</text>
+        <text x="560" y="62" class="svg-text-dim" font-size="9" text-anchor="middle">索尔思EML+CW</text>
+        <text x="560" y="76" class="svg-text-dim" font-size="9" text-anchor="middle">CW良率90%</text>
+        <text x="560" y="90" class="svg-text-dim" font-size="9" text-anchor="middle">Meta CPO独家</text>
+        
+        <rect x="680" y="20" width="200" height="80" fill="#13181f" stroke="#3d4a5c" rx="2"/>
+        <text x="780" y="44" class="svg-text" font-size="12" text-anchor="middle">二线光模块厂</text>
+        <text x="780" y="62" class="svg-text-dim" font-size="9" text-anchor="middle">光迅·联特·剑桥·汇绿</text>
+        <text x="780" y="76" class="svg-text-dim" font-size="9" text-anchor="middle">订单弹性大</text>
+        <text x="780" y="90" class="svg-text-dim" font-size="9" text-anchor="middle">CPO时代风险高</text>
+      </g>
+      
+      <!-- 第四层:设备与终端 -->
+      <g transform="translate(0, 415)">
+        <text x="20" y="0" class="svg-text-accent" font-size="12">第四层 · 设备与终端</text>
+        <line x1="200" y1="-4" x2="1000" y2="-4" stroke="#2a323f"/>
+        
+        <rect x="20" y="20" width="220" height="60" fill="#1a212c" stroke="#3d4a5c" rx="2"/>
+        <text x="130" y="42" class="svg-text" font-size="11" text-anchor="middle">CPO耦合测试设备</text>
+        <text x="130" y="58" class="svg-text-dim" font-size="9" text-anchor="middle">设备厂"卖铲人"</text>
+        <text x="130" y="72" class="svg-text-dim" font-size="9" text-anchor="middle" fill="#f5c896">罗博特科(收购ficonTEC)</text>
+        
+        <rect x="260" y="20" width="220" height="60" fill="#1a212c" stroke="#3d4a5c" rx="2"/>
+        <text x="370" y="42" class="svg-text" font-size="11" text-anchor="middle">DCI / 长距光纤</text>
+        <text x="370" y="58" class="svg-text-dim" font-size="9" text-anchor="middle">数据中心间互联</text>
+        <text x="370" y="72" class="svg-text-dim" font-size="9" text-anchor="middle">长飞·德科立(慎入)</text>
+        
+        <rect x="640" y="20" width="320" height="60" fill="#1a212c" stroke="#d4a574" stroke-width="1.5" rx="2"/>
+        <text x="800" y="42" class="svg-text-accent" font-size="13" text-anchor="middle" font-weight="600">终端 · AI数据中心</text>
+        <text x="800" y="58" class="svg-text-dim" font-size="9" text-anchor="middle">英伟达 / Meta / Google / Amazon</text>
+        <text x="800" y="72" class="svg-text-dim" font-size="9" text-anchor="middle">2026-2027资本开支翻倍</text>
+      </g>
+      
+      <!-- 流向箭头 -->
+      <g stroke="#3d4a5c" stroke-width="0.5" opacity="0.4" fill="none">
+        <line x1="500" y1="155" x2="500" y2="175"/>
+        <line x1="500" y1="265" x2="500" y2="285"/>
+        <line x1="500" y1="395" x2="500" y2="415"/>
+      </g>
+      
+      <!-- 图例 -->
+      <g transform="translate(20, 540)">
+        <rect x="0" y="0" width="14" height="14" fill="url(#lightGrad)" stroke="#d4a574" stroke-width="1.5"/>
+        <text x="22" y="11" class="svg-text-dim" font-size="11">★ 核心档(9只中的3只光通信标的)</text>
+        <rect x="320" y="0" width="14" height="14" fill="#1a212c" stroke="#3d4a5c"/>
+        <text x="342" y="11" class="svg-text-dim" font-size="11">研究池中卡位明确的标的</text>
+      </g>
+    </svg>
+    <div class="figure-caption">光通信产业链的四层结构清晰可见——核心档3只标的(中际旭创、新易盛、东山精密)在第三层"光模块成品"位置;源杰(CW激光器)、天孚(光器件)、鼎通(连接器)在第二层卡位;罗博特科作为CPO设备厂在第四层"卖铲人"位置。</div>
+  </div>
+
+  <h3 class="section-title">当前周期的核心驱动力</h3>
+  
+  <p>2026年的光通信产业链正在<strong>三个驱动力的叠加爆发</strong>:</p>
+
+  <h4 class="sub-title">驱动力一:从800G到1.6T的产品升级</h4>
+  
+  <p>800G光模块在2024-2025年是主力产品,2026年正在快速被1.6T替代。1.6T光模块<strong>单价是800G的2-2.5倍</strong>,带宽是2倍,功耗只增加30-40%——经济性远超800G。</p>
+  
+  <p>但1.6T的瓶颈在<strong>上游元器件</strong>:</p>
+  <ul style="list-style: none; padding-left: 0; margin: 16px 0;">
+    <li style="padding: 10px 0; border-bottom: 1px dashed var(--border);">• <strong>EML激光器芯片</strong>:1.6T必需,海外住友、Lumentum为主,国内只有源杰、东山-索尔思能量产</li>
+    <li style="padding: 10px 0; border-bottom: 1px dashed var(--border);">• <strong>DSP芯片</strong>:海外Marvell、Broadcom垄断,国产无替代</li>
+    <li style="padding: 10px 0;">• <strong>磷化铟衬底</strong>:海外住友、Coherent为主,国内云南锗业有布局</li>
+  </ul>
+  <p>这就是为什么<strong>中际旭创Q1预付款激增10倍到14.88亿</strong>——它必须用真金白银向海外供应商锁定上游产能,否则1.6T就出不了货。</p>
+
+  <h4 class="sub-title">驱动力二:CPO/LPO/硅光等新技术路线</h4>
+  
+  <p>CPO(Co-Packaged Optics,共封装光学)是把光引擎直接和GPU封装在一起,绕过传统光模块。LPO(Linear-Drive Pluggable Optics,线性可插拔光模块)是简化版的光模块,去掉了DSP,功耗低一半。硅光是用硅工艺替代磷化铟,降低成本。</p>
+
+  <div class="analogy-box">
+    <div class="tag">类比讲解</div>
+    <h5>光模块 vs CPO vs LPO</h5>
+    <p><strong>光模块</strong> = 录音机+播放器,功能完整、可热插拔、坏了能换,缺点是耗电。</p>
+    <p><strong>CPO</strong> = MacBook一体机,把"录音机+播放器"直接焊在GPU上,功耗低、速度快,但坏了得换整块GPU——<strong>所以英伟达和云服务商对它持谨慎态度</strong>。</p>
+    <p><strong>LPO</strong> = 简化版录音机,去掉了DSP("信号处理大脑"),靠GPU自身的信号处理能力,功耗只有传统光模块的一半,但要求GPU有更强的信号处理能力。</p>
+  </div>
+
+  <p>AAOI法说会的明确判断:<strong>2028年以前,光模块仍是主流;2028年以后CPO渗透率超30%时开始替代</strong>。也就是说,<strong>传统光模块还有2-3年的黄金窗口</strong>。这也是为什么中际旭创、新易盛、东山精密的产业α在2026-2027年最强。</p>
+
+  <h4 class="sub-title">驱动力三:从数据中心内到数据中心间</h4>
+  
+  <p>市场之前把光通信主要看成"机房内互联"(短距),但<strong>Scale-up</strong>(机柜内更高密度互联)和<strong>DCI</strong>(数据中心间长距互联)是两个被低估的方向。</p>
+  
+  <p>中际旭创年报明确指出:<strong>Scale-up的带宽需求有望达到Scale-out的5-10倍,预计2027年起量</strong>。这意味着光通信的市场空间可能<strong>不是现在的5倍,而是50-100倍</strong>。</p>
+
+  <h3 class="section-title">卡位龙头分析</h3>
+
+  <!-- 中际旭创 -->
+  <div class="company-card core">
+    <div class="company-card-header">
+      <div>
+        <div class="company-name">中际旭创<span class="code">300308.SZ</span></div>
+        <p style="color: var(--text-dim); font-size: 14px; margin-top: 4px;">光模块绝对龙头 · 全球市占率35%+ · 综合分4.85 · 排名第一</p>
+      </div>
+      <div class="company-tier core">CORE</div>
+    </div>
+    
+    <div class="company-stats">
+      <div class="company-stat"><div class="label">2025年净利</div><div class="value">107.97亿</div></div>
+      <div class="company-stat"><div class="label">Q1营收同比</div><div class="value">+192%</div></div>
+      <div class="company-stat"><div class="label">Q1净利同比</div><div class="value">+262%</div></div>
+      <div class="company-stat"><div class="label">Q1预付款</div><div class="value">14.88亿 +1009%</div></div>
+      <div class="company-stat"><div class="label">2026E PE</div><div class="value">39.0x</div></div>
+      <div class="company-stat"><div class="label">PEG</div><div class="value">0.33</div></div>
+    </div>
+    
+    <div class="company-logic">
+      <h6>产业卡位</h6>
+      <p>全球光模块出货量最大的玩家,2025年市占率约35%(超越Coherent、Lumentum等海外厂商)。<strong>北美四大CSP(微软、亚马逊、谷歌、Meta)中三家是它的核心客户</strong>。2024年通过英伟达全部认证后,正式进入Tier1供应链。</p>
+      
+      <h6>硬指标:订单可见度到2027年</h6>
+      <p>2026Q1预付款从1.34亿暴增到14.88亿(+1009%)——这是<strong>全市场最强的"管理层订单信号"</strong>。预付款的本质是"管理层用真金白银告诉市场:我对未来12个月的出货量极有信心"。Q1营收194.96亿(+192%)、净利57.35亿(+262%)、毛利率46.06%,三个数字共同验证产业α。</p>
+      
+      <h6>核心技术储备</h6>
+      <p>800G/1.6T全规格量产、硅光方案占比持续提升、12.8T XPO预研中。年报明确提到"Scale-up带宽需求是Scale-out的5-10倍,2027年起量"——这是中际旭创为CPO时代准备的"第二曲线"。</p>
+      
+      <h6>风险点</h6>
+      <p>主要风险是CPO在2028年大规模替代的不确定性。但作为光模块行业绝对龙头,中际旭创<strong>同时在做CPO研发</strong>,即使行业切换,它的卡位也最强。客户集中度(北美CSP占比约80%)是潜在风险但2026-2027年内可控。</p>
+    </div>
+  </div>
+
+  <!-- 新易盛 -->
+  <div class="company-card core">
+    <div class="company-card-header">
+      <div>
+        <div class="company-name">新易盛<span class="code">300502.SZ</span></div>
+        <p style="color: var(--text-dim); font-size: 14px; margin-top: 4px;">光模块全球前三 · LPO/CPO双路线 · 综合分4.40</p>
+      </div>
+      <div class="company-tier core">CORE</div>
+    </div>
+    
+    <div class="company-stats">
+      <div class="company-stat"><div class="label">2025年净利</div><div class="value">95.32亿</div></div>
+      <div class="company-stat"><div class="label">Q1营收同比</div><div class="value">+106%</div></div>
+      <div class="company-stat"><div class="label">Q1净利同比</div><div class="value">+77%</div></div>
+      <div class="company-stat"><div class="label">Q1预付款</div><div class="value">6.82亿 +40倍</div></div>
+      <div class="company-stat"><div class="label">2026E PE</div><div class="value">32.9x</div></div>
+      <div class="company-stat"><div class="label">PEG</div><div class="value">0.44</div></div>
+    </div>
+    
+    <div class="company-logic">
+      <h6>产业卡位</h6>
+      <p>光模块全球前三,客户结构与中际旭创高度重合(北美CSP)。差异化卡位在于<strong>LPO(线性可插拔光模块)和硅光方案布局更早</strong>,以及部分1.6T产品比中际旭创更早出货。</p>
+      
+      <h6>硬指标:预付款增40倍</h6>
+      <p>Q1预付款从1700万暴增到6.82亿(+40倍)。这是仅次于中际旭创的"管理层订单信号"。Q1净利环比下降13%但<strong>不是订单问题,而是汇兑损失5.22亿+物料短缺拖累产能释放</strong>——一旦上游CW和DSP供应改善,新易盛的弹性会比中际旭创更大(因为基数小)。</p>
+      
+      <h6>核心技术储备</h6>
+      <p>已部分量产1.6T,LPO技术成熟度领先。2026Q1高盛在一季报后维持"买入"评级,关键判断是:"虽然一季度净利润不及预期,但主要归因于汇兑损失增加,仍看好公司今年未来几个季度的营收环比增长"。</p>
+      
+      <h6>风险点</h6>
+      <p>(1)汇兑损失继续拖累净利(美元结算+人民币波动);(2)1.6T的EML/CW物料供应是产能瓶颈;(3)Q1实际业绩低于市场预期,股价短期承压。这些是Q2观察重点。</p>
+    </div>
+  </div>
+
+  <!-- 东山精密 -->
+  <div class="company-card core">
+    <div class="company-card-header">
+      <div>
+        <div class="company-name">东山精密<span class="code">002384.SZ</span></div>
+        <p style="color: var(--text-dim); font-size: 14px; margin-top: 4px;">索尔思EML+CW · A股唯一Meta CPO高功率CW独家 · 综合分4.32</p>
+      </div>
+      <div class="company-tier core">CORE</div>
+    </div>
+    
+    <div class="company-stats">
+      <div class="company-stat"><div class="label">2025年净利</div><div class="value">13.86亿</div></div>
+      <div class="company-stat"><div class="label">Q1净利同比</div><div class="value">+143%</div></div>
+      <div class="company-stat"><div class="label">索尔思CW良率</div><div class="value">90%</div></div>
+      <div class="company-stat"><div class="label">3年CAGR</div><div class="value">203%</div></div>
+      <div class="company-stat"><div class="label">2026E PE</div><div class="value">60.1x</div></div>
+      <div class="company-stat"><div class="label">PEG</div><div class="value">0.30</div></div>
+    </div>
+    
+    <div class="company-logic">
+      <h6>产业卡位 — 双驱动逻辑</h6>
+      <p>东山精密的卡位有两条独立的故事线:</p>
+      <p><strong>(1)PCB业务</strong>:全球PCB前十,直接受益AI服务器主板需求爆发。</p>
+      <p><strong>(2)索尔思(Source Photonics)收购</strong>:这是核心增量。索尔思是美国老牌光通信公司,EML(电吸收调制激光器)和CW(连续波激光器)是CPO时代的核心元件。AAOI法说会确认:<strong>头部企业(指索尔思)CW良率能做到90%,多数厂商只有30-40%。低良率厂商无法进入高端市场,尤其是CPO供应链</strong>。</p>
+      
+      <h6>硬指标:Meta CPO订单独家</h6>
+      <p>索尔思是<strong>A股唯一进入北美Meta CPO供应链的CW厂商</strong>,拿到Meta CPO高功率CW(300毫瓦以上)订单,正在做英伟达CPO验证。这是A股最稀缺的CPO卡位。</p>
+      
+      <h6>核心驱动:2026-2028年的双爆发</h6>
+      <p>(1)PCB业务受Rubin拉动持续高增;(2)索尔思CW业务从2026年开始放量,2027年Meta CPO批量出货;(3)2028年CPO渗透率超30%时,东山精密的CW卡位将转化为真实业绩。</p>
+      
+      <h6>风险点</h6>
+      <p>(1)索尔思整合的协同效应释放时间表存在不确定性;(2)Q1净利同比+143%是好的,但<strong>Q1占比16.5%偏弱</strong>,机构对2026年67亿的预测需要Q2-Q4持续兑现。这是Q2观察重点。</p>
+    </div>
+  </div>
+
+  <!-- 源杰 -->
+  <div class="company-card subcore">
+    <div class="company-card-header">
+      <div>
+        <div class="company-name">源杰科技<span class="code">688498.SH</span></div>
+        <p style="color: var(--text-dim); font-size: 14px; margin-top: 4px;">国内CW激光器主要厂商 · 2025数据中心业务+719% · 综合分4.14</p>
+      </div>
+      <div class="company-tier subcore">次核心</div>
+    </div>
+    
+    <div class="company-stats">
+      <div class="company-stat"><div class="label">2025年净利</div><div class="value">1.91亿</div></div>
+      <div class="company-stat"><div class="label">数据中心收入</div><div class="value">+719%</div></div>
+      <div class="company-stat"><div class="label">Q1占比</div><div class="value green">25.0%</div></div>
+      <div class="company-stat"><div class="label">扩产投资</div><div class="value">12.51亿</div></div>
+      <div class="company-stat"><div class="label">2026E PE</div><div class="value red">184.9x</div></div>
+      <div class="company-stat"><div class="label">PEG</div><div class="value">1.15</div></div>
+    </div>
+    
+    <div class="company-logic">
+      <h6>产业卡位</h6>
+      <p>国内CW激光器最重要的厂商之一。DFB、EML、CW三大产品线齐全,2025年数据中心业务收入<strong>3.93亿,同比+719%</strong>——这是产业α真实兑现的硬数据。</p>
+      
+      <h6>硬指标:扩产规模超过自身体量</h6>
+      <p>2026年2月公告投资<strong>12.51亿元建设光电通信半导体二期项目</strong>——这个金额超过公司2025年全年净利润的6倍,管理层用真金白银押注CW需求爆发。同时推进海外建厂工作。</p>
+      
+      <h6>核心风险</h6>
+      <p>估值是最大问题。2026年PE 184倍、2027年PE 102倍,远高于其他CW相关标的。<strong>价格已经反映了非常乐观的预期</strong>,任何业绩低于预期都会引发剧烈回调。CW良率相对索尔思偏弱,在最高端CPO供应链中卡位次于东山-索尔思。</p>
+      
+      <h6>不纳入投资组合的判断逻辑</h6>
+      <p>虽然综合分4.14排第11位,但估值过贵(2026PE 184x)+CW卡位弱于索尔思+客户集中度风险,综合考虑下不进入最终12只清单。但保留在<strong>"次核心档观察池"</strong>,等估值消化后可重新评估。</p>
+    </div>
+  </div>
+
+  <!-- 天孚通信 -->
+  <div class="company-card subcore">
+    <div class="company-card-header">
+      <div>
+        <div class="company-name">天孚通信<span class="code">300394.SZ</span></div>
+        <p style="color: var(--text-dim); font-size: 14px; margin-top: 4px;">CPO配套组件领先厂商 · 综合分3.75 · 降级警示</p>
+      </div>
+      <div class="company-tier warning">降级警示</div>
+    </div>
+    
+    <div class="company-stats">
+      <div class="company-stat"><div class="label">2025年净利</div><div class="value">20.17亿</div></div>
+      <div class="company-stat"><div class="label">Q1净利同比</div><div class="value">+45.79%</div></div>
+      <div class="company-stat"><div class="label">3年CAGR</div><div class="value gray">47%</div></div>
+      <div class="company-stat"><div class="label">Q1占比</div><div class="value red">14.9%</div></div>
+      <div class="company-stat"><div class="label">2026E PE</div><div class="value red">87.6x</div></div>
+      <div class="company-stat"><div class="label">PEG</div><div class="value red">1.86</div></div>
+    </div>
+    
+    <div class="company-logic">
+      <h6>产业卡位</h6>
+      <p>FAU(光纤阵列单元)、ELSFP(外置激光源)、OE组件等CPO核心配套部件的主要供应商。CPO量产时需要的精密光器件,天孚是国内主要玩家。</p>
+      
+      <h6>降级理由</h6>
+      <p>原属轻仓档,但<strong>多个信号显示需要警惕</strong>:</p>
+      <p>(1)3年CAGR只有47%,是核心档及次核心档中最慢的;(2)2026 PE 87.6倍、PEG 1.86,估值贵于大部分核心标的;(3)Q1占比仅14.9%,业绩兑现度偏弱;(4)CPO量产时点已从"立刻"推迟到2028-2029年,业绩兑现还需等待。</p>
+      
+      <h6>建议处理</h6>
+      <p>从原来的轻仓档(5-7%)降到<strong>卫星档(2-4%)或观察</strong>,等Q2财报观察业绩兑现度。如果Q2占比能回升到20%以上,可以重新考虑加仓。</p>
+    </div>
+  </div>
+
+  <h3 class="section-title">认知偏差识别</h3>
+  
+  <p>光通信产业链是机构覆盖最深的板块,但仍然存在多个被市场误读的判断点。我们识别出4个关键认知偏差:</p>
+
+  <div class="bias-box">
+    <div class="tag">认知偏差 #1</div>
+    <h5>"光模块要被CPO替代,所以现在不应该买光模块"</h5>
+    <p><strong>真相</strong>:AAOI法说会明确,2028年以前光模块业绩无需担心,2028年以后CPO渗透率超30%时才开始大规模替代。光模块还有2-3年的黄金窗口。而且<strong>中际旭创、新易盛同时在做CPO研发</strong>——即使行业切换,头部光模块厂商也将是CPO时代的赢家。</p>
+  </div>
+
+  <div class="bias-box">
+    <div class="tag">认知偏差 #2</div>
+    <h5>"长飞光纤PEG只有0.22,非常便宜,应该重仓"</h5>
+    <p><strong>真相</strong>:长飞光纤2026 PE 50.3倍、PEG 0.22看起来便宜,但<strong>Q1占比只有7.7%</strong>——意味着机构对2026年63.94亿的预测大概率被下修。<strong>PEG便宜+Q1占比极低 = 假便宜陷阱</strong>。同样的逻辑也适用于剑桥科技(PEG 0.24/Q1占比7.2%)、德科立(PEG 1.21/Q1占比8.3%)。这些标的产业概念漂亮(DCI/光模块二线),但业绩兑现节奏远跟不上机构预测。</p>
+  </div>
+
+  <div class="bias-box">
+    <div class="tag">认知偏差 #3</div>
+    <h5>"二线光模块厂订单弹性大,现在应该买"</h5>
+    <p><strong>真相</strong>:AAOI法说会明确建议<strong>"回避单纯做光模块的二线公司"</strong>,因为CPO时代加速时,二线公司缺乏CPO研发能力,会重蹈光伏行业的覆辙。联特光电、汇绿生态、剑桥科技这类"项目制二线"虽然短期订单弹性大,但<strong>长期空间受限</strong>。这是我们将联特从研究池降到轻仓档、剑桥归入"不建议"的根本原因。</p>
+  </div>
+
+  <div class="bias-box">
+    <div class="tag">认知偏差 #4</div>
+    <h5>"罗博特科借CPO改命,2031年估值折现到2027,所以现在是买入时机"</h5>
+    <p><strong>真相</strong>:罗博特科收购ficonTEC后确实拿到了CPO耦合测试设备的卡位,2026年5月也确实签了5900万美元订单。但<strong>公司2025年仍亏损6.59亿元,2026E仅0.5亿、2027E 1.0亿</strong>。高盛688元目标价建立在"CPO在2027-2028年大规模量产+罗博特科保持50%份额"两个假设上,任何一个不成立都会引发剧烈回调。这是典型的"<strong>强预期+弱现实</strong>"标的,只适合极小仓位(<2%)的概念性押注,不适合作为核心配置。</p>
+  </div>
+
+  <div class="quote">
+    "光通信产业链最大的认知陷阱不是'看不到产业α',而是'看到了产业α却押错了具体标的'。中际旭创、新易盛、东山精密的业绩兑现度,与长飞、剑桥、汇绿的业绩兑现度,在Q1数据上相差5-10倍——但在估值上差距并不大。这是市场为我们留下的最大alpha来源。"
+    <span class="source">本研究 · 第4章结论</span>
+  </div>
+
+</section>
+</div>
+
+
+<!-- ====== 第5章:PCB与覆铜板 ====== -->
+<div class="container">
+<section class="chapter" id="ch5">
+  <div class="chapter-num">CHAPTER 05</div>
+  <h2 class="chapter-title">PCB与<span class="em">覆铜板</span></h2>
+  <p class="chapter-lead">如果说光通信是AI服务器"跨城运输"的卡车,PCB就是<strong>整座城市的道路系统</strong>。Rubin机柜里PCB价值量+233%是所有零部件中最大的增幅——这不是叙事,是大摩亲手拆机得出的物理事实。M7→M8→M9的材料升级,把这条赛道从"传统电子加工"推到了"航空航天级精密工艺"的水平。</p>
+
+  <h3 class="section-title">PCB到底是什么</h3>
+  
+  <p class="lead">PCB(Printed Circuit Board,印制电路板)是所有电子设备的"骨架"。它的作用是<strong>用金属铜线把各个芯片连接起来,并提供机械支撑</strong>。手机、电视、电脑、汽车、所有电子产品里都有PCB,但AI服务器的PCB是<strong>完全不同的物种</strong>。</p>
+
+  <div class="analogy-box">
+    <div class="tag">类比讲解</div>
+    <h5>普通PCB = 县城公路 · AI服务器PCB = 北京六环立体交通</h5>
+    <p>家电PCB一般是<strong>2-4层</strong>,像县城公路,几条主干道就够了。手机PCB是<strong>6-8层</strong>,像城市快速路,有立交桥和地下通道。AI服务器PCB是<strong>22-32层</strong>,像北京六环+地铁+高架的立体交通,每一层都有自己的"道路网络",层与层之间还有"立交桥"(过孔)连接。</p>
+    <p>Rubin机柜新增的"44层中板PCB",可以理解为<strong>北京六环+地铁8条线+5个机场快线+水路</strong>的超级综合体——这种级别的工程,只有少数公司能造。</p>
+  </div>
+
+  <h3 class="section-title">PCB与覆铜板的产业链拓扑</h3>
+
+  <div class="figure">
+    <div class="figure-title">PCB制造的层级结构</div>
+    <div class="figure-subtitle">FROM RESIN TO ROBUST · WHY M9 IS THE NEW BENCHMARK</div>
+    
+    <svg viewBox="0 0 1000 540" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="ccl1" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#9c7eb0" stop-opacity="0.5"/>
+          <stop offset="100%" stop-color="#9c7eb0" stop-opacity="0.1"/>
+        </linearGradient>
+        <linearGradient id="ccl2" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#d4a574" stop-opacity="0.5"/>
+          <stop offset="100%" stop-color="#d4a574" stop-opacity="0.1"/>
+        </linearGradient>
+      </defs>
+      
+      <text x="500" y="30" class="svg-text-accent" font-size="16" text-anchor="middle" font-weight="600">PCB的制造原料 = 覆铜板 + 上游树脂/铜箔/玻纤布</text>
+      
+      <!-- 左侧:覆铜板结构示意 -->
+      <g transform="translate(50, 65)">
+        <text x="200" y="0" class="svg-text-accent" font-size="14" text-anchor="middle">覆铜板(CCL)结构示意</text>
+        <text x="200" y="20" class="svg-text-dim" font-size="10" text-anchor="middle">每张铜板是PCB的"建筑材料"</text>
+        
+        <!-- CCL层结构 -->
+        <rect x="50" y="40" width="300" height="22" fill="#c9a961" stroke="#3d4a5c"/>
+        <text x="200" y="56" class="svg-text" font-size="10" text-anchor="middle" fill="#0a0e14">铜箔 Copper Foil</text>
+        
+        <rect x="50" y="64" width="300" height="80" fill="url(#ccl1)" stroke="#3d4a5c"/>
+        <text x="200" y="100" class="svg-text" font-size="11" text-anchor="middle">玻纤布 + 树脂 (半固化片)</text>
+        <text x="200" y="118" class="svg-text-dim" font-size="9" text-anchor="middle">Q布/T布 + PPO/碳氢/M9树脂</text>
+        
+        <rect x="50" y="146" width="300" height="22" fill="#c9a961" stroke="#3d4a5c"/>
+        <text x="200" y="162" class="svg-text" font-size="10" text-anchor="middle" fill="#0a0e14">铜箔 Copper Foil</text>
+        
+        <!-- 标注 -->
+        <line x1="370" y1="50" x2="395" y2="50" stroke="#d4a574"/>
+        <line x1="370" y1="155" x2="395" y2="155" stroke="#d4a574"/>
+        <text x="400" y="102" class="svg-text-dim" font-size="10">铜冠铜箔</text>
+        <text x="400" y="116" class="svg-text-dim" font-size="10">德福科技(HVLP铜箔)</text>
+        
+        <line x1="370" y1="100" x2="395" y2="100" stroke="#d4a574"/>
+        <text x="400" y="80" class="svg-text-dim" font-size="10">菲利华Q布·宏和T布</text>
+        <text x="400" y="135" class="svg-text-dim" font-size="10">圣泉PPO·东材碳氢</text>
+      </g>
+      
+      <!-- 右侧:PCB层数对比 -->
+      <g transform="translate(600, 65)">
+        <text x="170" y="0" class="svg-text-accent" font-size="14" text-anchor="middle">PCB层数 = 多张CCL叠压</text>
+        <text x="170" y="20" class="svg-text-dim" font-size="10" text-anchor="middle">Rubin从22层升级到26层 + 44层中板</text>
+        
+        <!-- 26层PCB示意 -->
+        <g transform="translate(0, 40)">
+          <text x="0" y="14" class="svg-text-dim" font-size="10">Rubin计算板</text>
+          <text x="0" y="28" class="svg-text-accent" font-size="11">26 layer</text>
+          <g transform="translate(80, 0)">
+            <rect x="0" y="0" width="120" height="8" fill="#c9a961"/>
+            <rect x="0" y="8" width="120" height="4" fill="url(#ccl1)"/>
+            <rect x="0" y="12" width="120" height="8" fill="#c9a961"/>
+            <rect x="0" y="20" width="120" height="4" fill="url(#ccl1)"/>
+            <rect x="0" y="24" width="120" height="8" fill="#c9a961"/>
+            <rect x="0" y="32" width="120" height="4" fill="url(#ccl1)"/>
+            <rect x="0" y="36" width="120" height="8" fill="#c9a961"/>
+            <rect x="0" y="44" width="120" height="4" fill="url(#ccl1)"/>
+            <rect x="0" y="48" width="120" height="8" fill="#c9a961"/>
+            <text x="60" y="40" class="svg-text-dim" font-size="9" text-anchor="middle" fill="#1a212c" font-weight="600">26 LAYERS</text>
+          </g>
+        </g>
+        
+        <!-- 44层中板 -->
+        <g transform="translate(0, 120)">
+          <text x="0" y="14" class="svg-text-dim" font-size="10">Rubin中板</text>
+          <text x="0" y="28" class="svg-text-accent" font-size="11">44 layer</text>
+          <g transform="translate(80, 0)">
+            <rect x="0" y="0" width="120" height="80" fill="url(#ccl2)" stroke="#d4a574"/>
+            <text x="60" y="44" class="svg-text-accent" font-size="13" text-anchor="middle" font-weight="600">44 LAYERS</text>
+            <text x="60" y="60" class="svg-text-dim" font-size="9" text-anchor="middle">单价$1,500</text>
+            <text x="60" y="72" class="svg-text-dim" font-size="8" text-anchor="middle">每柜18块</text>
+          </g>
+        </g>
+        
+        <!-- 备注 -->
+        <text x="0" y="215" class="svg-text-dim" font-size="9">层数越多,精度越高,</text>
+        <text x="0" y="227" class="svg-text-dim" font-size="9">技术壁垒指数级上升</text>
+      </g>
+      
+      <!-- 底部:厂商对应 -->
+      <g transform="translate(0, 320)">
+        <text x="500" y="0" class="svg-text-accent" font-size="14" text-anchor="middle" font-weight="600">从覆铜板到PCB的卡位龙头</text>
+        <line x1="100" y1="10" x2="900" y2="10" stroke="#2a323f"/>
+        
+        <g transform="translate(0, 30)">
+          <rect x="80" y="0" width="180" height="80" fill="#1a212c" stroke="#d4a574" stroke-width="1.5" rx="2"/>
+          <text x="170" y="22" class="svg-text-accent" font-size="13" text-anchor="middle" font-weight="600">生益科技★</text>
+          <text x="170" y="40" class="svg-text-dim" font-size="10" text-anchor="middle">覆铜板龙头</text>
+          <text x="170" y="56" class="svg-text-dim" font-size="9" text-anchor="middle">大陆唯一M9认证</text>
+          <text x="170" y="70" class="svg-text-dim" font-size="9" text-anchor="middle">订单排到Q4</text>
+        </g>
+        
+        <text x="280" y="80" class="svg-text-dim" font-size="14" font-weight="600">→</text>
+        
+        <g transform="translate(300, 30)">
+          <rect x="0" y="0" width="180" height="80" fill="#1a212c" stroke="#d4a574" stroke-width="1.5" rx="2"/>
+          <text x="90" y="22" class="svg-text-accent" font-size="13" text-anchor="middle" font-weight="600">胜宏科技★</text>
+          <text x="90" y="40" class="svg-text-dim" font-size="10" text-anchor="middle">PCB全球龙头</text>
+          <text x="90" y="56" class="svg-text-dim" font-size="9" text-anchor="middle">英伟达60-70%份额</text>
+          <text x="90" y="70" class="svg-text-dim" font-size="9" text-anchor="middle">2026固投180亿</text>
+        </g>
+        
+        <g transform="translate(500, 30)">
+          <rect x="0" y="0" width="180" height="80" fill="#1a212c" stroke="#d4a574" stroke-width="1.5" rx="2"/>
+          <text x="90" y="22" class="svg-text-accent" font-size="13" text-anchor="middle" font-weight="600">沪电股份★</text>
+          <text x="90" y="40" class="svg-text-dim" font-size="10" text-anchor="middle">AI PCB主力</text>
+          <text x="90" y="56" class="svg-text-dim" font-size="9" text-anchor="middle">扩产170亿+</text>
+          <text x="90" y="70" class="svg-text-dim" font-size="9" text-anchor="middle">Q1占比21.7%</text>
+        </g>
+        
+        <g transform="translate(700, 30)">
+          <rect x="0" y="0" width="180" height="80" fill="#1a212c" stroke="#3d4a5c" rx="2"/>
+          <text x="90" y="22" class="svg-text" font-size="13" text-anchor="middle">深南电路</text>
+          <text x="90" y="40" class="svg-text-dim" font-size="10" text-anchor="middle">PCB+载板双业务</text>
+          <text x="90" y="56" class="svg-text-dim" font-size="9" text-anchor="middle">广州+无锡+南通+泰国</text>
+          <text x="90" y="70" class="svg-text-dim" font-size="9" text-anchor="middle">合同负债下降警讯</text>
+        </g>
+      </g>
+    </svg>
+    <div class="figure-caption">左边的覆铜板结构图清晰展示了"铜箔+玻纤布+树脂"如何组成一张CCL,这张CCL是PCB的"建筑材料";右边的PCB层数对比展示了Rubin时代26层计算板和新增44层中板的复杂度——每加一层,制造难度都是指数级上升。</div>
+  </div>
+
+  <h3 class="section-title">M7→M8→M9的材料升级革命</h3>
+  
+  <p>市场对PCB的传统认知是"低毛利电子加工",但AI服务器PCB完全不是。<strong>同样大小的一块PCB,M7级材料卖800元,M8级材料卖2500元,M9级材料卖5000-7000元</strong>。从M7到M9,价格涨6-8倍,但单位面积成本只涨1.5-2倍——<strong>这是利润空间被10倍放大的赛道</strong>。</p>
+
+  <div class="data-grid">
+    <div class="data-card">
+      <div class="label">M7 → M8 升级</div>
+      <div class="value">+200<span class="unit">%</span></div>
+      <div class="desc">材料单价提升幅度,GB300到Rubin的核心升级</div>
+    </div>
+    <div class="data-card">
+      <div class="label">M9 价格</div>
+      <div class="value">5000<span class="unit">+元</span></div>
+      <div class="desc">每平米M9覆铜板价格,是M7的6倍</div>
+    </div>
+    <div class="data-card">
+      <div class="label">高端AI PCB毛利率</div>
+      <div class="value">35-40<span class="unit">%</span></div>
+      <div class="desc">vs 传统PCB毛利率20-25%</div>
+    </div>
+    <div class="data-card">
+      <div class="label">Rubin新增44层中板</div>
+      <div class="value">$1500<span class="unit">/块</span></div>
+      <div class="desc">每柜18块,单项贡献$2.7万</div>
+    </div>
+  </div>
+
+  <p>M7、M8、M9是什么?简单理解,<strong>它们是覆铜板的"性能等级"</strong>,主要差异在两个维度:</p>
+  <ul style="list-style: none; padding-left: 0; margin: 16px 0;">
+    <li style="padding: 10px 0; border-bottom: 1px dashed var(--border);">
+      <strong>介电常数(Dk)</strong>:Dk越低,信号衰减越小,适合高频信号传输。M7的Dk约3.8,M9的Dk约3.0。
+    </li>
+    <li style="padding: 10px 0;">
+      <strong>损耗因子(Df)</strong>:Df越低,信号在传输中损失的能量越少。M7的Df约0.005,M9的Df约0.002。
+    </li>
+  </ul>
+  
+  <p>这两个指标看起来差异微小,但<strong>在224Gbps的信号速率下,Df从0.005降到0.002,信号完整性提升数倍</strong>。这就是为什么Rubin时代必须用M8/M9——没有这种材料,1.6T光模块和高速PCB根本运行不起来。</p>
+
+  <h3 class="section-title">当前周期的核心驱动力</h3>
+
+  <h4 class="sub-title">驱动力一:Rubin拉动+233%的物理需求</h4>
+  
+  <p>大摩2026年5月22日的拆机报告里,PCB是<strong>所有零部件中价值量增幅最大的</strong>。具体增量来自三个方面:</p>
+  
+  <table>
+    <thead>
+      <tr><th>PCB类型</th><th>GB300</th><th>Rubin</th><th>变化</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>计算板</td><td class="num gray">22层 HDI / M7</td><td class="num">26层 / M8</td><td class="num green">层数+18% · 材料升级</td></tr>
+      <tr><td>交换托板</td><td class="num gray">24层</td><td class="num">32层</td><td class="num green">层数+33%</td></tr>
+      <tr><td>中板PCB</td><td class="num red">不存在</td><td class="num">44层 · $1500/块</td><td class="num green">新增18块/柜</td></tr>
+      <tr><td>ConnectX模组PCB</td><td class="num red">不存在</td><td class="num">$270/块</td><td class="num green">新增72块/柜</td></tr>
+    </tbody>
+  </table>
+  
+  <p>单机柜PCB价值从GB300的3.51万美元升至Rubin的11.67万美元,<strong>+233%</strong>。整个产业链的中游(覆铜板厂、PCB厂)都直接受益。</p>
+
+  <h4 class="sub-title">驱动力二:头部厂商的资本开支竞赛</h4>
+  
+  <p>"扩产规模"是判断产业景气度最硬的指标——管理层有内部信息优势,他们扩产意味着他们看到了真实订单。2025-2026年初,国内PCB头部企业新增高端产能投资计划<strong>已超过400亿元</strong>,扩产方向高度集中于AI服务器、高频高速板、IC载板:</p>
+
+  <div class="data-grid">
+    <div class="data-card">
+      <div class="label">胜宏科技 2026固定投资</div>
+      <div class="value">180<span class="unit">亿</span></div>
+      <div class="desc">英伟达Tier1供应商的真金白银</div>
+    </div>
+    <div class="data-card">
+      <div class="label">沪电股份 累计扩产</div>
+      <div class="value">170<span class="unit">亿+</span></div>
+      <div class="desc">昆山+常州+3亿美元高密度</div>
+    </div>
+    <div class="data-card">
+      <div class="label">鹏鼎控股 泰国扩建</div>
+      <div class="value">168<span class="unit">亿</span></div>
+      <div class="desc">2026资本开支,同比+154%</div>
+    </div>
+    <div class="data-card">
+      <div class="label">25Q1-Q3行业资本开支</div>
+      <div class="value">+69<span class="unit">%</span></div>
+      <div class="desc">8家主流PCB企业合计162亿</div>
+    </div>
+  </div>
+
+  <h4 class="sub-title">驱动力三:M9级覆铜板的国产替代窗口</h4>
+  
+  <p>高端覆铜板(M7级以上)长期被日韩台厂商垄断:松下(日本)、台光(台湾)、斗山(韩国)、ITEQ(台湾)等。国产替代的窗口在M8/M9级别正在打开——<strong>生益科技是大陆唯一获得英伟达M9认证的覆铜板厂商</strong>。</p>
+  
+  <p>这是真正的"硬技术国产替代",不是低端价格战:</p>
+  <ul style="list-style: none; padding-left: 0; margin: 16px 0;">
+    <li style="padding: 10px 0; border-bottom: 1px dashed var(--border);">• 生益M8已批量出货胜宏、沪电、深南</li>
+    <li style="padding: 10px 0; border-bottom: 1px dashed var(--border);">• 生益M9通过英伟达Rubin认证,2026Q2开始批量</li>
+    <li style="padding: 10px 0;">• 南亚新材、华正新材等二线厂商也在做M8/M9突破</li>
+  </ul>
+
+  <h3 class="section-title">卡位龙头分析</h3>
+
+  <!-- 胜宏科技 -->
+  <div class="company-card core">
+    <div class="company-card-header">
+      <div>
+        <div class="company-name">胜宏科技<span class="code">300476.SZ</span></div>
+        <p style="color: var(--text-dim); font-size: 14px; margin-top: 4px;">英伟达AI PCB Tier1供应商 · 全球60-70%份额 · 综合分4.47</p>
+      </div>
+      <div class="company-tier core">CORE</div>
+    </div>
+    
+    <div class="company-stats">
+      <div class="company-stat"><div class="label">2025年净利</div><div class="value">43.12亿</div></div>
+      <div class="company-stat"><div class="label">Q1净利同比</div><div class="value">+339%</div></div>
+      <div class="company-stat"><div class="label">AI订单占比</div><div class="value">60%+</div></div>
+      <div class="company-stat"><div class="label">2026固投</div><div class="value">180亿</div></div>
+      <div class="company-stat"><div class="label">2026E PE</div><div class="value">41.4x</div></div>
+      <div class="company-stat"><div class="label">PEG</div><div class="value">0.48</div></div>
+    </div>
+    
+    <div class="company-logic">
+      <h6>产业卡位 — 英伟达Tier1的稀缺性</h6>
+      <p>2020年通过技术突破进入英伟达供应链,2025年正式成为<strong>英伟达Tier1供应商</strong>。在英伟达AI PCB采购份额中占60-70%——这是A股极其稀缺的英伟达深度绑定。2026年1月英伟达CEO黄仁勋在台北宴请40多位供应链高管时,胜宏科技董事长陈涛是<strong>唯一受邀的大陆代表</strong>。</p>
+      
+      <h6>硬指标:180亿固定资产投资</h6>
+      <p>2026年公司固定资产投资计划<strong>不超过180亿元</strong>——这是A股PCB行业最大单笔扩产计划,投资范围包括新厂房、设备购置、自动化产线。2025Q4 CAPEX 29.63亿,环比+98%,验证扩产节奏正在加速。</p>
+      
+      <h6>核心技术储备</h6>
+      <p>52层M9级HDI PCB国内唯一量产,mSAP工艺龙头。在224Gbps PCB上良率领跑行业。客户包括英伟达、AMD、英特尔、特斯拉、微软、亚马逊、谷歌、博世、台达。AI产品毛利率35-40%,远超传统PCB的20-25%。</p>
+      
+      <h6>风险点 — Q1兑现度</h6>
+      <p>Q1占比14.5%偏弱(机构2026年预测89亿,Q1实际只做到13亿)。这意味着<strong>需要Q2-Q4持续加速兑现</strong>才能跑到预测。鉴于扩产节奏和订单可见度,这是高概率事件,但需要Q2财报验证。短期借款翻倍带来财务费用压力,需关注负债结构。</p>
+    </div>
+  </div>
+
+  <!-- 沪电股份 -->
+  <div class="company-card core">
+    <div class="company-card-header">
+      <div>
+        <div class="company-name">沪电股份<span class="code">002463.SZ</span></div>
+        <p style="color: var(--text-dim); font-size: 14px; margin-top: 4px;">AI PCB主力 · 北美AI服务器PCB市占率80%+ · 综合分4.63 · 排名第二</p>
+      </div>
+      <div class="company-tier core">CORE</div>
+    </div>
+    
+    <div class="company-stats">
+      <div class="company-stat"><div class="label">2025年净利</div><div class="value">38.22亿</div></div>
+      <div class="company-stat"><div class="label">Q1营收同比</div><div class="value">+143%</div></div>
+      <div class="company-stat"><div class="label">Q1净利同比</div><div class="value">+339%</div></div>
+      <div class="company-stat"><div class="label">Q1占比</div><div class="value green">21.7%</div></div>
+      <div class="company-stat"><div class="label">2026E PE</div><div class="value">38.4x</div></div>
+      <div class="company-stat"><div class="label">PEG</div><div class="value">0.77</div></div>
+    </div>
+    
+    <div class="company-logic">
+      <h6>产业卡位 — 北美AI服务器PCB王者</h6>
+      <p>北美AI服务器PCB市占率<strong>80%+</strong>,这是和胜宏(英伟达60-70%)相互补的卡位——胜宏强在英伟达,沪电强在<strong>整个北美AI服务器生态</strong>(包括ASIC、Marvell、Broadcom等)。112Gbps板已量产,224Gbps在送样。</p>
+      
+      <h6>硬指标:扩产170亿+</h6>
+      <p>2026年1月以来密集公告多个项目,<strong>累计投资总额超170亿元</strong>:昆山扩产55亿+昆山追加33亿+常州3亿美元高密度光电集成线路板+68亿AI PCB扩产。<strong>单月123亿投资</strong>——这是管理层对Rubin拉动需求的真金白银押注。</p>
+      
+      <h6>核心数据:Q1占比21.7% — 全核心档最强兑现度</h6>
+      <p>Q1占比21.7%在核心档6只中<strong>领先</strong>,意味着机构对2026年57亿的预测<strong>不需要任何下半年加速</strong>,按当前节奏自然达成。沪电股份的产业α<strong>已经在数字上完整兑现</strong>。</p>
+      
+      <h6>胜宏 vs 沪电 — 不是替代而是双龙头</h6>
+      <p>市场常常把胜宏和沪电当成"二选一",但产业上两者卡位互补——胜宏深度绑定英伟达,沪电覆盖整个北美AI服务器(英伟达+AMD+Marvell+Broadcom)。GTC大会后市场叙事从"英伟达链高弹性"切换到"系统互联高确定性",沪电因此领先胜宏一段时间。<strong>两者应该都配置</strong>,不应二选一。</p>
+    </div>
+  </div>
+
+  <!-- 生益科技 -->
+  <div class="company-card core">
+    <div class="company-card-header">
+      <div>
+        <div class="company-name">生益科技<span class="code">600183.SH</span></div>
+        <p style="color: var(--text-dim); font-size: 14px; margin-top: 4px;">大陆唯一英伟达M9覆铜板认证 · 综合分4.33</p>
+      </div>
+      <div class="company-tier core">CORE</div>
+    </div>
+    
+    <div class="company-stats">
+      <div class="company-stat"><div class="label">2025年净利</div><div class="value">33.34亿</div></div>
+      <div class="company-stat"><div class="label">Q1占比</div><div class="value green">20.8%</div></div>
+      <div class="company-stat"><div class="label">订单可见度</div><div class="value">到2026Q4</div></div>
+      <div class="company-stat"><div class="label">2026E PE</div><div class="value">47.1x</div></div>
+      <div class="company-stat"><div class="label">2027E PE</div><div class="value">33.3x</div></div>
+      <div class="company-stat"><div class="label">PEG</div><div class="value">0.88</div></div>
+    </div>
+    
+    <div class="company-logic">
+      <h6>产业卡位 — M9认证的稀缺性</h6>
+      <p><strong>大陆唯一获得英伟达M9级覆铜板认证</strong>的厂商。生益科技在M7时代就是国内龙头,M8时代成功量产,M9时代独家进入英伟达Rubin供应链——这是<strong>15年技术积累+客户绑定</strong>的结果,不可被短期复制。</p>
+      
+      <h6>硬指标:订单排到2026Q4</h6>
+      <p>78层正交背板M9覆铜板订单<strong>排到2026Q4</strong>。这意味着即使Q3-Q4市场出现波动,生益的收入兑现度是确定的。Q1占比20.8%印证了订单节奏健康。</p>
+      
+      <h6>独家产业逻辑</h6>
+      <p>(1)Rubin带动M8 → M9的材料升级,生益是唯一国产受益者;(2)整个国内PCB扩产+400亿元,所有这些产能都需要覆铜板原料,生益是上游核心;(3)产能扩张相对克制——通过提价而非扩量来获取超额利润,毛利率有望进一步提升。</p>
+      
+      <h6>风险点</h6>
+      <p>主要风险是上游玻纤布、铜箔的成本传导。但作为下游PCB厂的核心供应商,生益的议价权较强,可以转嫁成本。</p>
+    </div>
+  </div>
+
+  <!-- 深南电路 -->
+  <div class="company-card subcore">
+    <div class="company-card-header">
+      <div>
+        <div class="company-name">深南电路<span class="code">002916.SZ</span></div>
+        <p style="color: var(--text-dim); font-size: 14px; margin-top: 4px;">PCB+ABF载板双业务 · 四大扩产项目同步推进 · 综合分4.10</p>
+      </div>
+      <div class="company-tier subcore">次核心</div>
+    </div>
+    
+    <div class="company-stats">
+      <div class="company-stat"><div class="label">25Q4 CAPEX</div><div class="value">14.16亿</div></div>
+      <div class="company-stat"><div class="label">CAPEX环比</div><div class="value">+76%</div></div>
+      <div class="company-stat"><div class="label">广州FC-BGA</div><div class="value">22层已量产</div></div>
+      <div class="company-stat"><div class="label">合同负债环比</div><div class="value red">-33.5%</div></div>
+      <div class="company-stat"><div class="label">扩产项目数</div><div class="value">4个</div></div>
+    </div>
+    
+    <div class="company-logic">
+      <h6>产业卡位 — PCB+载板双引擎</h6>
+      <p>深南电路是<strong>国内少数同时具备高多层PCB和ABF封装基板能力</strong>的厂商。PCB业务受Rubin拉动,封装基板业务受AI芯片需求拉动。这种双引擎在中国大陆只有少数玩家具备。</p>
+      
+      <h6>四大扩产项目</h6>
+      <p>(1)广州FC-BGA封装基板:22层及以下已量产,24层在研发;(2)无锡封装基板二期:2022年9月连线投产,产能爬坡中;(3)南通四期+泰国工厂:2025年下半年连线投产,产能爬坡早期;(4)2026年资本开支聚焦无锡高速高密、高多层电路项目+广州基板工厂+泰国后续款项。</p>
+      
+      <h6>关键警讯:合同负债环比下降33.5%</h6>
+      <p>2026Q1合同负债11.25亿,vs 2025Q4的16.91亿,<strong>环比下降33.5%</strong>。这个信号需要谨慎解读——可能是:(a)订单交付加速(把预收款转成确认收入,正面);(b)订单减少或客户不再大额预付(负面)。<strong>在Q2财报确认之前,不能给最高仓位</strong>。</p>
+      
+      <h6>建议处理</h6>
+      <p>列入次核心档,但<strong>仓位明显低于核心档6只</strong>。Q2财报观察重点:合同负债是否回升、广州FC-BGA量产节奏、泰国工厂产能爬坡。如果合同负债回升,可以加仓到次核心上限;如果继续下降,降到卫星档。</p>
+    </div>
+  </div>
+
+  <h3 class="section-title">认知偏差识别</h3>
+
+  <div class="bias-box">
+    <div class="tag">认知偏差 #5</div>
+    <h5>"PCB是传统加工行业,毛利低,买PCB不如买光模块"</h5>
+    <p><strong>真相</strong>:传统PCB确实毛利20-25%,但AI服务器PCB(M8/M9级,22+层)毛利35-40%。胜宏科技AI产品占比60%+,毛利率<strong>已经接近光模块龙头水平</strong>。市场对PCB的认知仍停留在2015年的传统印象,但实际产业链已经发生质变。</p>
+  </div>
+
+  <div class="bias-box">
+    <div class="tag">认知偏差 #6</div>
+    <h5>"胜宏和沪电是同一类标的,买一个就行"</h5>
+    <p><strong>真相</strong>:胜宏深度绑定英伟达(60-70%份额),沪电覆盖整个北美AI服务器生态(80%+市占率)——两者是<strong>互补不是替代</strong>。GTC大会后市场叙事切换时,沪电领先胜宏一段时间;但等到Rubin真正放量时,胜宏的英伟达份额会变现。<strong>组合中应该同时配置</strong>。</p>
+  </div>
+
+  <div class="bias-box">
+    <div class="tag">认知偏差 #7</div>
+    <h5>"生益科技PE 47倍偏贵,不如买二线覆铜板"</h5>
+    <p><strong>真相</strong>:覆铜板行业是<strong>典型的赢家通吃</strong>——M9级认证不是"便宜就能买",而是涉及PCB厂的整体良率风险,所以PCB大厂只用经过认证的覆铜板。生益的M9认证是15年技术积累的结果,二线覆铜板厂短期内无法替代。<strong>PE 47倍是合理估值,不是泡沫</strong>。同样的逻辑,南亚新材PE 79倍、华正新材PE 37倍但Q1占比仅5.9%——前者估值贵且无认证溢价,后者预测过乐观。</p>
+  </div>
+
+  <div class="bias-box">
+    <div class="tag">认知偏差 #8</div>
+    <h5>"深南电路合同负债下降是订单流失,应该清仓"</h5>
+    <p><strong>真相</strong>:合同负债的下降有两种可能解读——交付加速(正面)或订单减少(负面)。在<strong>Q2财报确认之前不能下结论</strong>。同时,深南的扩产数据(广州FC-BGA、无锡二期、南通四期、泰国工厂)说明管理层对未来有信心。<strong>正确的处理是"降低仓位但保持持有",等Q2财报验证</strong>。这是产业研究的纪律——硬数据未确认时不做大动作。</p>
+  </div>
+
+  <div class="quote">
+    "PCB与覆铜板的故事不是'AI概念股',而是'高端制造业的国产替代'。生益、胜宏、沪电的技术积累都在10年以上——它们不是被AI拉起来的,而是<strong>本来就在那里,等到了AI爆发的时刻</strong>。这种公司的产业α最硬、可持续性最强。"
+    <span class="source">本研究 · 第5章结论</span>
+  </div>
+
+</section>
+</div>
+
+
+<!-- ====== Footer ====== -->
+<div class="container">
+<div class="footer">
+  <div class="ornament"></div>
+  <p>END OF CHAPTERS 4-5 · 第二部分 第一次提交</p>
+  <p style="margin-top: 12px; letter-spacing: 0.15em;">NEXT — CHAPTERS 6-7 · PCB上游材料 + ABF载板</p>
+</div>
+</div>
+
+</body>
+</html>
