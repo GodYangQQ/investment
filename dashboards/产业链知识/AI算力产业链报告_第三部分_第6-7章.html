@@ -1,0 +1,1360 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI算力产业链深度研究报告 — 第二部分:第6-7章</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0e14;
+  --bg-card: #131820;
+  --bg-card-hover: #1a212c;
+  --border: #2a323f;
+  --border-bright: #3d4a5c;
+  --text: #e8eaed;
+  --text-dim: #9aa3b2;
+  --text-faint: #6b7384;
+  --accent: #d4a574;
+  --accent-bright: #f5c896;
+  --gold: #c9a961;
+  --red: #d4644a;
+  --green: #6da479;
+  --blue: #6a8cb5;
+  --purple: #9c7eb0;
+  --serif: 'Noto Serif SC', 'Cormorant Garamond', Georgia, serif;
+  --display: 'Cormorant Garamond', 'Noto Serif SC', serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--serif);
+  font-weight: 400;
+  line-height: 1.75;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  background-image: 
+    radial-gradient(ellipse at 20% 0%, rgba(212, 165, 116, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 100%, rgba(106, 140, 181, 0.04) 0%, transparent 50%);
+  background-attachment: fixed;
+}
+
+.container { max-width: 1100px; margin: 0 auto; padding: 0 40px; }
+
+.chapter {
+  padding: 120px 0 80px;
+  border-bottom: 1px solid var(--border);
+}
+.chapter-num {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.3em;
+  color: var(--accent);
+  margin-bottom: 20px;
+  text-transform: uppercase;
+}
+.chapter-title {
+  font-family: var(--display);
+  font-size: clamp(40px, 5vw, 64px);
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  margin-bottom: 24px;
+}
+.chapter-title .em { font-style: italic; color: var(--accent); }
+.chapter-lead {
+  font-size: 19px;
+  color: var(--text-dim);
+  max-width: 800px;
+  margin-bottom: 60px;
+  line-height: 1.7;
+  font-weight: 300;
+}
+
+h3.section-title {
+  font-family: var(--serif);
+  font-size: 28px;
+  font-weight: 500;
+  margin: 60px 0 24px;
+  color: var(--text);
+  position: relative;
+  padding-left: 24px;
+}
+h3.section-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 14px;
+  width: 12px;
+  height: 1px;
+  background: var(--accent);
+}
+
+h4.sub-title {
+  font-family: var(--serif);
+  font-size: 21px;
+  font-weight: 500;
+  margin: 40px 0 16px;
+  color: var(--accent-bright);
+}
+
+p {
+  margin-bottom: 18px;
+  color: var(--text);
+}
+strong, b { color: var(--accent-bright); font-weight: 600; }
+
+.lead {
+  font-size: 18px;
+  color: var(--text-dim);
+  margin-bottom: 24px;
+  line-height: 1.75;
+}
+
+.highlight-box {
+  background: linear-gradient(135deg, rgba(212,165,116,0.08), rgba(212,165,116,0.02));
+  border-left: 3px solid var(--accent);
+  padding: 28px 32px;
+  margin: 32px 0;
+  border-radius: 0 4px 4px 0;
+}
+.highlight-box .tag {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.warning-box {
+  background: linear-gradient(135deg, rgba(212,100,74,0.08), rgba(212,100,74,0.02));
+  border-left: 3px solid var(--red);
+  padding: 28px 32px;
+  margin: 32px 0;
+  border-radius: 0 4px 4px 0;
+}
+.warning-box .tag {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--red);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.analogy-box {
+  background: rgba(106,140,181,0.06);
+  border: 1px solid rgba(106,140,181,0.2);
+  padding: 24px 28px;
+  margin: 24px 0;
+  border-radius: 4px;
+}
+.analogy-box .tag {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--blue);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.analogy-box h5 {
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--accent-bright);
+  margin-bottom: 8px;
+}
+
+.bias-box {
+  background: linear-gradient(135deg, rgba(156,126,176,0.08), rgba(156,126,176,0.02));
+  border-left: 3px solid var(--purple);
+  padding: 28px 32px;
+  margin: 32px 0;
+  border-radius: 0 4px 4px 0;
+}
+.bias-box .tag {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--purple);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.bias-box h5 {
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+
+.data-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+  margin: 32px 0;
+}
+.data-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 24px 22px;
+  border-radius: 4px;
+  transition: all 0.3s;
+}
+.data-card:hover {
+  border-color: var(--border-bright);
+  transform: translateY(-2px);
+}
+.data-card .label {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.data-card .value {
+  font-family: var(--display);
+  font-size: 38px;
+  font-weight: 500;
+  color: var(--accent);
+  line-height: 1.1;
+  margin-bottom: 8px;
+}
+.data-card .value .unit {
+  font-size: 16px;
+  color: var(--text-dim);
+  margin-left: 4px;
+}
+.data-card .desc {
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 24px 0;
+  font-size: 14px;
+}
+table thead {
+  background: var(--bg-card);
+  border-top: 1px solid var(--border-bright);
+  border-bottom: 1px solid var(--border-bright);
+}
+table th {
+  padding: 14px 16px;
+  text-align: left;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  color: var(--accent);
+  text-transform: uppercase;
+  font-weight: 500;
+}
+table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+table tr:hover td { background: rgba(255,255,255,0.02); }
+.num { font-family: var(--mono); color: var(--accent-bright); font-weight: 500; }
+.num.red { color: var(--red); }
+.num.green { color: var(--green); }
+.num.blue { color: var(--blue); }
+.num.gray { color: var(--text-dim); }
+
+.figure {
+  margin: 48px 0;
+  padding: 32px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+.figure-title {
+  font-family: var(--display);
+  font-size: 24px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 8px;
+  text-align: center;
+}
+.figure-subtitle {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  text-align: center;
+  margin-bottom: 32px;
+}
+.figure svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.figure-caption {
+  margin-top: 24px;
+  font-size: 13px;
+  color: var(--text-dim);
+  text-align: center;
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.company-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 32px;
+  margin: 24px 0;
+  position: relative;
+}
+.company-card.core { border-left: 4px solid var(--accent); }
+.company-card.subcore { border-left: 4px solid var(--blue); }
+.company-card.warning { border-left: 4px solid var(--red); }
+.company-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.company-name {
+  font-family: var(--serif);
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--text);
+}
+.company-name .code {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text-faint);
+  margin-left: 12px;
+  letter-spacing: 0.1em;
+}
+.company-tier {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  padding: 6px 12px;
+  border-radius: 2px;
+  text-transform: uppercase;
+}
+.company-tier.core {
+  background: rgba(212,165,116,0.15);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+.company-tier.subcore {
+  background: rgba(106,140,181,0.15);
+  color: var(--blue);
+  border: 1px solid var(--blue);
+}
+.company-tier.satellite {
+  background: rgba(156,126,176,0.15);
+  color: var(--purple);
+  border: 1px solid var(--purple);
+}
+.company-tier.warning {
+  background: rgba(212,100,74,0.15);
+  color: var(--red);
+  border: 1px solid var(--red);
+}
+.company-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 16px;
+  margin: 20px 0;
+  padding: 16px;
+  background: rgba(255,255,255,0.02);
+  border-radius: 2px;
+}
+.company-stat {
+  font-family: var(--mono);
+}
+.company-stat .label {
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.company-stat .value {
+  font-size: 16px;
+  color: var(--accent-bright);
+  font-weight: 500;
+}
+.company-logic h6 {
+  font-family: var(--serif);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-top: 16px;
+  margin-bottom: 8px;
+}
+.company-logic p {
+  font-size: 15px;
+  color: var(--text-dim);
+  line-height: 1.65;
+  margin-bottom: 12px;
+}
+
+.quote {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 24px;
+  line-height: 1.5;
+  color: var(--text);
+  padding: 32px 0 32px 32px;
+  border-left: 2px solid var(--accent);
+  margin: 40px 0;
+  max-width: 800px;
+}
+.quote .source {
+  font-family: var(--mono);
+  font-style: normal;
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  margin-top: 16px;
+  display: block;
+}
+
+.footer {
+  padding: 60px 0 80px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--text-faint);
+  text-transform: uppercase;
+}
+.footer .ornament {
+  width: 40px;
+  height: 1px;
+  background: var(--accent);
+  margin: 0 auto 24px;
+}
+
+@media (max-width: 768px) {
+  .container { padding: 0 20px; }
+  .data-grid { grid-template-columns: 1fr; }
+  .figure { padding: 16px; }
+  .company-card { padding: 20px; }
+}
+
+.svg-text { font-family: var(--mono); fill: var(--text); }
+.svg-text-dim { font-family: var(--mono); fill: var(--text-dim); }
+.svg-text-accent { font-family: var(--serif); fill: var(--accent); font-weight: 500; }
+</style>
+</head>
+<body>
+
+<!-- ====== 第6章:PCB上游材料 ====== -->
+<div class="container">
+<section class="chapter" id="ch6">
+  <div class="chapter-num">CHAPTER 06</div>
+  <h2 class="chapter-title">PCB上游<span class="em">材料</span></h2>
+  <p class="chapter-lead">PCB能不能造出来,取决于三种基础材料:<strong>玻纤布、树脂、铜箔</strong>。这三种材料的高端品质长期被日本、台湾、韩国垄断。但Rubin时代,这三个环节同时出现国产替代窗口——菲利华、宏和、圣泉、铜冠铜箔、德福科技,正在打破海外40年的统治。这是这次研究中我们发现的<strong>最大产业α所在</strong>。</p>
+
+  <h3 class="section-title">为什么这一章如此重要</h3>
+  
+  <p class="lead">前两章讲的是"成品"(光模块、PCB),这一章讲的是<strong>"成品的成品"</strong>——制造光模块和PCB所必需的最上游材料。这些材料看似不起眼,但它们决定了整个产业链的<strong>性能上限</strong>。</p>
+  
+  <p>大摩在Rubin拆机报告里特别提到一个细节:<strong>"PCB的性能受制于覆铜板,覆铜板的性能受制于玻纤布和铜箔"</strong>。也就是说,要做出M9级别的覆铜板,必须有Q布(Quartz布,纯石英玻纤)+ HVLP4铜箔 + M9树脂这三种材料。<strong>任何一种缺货或质量不达标,整个PCB产业链就会卡住</strong>。</p>
+
+  <div class="analogy-box">
+    <div class="tag">类比讲解</div>
+    <h5>做PCB = 烤蛋糕 · 上游材料 = 面粉/糖/鸡蛋</h5>
+    <p>烤蛋糕(PCB)的师傅(胜宏、沪电)技术再好,如果买不到优质面粉(玻纤布)、糖(树脂)、鸡蛋(铜箔),也做不出米其林级别的蛋糕(M8/M9级AI PCB)。</p>
+    <p>Rubin时代AI PCB对材料的要求是<strong>"米其林级别"</strong>——必须用最好的面粉(Q布)、最好的糖(PPO/M9树脂)、最好的鸡蛋(HVLP4铜箔)。而能做出这种"米其林级食材"的公司,在中国大陆<strong>不到10家</strong>。</p>
+  </div>
+
+  <h3 class="section-title">三种上游材料的产业地图</h3>
+
+  <div class="figure">
+    <div class="figure-title">PCB三大上游材料 — 卡位与国产替代</div>
+    <div class="figure-subtitle">GLASS CLOTH · RESIN · COPPER FOIL</div>
+    
+    <svg viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="m6g1" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#6a8cb5" stop-opacity="0.3"/>
+          <stop offset="100%" stop-color="#6a8cb5" stop-opacity="0.05"/>
+        </linearGradient>
+        <linearGradient id="m6g2" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#9c7eb0" stop-opacity="0.3"/>
+          <stop offset="100%" stop-color="#9c7eb0" stop-opacity="0.05"/>
+        </linearGradient>
+        <linearGradient id="m6g3" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#c9a961" stop-opacity="0.3"/>
+          <stop offset="100%" stop-color="#c9a961" stop-opacity="0.05"/>
+        </linearGradient>
+      </defs>
+      
+      <text x="500" y="30" class="svg-text-accent" font-size="16" text-anchor="middle" font-weight="600">从原料到M9覆铜板的完整链条</text>
+      
+      <!-- 三大材料 -->
+      <g transform="translate(20, 70)">
+        <rect x="0" y="0" width="305" height="430" fill="url(#m6g1)" stroke="#6a8cb5" stroke-width="1.5" rx="4"/>
+        <text x="152" y="30" class="svg-text-accent" font-size="15" text-anchor="middle" font-weight="600">① 玻纤布 (骨架)</text>
+        <text x="152" y="48" class="svg-text-dim" font-size="10" text-anchor="middle">每张PCB的"建筑钢筋"</text>
+        
+        <!-- 高端品类 -->
+        <rect x="15" y="70" width="275" height="60" fill="#0a0e14" stroke="#3d4a5c" rx="2"/>
+        <text x="152" y="92" class="svg-text-accent" font-size="12" text-anchor="middle">Q布 (纯石英) — 最高等级</text>
+        <text x="152" y="108" class="svg-text-dim" font-size="9" text-anchor="middle">英伟达M9级覆铜板必需</text>
+        <text x="152" y="122" class="svg-text-dim" font-size="9" text-anchor="middle" fill="#f5c896">菲利华 (全球三家之一)</text>
+        
+        <rect x="15" y="140" width="275" height="60" fill="#0a0e14" stroke="#3d4a5c" rx="2"/>
+        <text x="152" y="162" class="svg-text-accent" font-size="12" text-anchor="middle">T布/超薄布 (4-12μm)</text>
+        <text x="152" y="178" class="svg-text-dim" font-size="9" text-anchor="middle">ABF载板核心材料</text>
+        <text x="152" y="192" class="svg-text-dim" font-size="9" text-anchor="middle" fill="#f5c896">宏和科技 (4μm全球唯一)</text>
+        
+        <rect x="15" y="210" width="275" height="60" fill="#0a0e14" stroke="#3d4a5c" rx="2"/>
+        <text x="152" y="232" class="svg-text-accent" font-size="12" text-anchor="middle">Low-CTE 厚布</text>
+        <text x="152" y="248" class="svg-text-dim" font-size="9" text-anchor="middle">高多层PCB必需</text>
+        <text x="152" y="262" class="svg-text-dim" font-size="9" text-anchor="middle">中材科技·国际复材·中国巨石</text>
+        
+        <rect x="15" y="280" width="275" height="60" fill="#0a0e14" stroke="#3d4a5c" rx="2"/>
+        <text x="152" y="302" class="svg-text-accent" font-size="12" text-anchor="middle">电子玻纤布 (常规)</text>
+        <text x="152" y="318" class="svg-text-dim" font-size="9" text-anchor="middle">中低端PCB主流</text>
+        <text x="152" y="332" class="svg-text-dim" font-size="9" text-anchor="middle">中国巨石 (全球第一)</text>
+        
+        <text x="152" y="380" class="svg-text-dim" font-size="10" text-anchor="middle">国外巨头:</text>
+        <text x="152" y="396" class="svg-text-dim" font-size="9" text-anchor="middle">日东纺 · 日本电气硝子(NEG)</text>
+        <text x="152" y="412" class="svg-text-dim" font-size="9" text-anchor="middle">台玻 · AGC</text>
+      </g>
+      
+      <!-- 第二列:树脂 -->
+      <g transform="translate(345, 70)">
+        <rect x="0" y="0" width="305" height="430" fill="url(#m6g2)" stroke="#9c7eb0" stroke-width="1.5" rx="4"/>
+        <text x="152" y="30" class="svg-text-accent" font-size="15" text-anchor="middle" font-weight="600">② 树脂 (粘合剂)</text>
+        <text x="152" y="48" class="svg-text-dim" font-size="10" text-anchor="middle">控制介电性能的核心</text>
+        
+        <rect x="15" y="70" width="275" height="60" fill="#0a0e14" stroke="#3d4a5c" rx="2"/>
+        <text x="152" y="92" class="svg-text-accent" font-size="12" text-anchor="middle">PPO树脂 — 最高介电</text>
+        <text x="152" y="108" class="svg-text-dim" font-size="9" text-anchor="middle">M9覆铜板上游</text>
+        <text x="152" y="122" class="svg-text-dim" font-size="9" text-anchor="middle" fill="#f5c896">圣泉集团 (国内唯一量产)</text>
+        
+        <rect x="15" y="140" width="275" height="60" fill="#0a0e14" stroke="#3d4a5c" rx="2"/>
+        <text x="152" y="162" class="svg-text-accent" font-size="12" text-anchor="middle">碳氢树脂</text>
+        <text x="152" y="178" class="svg-text-dim" font-size="9" text-anchor="middle">M7/M8主流材料</text>
+        <text x="152" y="192" class="svg-text-dim" font-size="9" text-anchor="middle" fill="#f5c896">东材科技</text>
+        
+        <rect x="15" y="210" width="275" height="60" fill="#0a0e14" stroke="#3d4a5c" rx="2"/>
+        <text x="152" y="232" class="svg-text-accent" font-size="12" text-anchor="middle">ABF树脂 (味之素垄断)</text>
+        <text x="152" y="248" class="svg-text-dim" font-size="9" text-anchor="middle">封装基板核心,见第7章</text>
+        <text x="152" y="262" class="svg-text-dim" font-size="9" text-anchor="middle">国产几乎为零</text>
+        
+        <rect x="15" y="280" width="275" height="60" fill="#0a0e14" stroke="#3d4a5c" rx="2"/>
+        <text x="152" y="302" class="svg-text-accent" font-size="12" text-anchor="middle">环氧/酚醛 (传统)</text>
+        <text x="152" y="318" class="svg-text-dim" font-size="9" text-anchor="middle">中低端PCB主流</text>
+        <text x="152" y="332" class="svg-text-dim" font-size="9" text-anchor="middle">圣泉集团·东材科技</text>
+        
+        <text x="152" y="380" class="svg-text-dim" font-size="10" text-anchor="middle">国外巨头:</text>
+        <text x="152" y="396" class="svg-text-dim" font-size="9" text-anchor="middle">SABIC (PPO) · 味之素 (ABF)</text>
+        <text x="152" y="412" class="svg-text-dim" font-size="9" text-anchor="middle">DIC · 朗盛</text>
+      </g>
+      
+      <!-- 第三列:铜箔 -->
+      <g transform="translate(670, 70)">
+        <rect x="0" y="0" width="305" height="430" fill="url(#m6g3)" stroke="#c9a961" stroke-width="1.5" rx="4"/>
+        <text x="152" y="30" class="svg-text-accent" font-size="15" text-anchor="middle" font-weight="600">③ 铜箔 (导线)</text>
+        <text x="152" y="48" class="svg-text-dim" font-size="10" text-anchor="middle">信号传输的物理通道</text>
+        
+        <rect x="15" y="70" width="275" height="60" fill="#0a0e14" stroke="#3d4a5c" rx="2"/>
+        <text x="152" y="92" class="svg-text-accent" font-size="12" text-anchor="middle">HVLP4/5 铜箔 — 最高端</text>
+        <text x="152" y="108" class="svg-text-dim" font-size="9" text-anchor="middle">224Gbps PCB必需</text>
+        <text x="152" y="122" class="svg-text-dim" font-size="9" text-anchor="middle" fill="#f5c896">德福(卢森堡技术)·铜冠铜箔</text>
+        
+        <rect x="15" y="140" width="275" height="60" fill="#0a0e14" stroke="#3d4a5c" rx="2"/>
+        <text x="152" y="162" class="svg-text-accent" font-size="12" text-anchor="middle">HVLP1-3 铜箔</text>
+        <text x="152" y="178" class="svg-text-dim" font-size="9" text-anchor="middle">112Gbps以下PCB主流</text>
+        <text x="152" y="192" class="svg-text-dim" font-size="9" text-anchor="middle" fill="#f5c896">铜冠铜箔·德福科技</text>
+        
+        <rect x="15" y="210" width="275" height="60" fill="#0a0e14" stroke="#3d4a5c" rx="2"/>
+        <text x="152" y="232" class="svg-text-accent" font-size="12" text-anchor="middle">载体铜箔 (超薄)</text>
+        <text x="152" y="248" class="svg-text-dim" font-size="9" text-anchor="middle">IC封装载板内层用</text>
+        <text x="152" y="262" class="svg-text-dim" font-size="9" text-anchor="middle">方邦股份 (A股核心)</text>
+        
+        <rect x="15" y="280" width="275" height="60" fill="#0a0e14" stroke="#3d4a5c" rx="2"/>
+        <text x="152" y="302" class="svg-text-accent" font-size="12" text-anchor="middle">RTF/常规铜箔</text>
+        <text x="152" y="318" class="svg-text-dim" font-size="9" text-anchor="middle">中低端PCB主流</text>
+        <text x="152" y="332" class="svg-text-dim" font-size="9" text-anchor="middle">嘉元·诺德·铜冠铜箔</text>
+        
+        <text x="152" y="380" class="svg-text-dim" font-size="10" text-anchor="middle">国外巨头:</text>
+        <text x="152" y="396" class="svg-text-dim" font-size="9" text-anchor="middle">三井金属 (HVLP4) · 古河电工</text>
+        <text x="152" y="412" class="svg-text-dim" font-size="9" text-anchor="middle">福田金属 · 长春集团</text>
+      </g>
+      
+      <!-- 底部箭头汇聚 -->
+      <g transform="translate(20, 520)">
+        <line x1="172" y1="0" x2="172" y2="20" stroke="#3d4a5c" stroke-dasharray="2,2"/>
+        <line x1="497" y1="0" x2="497" y2="20" stroke="#3d4a5c" stroke-dasharray="2,2"/>
+        <line x1="822" y1="0" x2="822" y2="20" stroke="#3d4a5c" stroke-dasharray="2,2"/>
+        <line x1="172" y1="20" x2="822" y2="20" stroke="#3d4a5c" stroke-dasharray="2,2"/>
+        <line x1="497" y1="20" x2="497" y2="35" stroke="#d4a574" stroke-width="2"/>
+        <polygon points="497,40 491,32 503,32" fill="#d4a574"/>
+      </g>
+      
+      <text x="500" y="575" class="svg-text-accent" font-size="14" text-anchor="middle" font-weight="600">→ M9级覆铜板 → AI PCB → Rubin机柜</text>
+    </svg>
+    <div class="figure-caption">这是PCB产业链最关键的一张图。三种材料各自的国产替代窗口都不同——玻纤布是菲利华(Q布)+宏和(超薄布)走在最前面;树脂是圣泉(PPO)国内独家;铜箔是德福、铜冠铜箔在HVLP4级别突破。<strong>三种材料同时国产突破,意味着整条M9级覆铜板产业链都能国产化</strong>。</div>
+  </div>
+
+  <h3 class="section-title">第一种关键材料:玻纤布</h3>
+  
+  <p class="lead">玻纤布是PCB的"骨架"。它决定了PCB的<strong>机械强度、热膨胀系数、介电常数</strong>这三个最关键的物理性能。AI服务器PCB对玻纤布的要求是普通PCB的<strong>50-100倍</strong>。</p>
+
+  <h4 class="sub-title">Q布:纯石英玻纤,英伟达M9认证的"门票"</h4>
+  
+  <p>Q布(Quartz布)是用<strong>纯石英玻璃</strong>拉成丝,再织成的布。普通玻纤布是用E玻璃(普通玻璃)拉丝,Q布的纯度高几个数量级。</p>
+  
+  <p>为什么AI服务器需要Q布?因为Q布的<strong>介电常数Dk只有3.4</strong>(普通玻纤布是5.5),Df只有0.0002(普通玻纤布是0.0030)。这意味着<strong>信号在Q布做的PCB上传输,衰减只有普通PCB的1/10</strong>——这是1.6T光模块和224Gbps PCB能跑起来的物理基础。</p>
+
+  <div class="analogy-box">
+    <div class="tag">类比讲解</div>
+    <h5>Q布 = 航天器隔热瓦的材料</h5>
+    <p>普通玻纤布像<strong>普通钢材</strong>,够用就行。Q布像<strong>航天器隔热瓦的材料</strong>——纯度极高、加工极难、价格极贵、全球只有少数厂商能造。每米Q布的价格<strong>450-550元</strong>(普通玻纤布只有20-30元),而且<strong>2026年5月有价无货</strong>。</p>
+  </div>
+
+  <p>全球Q布的供应格局极其集中:</p>
+  <ul style="list-style: none; padding-left: 0; margin: 16px 0;">
+    <li style="padding: 10px 0; border-bottom: 1px dashed var(--border);">• <strong>日本AGC</strong>(原旭硝子):全球第一,主要供应日本本土PCB厂</li>
+    <li style="padding: 10px 0; border-bottom: 1px dashed var(--border);">• <strong>日本日东纺</strong>:全球第二,供应日本+台湾</li>
+    <li style="padding: 10px 0;">• <strong>菲利华(中国)</strong>:全球第三,A股独家。<strong>英伟达国产唯一M9级Q布供应商</strong></li>
+  </ul>
+  <p>菲利华的Q布卡位是这次研究中的<strong>最大产业α发现</strong>——它不是"国产替代海外产品",而是<strong>全球前三的产能 + 英伟达独家供应</strong>。</p>
+
+  <h4 class="sub-title">T布/超薄布:ABF封装基板的核心</h4>
+  
+  <p>T布是<strong>低介电常数玻纤布</strong>的统称,超薄布是<strong>厚度4-12μm的玻纤布</strong>。两者都是封装基板(ABF)和高端PCB的关键材料。</p>
+  
+  <p>宏和科技的卡位:</p>
+  <ul style="list-style: none; padding-left: 0; margin: 16px 0;">
+    <li style="padding: 10px 0; border-bottom: 1px dashed var(--border);">• <strong>4μm以下极薄布:全球唯一量产</strong>——这是宏和最稀缺的卡位</li>
+    <li style="padding: 10px 0; border-bottom: 1px dashed var(--border);">• <strong>12μm超薄布:全球50%以上份额</strong></li>
+    <li style="padding: 10px 0; border-bottom: 1px dashed var(--border);">• <strong>Low-CTE电子布:2025年已批量进入封装基板供应链</strong></li>
+    <li style="padding: 10px 0;">• <strong>Q布:在研、送样认证中</strong>(如果通过,将打开第二增长曲线)</li>
+  </ul>
+
+  <h3 class="section-title">第二种关键材料:树脂</h3>
+  
+  <p>树脂是PCB的"粘合剂",作用是<strong>把玻纤布粘合在一起,并填充介质空间</strong>。不同的树脂决定了PCB的介电性能上限。</p>
+
+  <h4 class="sub-title">PPO树脂:M9覆铜板的"灵魂"</h4>
+  
+  <p>PPO(聚苯醚)树脂是目前已知<strong>介电性能最好的树脂材料</strong>,Dk约2.5、Df约0.001。这意味着用PPO做的覆铜板,信号传输损耗极低,是M9级别的核心特征。</p>
+  
+  <p>但PPO的合成技术极其复杂——<strong>全球只有少数公司能稳定量产电子级PPO</strong>:</p>
+  <ul style="list-style: none; padding-left: 0; margin: 16px 0;">
+    <li style="padding: 10px 0; border-bottom: 1px dashed var(--border);">• <strong>SABIC(沙特)</strong>:全球最大,占60%+份额</li>
+    <li style="padding: 10px 0; border-bottom: 1px dashed var(--border);">• <strong>朝日化成(日本)</strong>:全球第二</li>
+    <li style="padding: 10px 0;">• <strong>圣泉集团(中国)</strong>:<strong>国内唯一量产电子级PPO树脂的厂商</strong></li>
+  </ul>
+
+  <h3 class="section-title">第三种关键材料:铜箔</h3>
+  
+  <p>铜箔是PCB的"导线"——电信号通过铜箔传输。普通铜箔表面粗糙,在高频信号下会有<strong>"集肤效应"</strong>导致信号损耗。HVLP铜箔(Hyper Very Low Profile)的表面是<strong>纳米级平整</strong>,在高频下损耗极低。</p>
+
+  <div class="analogy-box">
+    <div class="tag">类比讲解</div>
+    <h5>普通铜箔 vs HVLP4铜箔</h5>
+    <p>普通铜箔表面像<strong>粗糙的沙土路</strong>——信号("车")在上面走,会被沙土("微小凸起")阻挡,损耗大。</p>
+    <p>HVLP4铜箔表面像<strong>赛车专用跑道</strong>——纳米级平整,信号无障碍传输,损耗只有普通铜箔的1/5。</p>
+    <p>但HVLP4的工艺难度极高——电解铜的工艺参数差0.01%,表面平整度就达不到。<strong>全球能稳定量产HVLP4的公司不到5家</strong>。</p>
+  </div>
+
+  <p>HVLP铜箔的产业格局:</p>
+  <ul style="list-style: none; padding-left: 0; margin: 16px 0;">
+    <li style="padding: 10px 0; border-bottom: 1px dashed var(--border);">• <strong>三井金属(日本)</strong>:HVLP4/5的绝对龙头,全球60%+份额</li>
+    <li style="padding: 10px 0; border-bottom: 1px dashed var(--border);">• <strong>古河电工/福田金属(日本)</strong>:HVLP3-4主要供应商</li>
+    <li style="padding: 10px 0; border-bottom: 1px dashed var(--border);">• <strong>长春集团(台湾)</strong>:HVLP3-4台系供应商</li>
+    <li style="padding: 10px 0; border-bottom: 1px dashed var(--border);">• <strong>德福科技(中国)</strong>:2024年收购卢森堡铜箔工厂,获HVLP4/5技术储备</li>
+    <li style="padding: 10px 0;">• <strong>铜冠铜箔(中国)</strong>:HVLP4客户认证中,HVLP1-3已批量出货</li>
+  </ul>
+
+  <h3 class="section-title">当前周期的核心驱动力</h3>
+
+  <h4 class="sub-title">驱动力一:全行业供需缺口</h4>
+  
+  <p>Rubin拉动的不只是PCB,而是<strong>整条上游材料链</strong>。汇丰报告显示,<strong>2025-2028年T-glass(包括Q布)的供给缺口将持续扩大</strong>:</p>
+
+  <div class="data-grid">
+    <div class="data-card">
+      <div class="label">Q布需求CAGR</div>
+      <div class="value">40<span class="unit">%+</span></div>
+      <div class="desc">2025-2028年AI驱动的复合增速</div>
+    </div>
+    <div class="data-card">
+      <div class="label">Q布全球产能</div>
+      <div class="value">~3<span class="unit">家</span></div>
+      <div class="desc">AGC、日东纺、菲利华</div>
+    </div>
+    <div class="data-card">
+      <div class="label">2026 H2 T-glass缺口</div>
+      <div class="value">40<span class="unit">%+</span></div>
+      <div class="desc">日东纺已宣布涨价20%</div>
+    </div>
+    <div class="data-card">
+      <div class="label">2026 HVLP4缺口</div>
+      <div class="value">23<span class="unit">%</span></div>
+      <div class="desc">2027缺口扩大到30%</div>
+    </div>
+  </div>
+
+  <h4 class="sub-title">驱动力二:菲利华Q布的10倍扩产</h4>
+  
+  <p>菲利华Q布的产能扩张节奏是<strong>2024年100万米→2026年1000万米→2028年3000万米</strong>。这种10倍-30倍的扩产规模,在A股材料行业极其罕见。</p>
+  
+  <p>更关键的是:<strong>扩产是基于明确的订单可见度</strong>。2026Q1合同负债+42.1%(2.87亿 vs Q4的2.02亿),是10只重点观察标的中<strong>增长最快的</strong>。这意味着客户已经用真金白银预付货款,锁定未来2-3年的Q布产能。</p>
+
+  <h4 class="sub-title">驱动力三:HVLP4铜箔的国产替代</h4>
+  
+  <p>HVLP4铜箔过去100%依赖日本进口。但2024-2025年,德福科技通过收购卢森堡铜箔工厂获得HVLP4/5技术,铜冠铜箔通过自主研发进入客户认证阶段。<strong>2026年是国产HVLP4铜箔的关键突破年</strong>。</p>
+
+  <h3 class="section-title">卡位龙头分析</h3>
+
+  <!-- 菲利华 -->
+  <div class="company-card core">
+    <div class="company-card-header">
+      <div>
+        <div class="company-name">菲利华<span class="code">300395.SZ</span></div>
+        <p style="color: var(--text-dim); font-size: 14px; margin-top: 4px;">Q布全球三家之一 · 英伟达国产唯一M9级供应商 · 综合分4.49 · 排名第三</p>
+      </div>
+      <div class="company-tier core">CORE</div>
+    </div>
+    
+    <div class="company-stats">
+      <div class="company-stat"><div class="label">2025年净利</div><div class="value">4.43亿</div></div>
+      <div class="company-stat"><div class="label">合同负债环比</div><div class="value green">+42.1%</div></div>
+      <div class="company-stat"><div class="label">Q布产能扩张</div><div class="value">10倍</div></div>
+      <div class="company-stat"><div class="label">Q1占比</div><div class="value">16.4%</div></div>
+      <div class="company-stat"><div class="label">2026E PE</div><div class="value red">83.6x</div></div>
+      <div class="company-stat"><div class="label">PEG</div><div class="value">1.11</div></div>
+    </div>
+    
+    <div class="company-logic">
+      <h6>产业卡位 — 全球前三+英伟达独家</h6>
+      <p>菲利华在Q布(纯石英玻纤布)领域是<strong>全球三家、中国唯一</strong>已批量供货给英伟达的厂商。这不是"国产替代海外产品",而是<strong>全球前三的产能 + 客户独家供应</strong>。已通过英伟达/台积电认证,小批量测试中。</p>
+      
+      <h6>硬指标三连击</h6>
+      <p><strong>(1)合同负债+42.1%</strong>:2026Q1 2.87亿 vs Q4 2.02亿,是10只重点标的中增长最快的——这是订单爆发的硬证据。</p>
+      <p><strong>(2)Q布产能10倍扩产</strong>:2024年100万米/年→2026年1000万米/年→2028年3000万米/年。这种规模的扩产,只有看到真实订单的管理层敢做。</p>
+      <p><strong>(3)2026年5月Q布价格</strong>:450-550元/米且<strong>有价无货</strong>——典型的供需极度紧张状态。</p>
+      
+      <h6>客户名单</h6>
+      <p>英伟达、台积电、台光电子、斗山、胜宏科技、生益科技。其中<strong>英伟达Rubin的Switchtray核心材料(M9树脂+Q布方案)</strong>是菲利华最关键的订单。</p>
+      
+      <h6>估值的考量</h6>
+      <p>2026 PE 83.6倍看起来贵,但要注意三件事:(1)Q布需求是Rubin拉动的<strong>非线性爆发</strong>,2027年净利预期13.61亿,2028年根据扩产节奏可能到25-30亿;(2)合同负债+42.1%表明订单确定性极高;(3)Q1占比16.4%略低于22%的"正常季节性"标准,意味着Q2-Q4会加速兑现。<strong>这是"硬卡位+高估值"的典型组合</strong>,愿意支付估值溢价的逻辑是稀缺性。</p>
+      
+      <h6>风险点</h6>
+      <p>(1)估值已经反映了大部分Q布预期,任何低于扩产节奏的兑现都会引发回调;(2)2028年3000万米/年达产后,行业格局可能从"供不应求"变成"供需平衡",届时价格端可能下行;(3)军工业务占比下降可能影响整体估值锚。</p>
+    </div>
+  </div>
+
+  <!-- 宏和科技 -->
+  <div class="company-card core">
+    <div class="company-card-header">
+      <div>
+        <div class="company-name">宏和科技<span class="code">603256.SH</span></div>
+        <p style="color: var(--text-dim); font-size: 14px; margin-top: 4px;">4μm极薄布全球唯一量产 · 12μm超薄布全球50%+ · 综合分4.34</p>
+      </div>
+      <div class="company-tier core">CORE</div>
+    </div>
+    
+    <div class="company-stats">
+      <div class="company-stat"><div class="label">2025年净利</div><div class="value">2.02亿</div></div>
+      <div class="company-stat"><div class="label">Q1占比</div><div class="value green">24.4%</div></div>
+      <div class="company-stat"><div class="label">3年CAGR</div><div class="value green">121%</div></div>
+      <div class="company-stat"><div class="label">合同负债</div><div class="value">+27.1%</div></div>
+      <div class="company-stat"><div class="label">2026E PE</div><div class="value red">251.2x</div></div>
+      <div class="company-stat"><div class="label">PEG</div><div class="value red">2.08</div></div>
+    </div>
+    
+    <div class="company-logic">
+      <h6>产业卡位 — 三个"全球唯一/全球第一"</h6>
+      <p><strong>(1)4μm以下极薄布:全球唯一量产</strong>——这是宏和最稀缺的卡位。</p>
+      <p><strong>(2)12μm超薄布:全球50%+市占率</strong>——ABF封装基板核心材料。</p>
+      <p><strong>(3)Low-CTE电子布:已批量进入封装基板供应链</strong>——配套深南、兴森等ABF厂。</p>
+      
+      <h6>硬指标:Q1占比24.4%超预期</h6>
+      <p>Q1占比24.4%在33家研究池中<strong>排名前三</strong>(仅次于澜起25.4%、华工27.2%)。这意味着机构对2026年5.74亿的预测<strong>不需要任何下半年加速</strong>,按当前节奏自然达成,甚至可能上修。</p>
+      
+      <h6>估值的纠结</h6>
+      <p>这是核心档9只中<strong>估值最贵的一只</strong>——2026 PE 251倍、PEG 2.08。背后的逻辑:</p>
+      <p>(1)2025年基数极低(2.02亿),2026/2027净利预期5.74/9.83亿,3年CAGR 121%。<strong>低基数+高增速</strong>带来PE失真,要看2028年估值才合理。</p>
+      <p>(2)4μm极薄布全球唯一,议价权极强,毛利率可能从2025年的中位水平大幅提升。</p>
+      <p>(3)Q布在研、送样认证中——如果通过,将打开<strong>第二增长曲线</strong>(对标菲利华的卡位)。</p>
+      
+      <h6>风险点</h6>
+      <p>(1)估值已经反映了非常乐观的预期,任何认证延迟或客户切换都会引发回调;(2)4μm极薄布的需求高度依赖ABF封装基板,而ABF的下游高度集中于英伟达——单一客户依赖度高;(3)合同负债金额绝对值偏小(143万),需要观察后续是否大幅增长。</p>
+    </div>
+  </div>
+
+  <!-- 中国巨石 -->
+  <div class="company-card subcore">
+    <div class="company-card-header">
+      <div>
+        <div class="company-name">中国巨石<span class="code">600176.SH</span></div>
+        <p style="color: var(--text-dim); font-size: 14px; margin-top: 4px;">玻纤布全球龙头 · 涨价兑现+估值最便宜 · 综合分3.98</p>
+      </div>
+      <div class="company-tier subcore">次核心</div>
+    </div>
+    
+    <div class="company-stats">
+      <div class="company-stat"><div class="label">2025年净利</div><div class="value">32.85亿</div></div>
+      <div class="company-stat"><div class="label">Q1占比</div><div class="value green">22.0%</div></div>
+      <div class="company-stat"><div class="label">7628布单位净利</div><div class="value">3元/米+</div></div>
+      <div class="company-stat"><div class="label">薄布单位净利</div><div class="value">5-6元/米</div></div>
+      <div class="company-stat"><div class="label">2026E PE</div><div class="value green">26.6x</div></div>
+      <div class="company-stat"><div class="label">PEG</div><div class="value green">0.62</div></div>
+    </div>
+    
+    <div class="company-logic">
+      <h6>产业卡位 — 全球玻纤龙头</h6>
+      <p>中国巨石是<strong>全球玻纤布产能第一</strong>,2025年市场份额约30%+。产品覆盖从常规电子玻纤到Low-CTE特种布的全系列。和菲利华、宏和不同的是,巨石的卡位<strong>不是高端独家,而是规模化的成本优势</strong>。</p>
+      
+      <h6>硬指标:涨价持续兑现</h6>
+      <p>2026年4-5月,电子布每月提价0.3-0.5元/米。淮安一期5万吨产线4月下旬已满产但库存没上升——说明<strong>供不应求</strong>。具体单位经济:</p>
+      <p>• 7628布:价格6.7-6.8元/米,成本低于3元/米,单位净利润3元+</p>
+      <p>• 薄布和超薄布:价格接近9元/米,单位净利润5-6元/米</p>
+      
+      <h6>欧盟反倾销终裁利好</h6>
+      <p>2026年欧盟对中国玻纤布反倾销终裁11%——<strong>远低于市场预期的20%+</strong>。这意味着巨石的出口竞争力没有被实质削弱。出口占比35-40%,这部分业务的盈利能力得到保障。</p>
+      
+      <h6>估值的考量 — 最便宜的核心档/次核心档</h6>
+      <p>2026 PE 26.6倍、PEG 0.62——是核心档+次核心档中<strong>估值最便宜的一只</strong>。Q1占比22.0%印证了业绩兑现度。这种组合在产业α强标的中极其罕见。</p>
+      
+      <h6>不进核心档的原因</h6>
+      <p>主要是<strong>卡位强度</strong>不如菲利华和宏和。巨石做的是"全系列大规模生产",在最高端的Q布、4μm极薄布上不占优势。但作为<strong>对冲组合高估值的次核心标的</strong>,它的角色很重要——估值便宜+业绩兑现度强+产业逻辑硬。</p>
+    </div>
+  </div>
+
+  <!-- 圣泉集团 -->
+  <div class="company-card subcore">
+    <div class="company-card-header">
+      <div>
+        <div class="company-name">圣泉集团<span class="code">605589.SH</span></div>
+        <p style="color: var(--text-dim); font-size: 14px; margin-top: 4px;">PPO树脂国内唯一量产 · 估值最便宜 · 综合分3.94</p>
+      </div>
+      <div class="company-tier subcore">次核心</div>
+    </div>
+    
+    <div class="company-stats">
+      <div class="company-stat"><div class="label">2025年净利</div><div class="value">10.07亿</div></div>
+      <div class="company-stat"><div class="label">PPO树脂地位</div><div class="value">国内唯一</div></div>
+      <div class="company-stat"><div class="label">Q1占比</div><div class="value">13.0%</div></div>
+      <div class="company-stat"><div class="label">2026E PE</div><div class="value green">28.3x</div></div>
+      <div class="company-stat"><div class="label">PEG</div><div class="value green">0.96</div></div>
+    </div>
+    
+    <div class="company-logic">
+      <h6>产业卡位 — PPO树脂国产独家</h6>
+      <p>圣泉集团是<strong>国内唯一量产电子级PPO树脂的厂商</strong>。PPO是M9级覆铜板的"灵魂",生益科技M9认证用的就是圣泉的PPO树脂。<strong>没有圣泉的PPO,大陆做不出M9覆铜板</strong>。</p>
+      
+      <h6>第二业务:酚醛树脂行业第一</h6>
+      <p>圣泉同时是国内酚醛树脂(传统树脂)行业第一,这部分提供稳定现金流和规模基础。AI驱动的电子级PPO是增量,传统业务是基本盘。</p>
+      
+      <h6>估值的优势</h6>
+      <p>2026 PE 28.3倍——次核心档中<strong>最便宜</strong>之一。2025年净利10亿,基数大,业绩稳健。这种"产业独家+估值合理"的组合很难得。</p>
+      
+      <h6>风险点</h6>
+      <p>(1)Q1占比13%偏弱,业绩兑现度需要Q2-Q4加速;(2)PPO树脂虽然国内独家,但<strong>全球还有SABIC、朝日化成等海外巨头</strong>,如果它们大幅扩产或降价,圣泉的高端PPO业务会承压;(3)传统酚醛树脂业务受宏观经济影响,周期性较强。</p>
+    </div>
+  </div>
+
+  <!-- 铜冠铜箔 -->
+  <div class="company-card subcore">
+    <div class="company-card-header">
+      <div>
+        <div class="company-name">铜冠铜箔<span class="code">301217.SZ</span></div>
+        <p style="color: var(--text-dim); font-size: 14px; margin-top: 4px;">HVLP4客户认证中 · HVLP1-3已批量 · 综合分4.13</p>
+      </div>
+      <div class="company-tier subcore">次核心</div>
+    </div>
+    
+    <div class="company-stats">
+      <div class="company-stat"><div class="label">2025年净利</div><div class="value">0.63亿</div></div>
+      <div class="company-stat"><div class="label">3年CAGR</div><div class="value green">246%</div></div>
+      <div class="company-stat"><div class="label">Q1占比</div><div class="value green">20.9%</div></div>
+      <div class="company-stat"><div class="label">HVLP4认证</div><div class="value">进行中</div></div>
+      <div class="company-stat"><div class="label">2026E PE</div><div class="value red">147.8x</div></div>
+      <div class="company-stat"><div class="label">PEG</div><div class="value">0.60</div></div>
+    </div>
+    
+    <div class="company-logic">
+      <h6>产业卡位 — HVLP铜箔国产替代</h6>
+      <p>铜冠铜箔是<strong>国资委下属的铜箔央企</strong>(铜陵有色集团),HVLP1-3已批量供货国内主流PCB厂,HVLP4正在多家客户认证中。从产业地位看,是HVLP铜箔国产替代的<strong>第一梯队</strong>。</p>
+      
+      <h6>硬指标:Q1占比20.9%</h6>
+      <p>Q1占比20.9%达到"正常季节性"标准,意味着业绩兑现度可信。3年CAGR 246%——从2025年净利0.63亿到2027年7.56亿,增速极高但起点低。</p>
+      
+      <h6>估值的考量</h6>
+      <p>2026 PE 147.8倍看起来贵,但<strong>2025年净利基数极低(0.63亿)</strong>,导致PE失真。如果按2027年净利7.56亿算,2027 PE降到99.7倍——仍然偏贵,但反映了HVLP4认证通过后的爆发预期。<strong>PEG 0.60其实合理</strong>,体现了增速对估值的支撑。</p>
+      
+      <h6>核心风险 — HVLP4认证不确定性</h6>
+      <p>(1)如果HVLP4客户认证延迟超过2027年,业绩兑现节奏会延后;(2)三井金属是HVLP4绝对垄断者,铜冠的国产替代需要时间证明;(3)国资央企决策机制偏慢,扩产节奏可能慢于民营企业。</p>
+    </div>
+  </div>
+
+  <!-- 德福科技 -->
+  <div class="company-card subcore">
+    <div class="company-card-header">
+      <div>
+        <div class="company-name">德福科技<span class="code">301511.SZ</span></div>
+        <p style="color: var(--text-dim); font-size: 14px; margin-top: 4px;">收购卢森堡铜箔获HVLP4/5技术 · 综合分3.90</p>
+      </div>
+      <div class="company-tier subcore">次核心</div>
+    </div>
+    
+    <div class="company-stats">
+      <div class="company-stat"><div class="label">2025年净利</div><div class="value">1.13亿</div></div>
+      <div class="company-stat"><div class="label">3年CAGR</div><div class="value green">226%</div></div>
+      <div class="company-stat"><div class="label">Q1占比</div><div class="value">15.7%</div></div>
+      <div class="company-stat"><div class="label">海外技术</div><div class="value">卢森堡</div></div>
+      <div class="company-stat"><div class="label">2026E PE</div><div class="value red">73.1x</div></div>
+      <div class="company-stat"><div class="label">PEG</div><div class="value green">0.32</div></div>
+    </div>
+    
+    <div class="company-logic">
+      <h6>产业卡位 — 用并购获取HVLP4/5技术</h6>
+      <p>德福科技2024年完成<strong>收购卢森堡铜箔工厂(Circuit Foil)</strong>,这是一家有60年历史的欧洲HVLP铜箔厂商,具备HVLP4/5的成熟技术。德福通过并购<strong>跳过了10年自主研发周期</strong>,直接获得了高端铜箔的技术能力和欧洲客户。</p>
+      
+      <h6>硬指标:PEG 0.32最便宜</h6>
+      <p>2026 PE 73.1倍但<strong>PEG 0.32</strong>——这是因为2025年基数低(1.13亿)+ 3年CAGR 226%。如果按2027年净利12亿算,2027 PE降到56.9倍,仍然反映了HVLP4量产的高增长预期。</p>
+      
+      <h6>核心驱动:卢森堡产能+国内扩产</h6>
+      <p>(1)卢森堡工厂保持原有欧洲客户(直接受益AI数据中心建设);(2)国内将卢森堡技术国产化,产能扩张快速;(3)同时具备欧洲+国内双客户基础,弹性大。</p>
+      
+      <h6>风险点</h6>
+      <p>(1)Q1占比15.7%略低于"正常季节性",兑现度需要Q2观察;(2)并购整合的协同效应释放节奏存在不确定性;(3)HVLP4技术虽然有了,但客户认证还需要时间——和铜冠铜箔同样面临这个问题。</p>
+    </div>
+  </div>
+
+  <!-- 东材科技 -->
+  <div class="company-card subcore">
+    <div class="company-card-header">
+      <div>
+        <div class="company-name">东材科技<span class="code">601208.SH</span></div>
+        <p style="color: var(--text-dim); font-size: 14px; margin-top: 4px;">PPO+碳氢树脂双布局 · Q1占比超预期 · 综合分3.75</p>
+      </div>
+      <div class="company-tier satellite">卫星档</div>
+    </div>
+    
+    <div class="company-stats">
+      <div class="company-stat"><div class="label">2025年净利</div><div class="value">2.85亿</div></div>
+      <div class="company-stat"><div class="label">Q1占比</div><div class="value green">25.9%</div></div>
+      <div class="company-stat"><div class="label">3年CAGR</div><div class="value">99%</div></div>
+      <div class="company-stat"><div class="label">2026E PE</div><div class="value">73.5x</div></div>
+      <div class="company-stat"><div class="label">PEG</div><div class="value">0.74</div></div>
+    </div>
+    
+    <div class="company-logic">
+      <h6>产业卡位</h6>
+      <p>东材科技是<strong>国内碳氢树脂+PPO树脂同时布局</strong>的少数厂商。碳氢树脂是M7/M8覆铜板的主流材料,PPO是M9级。东材的客户结构相对分散,卡位不如圣泉独家。</p>
+      
+      <h6>硬指标:Q1占比25.9%</h6>
+      <p>Q1占比25.9%是<strong>33家中前三</strong>(澜起25.4、华工27.2、东材25.9)。这是非常强的业绩兑现信号——机构对2026年7.21亿的预测<strong>大概率会被上修</strong>。</p>
+      
+      <h6>不进核心或次核心的原因</h6>
+      <p>(1)<strong>卡位强度</strong>不如圣泉(后者PPO国内唯一);(2)客户结构相对分散,不像生益、菲利华那种"深度绑定头部客户";(3)毛利率水平中等,议价权较弱。<strong>Q1占比的优势可以让它进入卫星档,但还不能进核心档</strong>。</p>
+    </div>
+  </div>
+
+  <h3 class="section-title">认知偏差识别</h3>
+
+  <div class="bias-box">
+    <div class="tag">认知偏差 #9</div>
+    <h5>"菲利华PE 83倍太贵,等估值消化后再买"</h5>
+    <p><strong>真相</strong>:菲利华的估值贵是<strong>稀缺性溢价</strong>,不是泡沫。它是A股唯一能批量供应英伟达M9级Q布的厂商,合同负债+42.1%是全市场最强,Q布有价无货。"等估值消化"意味着<strong>等到产业α被市场充分定价</strong>——届时估值反而会更贵。这种逻辑和2024年初买英伟达时"等估值消化"是同一类错误。<strong>稀缺卡位 + 硬订单兑现 = 估值溢价是合理的</strong>。</p>
+  </div>
+
+  <div class="bias-box">
+    <div class="tag">认知偏差 #10</div>
+    <h5>"宏和PE 251倍是泡沫,不能碰"</h5>
+    <p><strong>真相</strong>:宏和的PE失真是<strong>2025年基数极低</strong>(2.02亿)。3年CAGR 121%意味着到2027年净利9.83亿,2027 PE降到146.7倍,2028年(按延伸预期)可能降到80倍以下。Q1占比24.4%已经印证业绩兑现度。<strong>正确的看法是"用2028年估值算PE"而不是"用2026年估值看PE"</strong>。当然,这个判断的前提是相信4μm极薄布+Low-CTE电子布的需求会持续爆发——这是产业α判断,不是估值游戏。</p>
+  </div>
+
+  <div class="bias-box">
+    <div class="tag">认知偏差 #11</div>
+    <h5>"中国巨石是周期股,景气来了就跌"</h5>
+    <p><strong>真相</strong>:玻纤布行业过去确实周期性强(房地产/汽车需求驱动),但<strong>AI驱动的电子玻纤布需求是全新增量</strong>,且供给受限于上游硅砂+技术壁垒。巨石2026年4-5月每月涨价0.3-0.5元/米,Q1占比22.0%印证涨价兑现。<strong>巨石不再是单纯的周期股,而是"周期 + AI增长"的双逻辑标的</strong>。</p>
+  </div>
+
+  <div class="bias-box">
+    <div class="tag">认知偏差 #12</div>
+    <h5>"铜冠铜箔/德福PE 100倍+,典型概念炒作"</h5>
+    <p><strong>真相</strong>:这两家的PE高是因为<strong>2025年基数极低</strong>(铜冠0.63亿、德福1.13亿),不是"概念炒作"。HVLP4铜箔的国产替代是<strong>真实的产业α</strong>——2026年全球缺口23%、2027年30%。如果HVLP4认证通过,2027年净利可能达到7-12亿。<strong>PEG 0.32-0.60其实合理</strong>。风险不在于"概念虚",而在于"认证时间表"——如果认证延迟,业绩兑现会拖后。</p>
+  </div>
+
+  <div class="quote">
+    "PCB上游材料是这次研究最大的发现。菲利华、宏和、圣泉这三个标的的卡位真实性,远超出市场认知。整个产业链的<strong>价值重心正在从下游PCB厂向上游材料转移</strong>——因为只有最上游的Q布、PPO、HVLP4才是真正的卡脖子环节。市场还在<strong>用'材料股=低估值'的传统认知看这条赛道,这是我们最大的alpha来源</strong>。"
+    <span class="source">本研究 · 第6章结论</span>
+  </div>
+
+</section>
+</div>
+
+
+<!-- ====== 第7章:ABF载板 ====== -->
+<div class="container">
+<section class="chapter" id="ch7">
+  <div class="chapter-num">CHAPTER 07</div>
+  <h2 class="chapter-title">ABF载板与<span class="em">封装基板</span></h2>
+  <p class="chapter-lead">如果说PCB是芯片的"高速公路",ABF载板就是<strong>芯片和PCB之间的"翻译官"</strong>。它是一种特殊的封装基板,<strong>把芯片上几亿个晶体管的引脚,翻译成PCB能识别的电路</strong>。这个"翻译官"全球被味之素(日本)一家公司垄断了40年——但2026-2028年,国产替代的窗口正在打开。</p>
+
+  <h3 class="section-title">ABF到底是什么</h3>
+  
+  <p class="lead">ABF的全称是<strong>Ajinomoto Build-up Film</strong>——直译就是"味之素堆叠膜"。是的,你没看错,就是那个做酱油和味精的日本味之素公司。</p>
+  
+  <p>味之素在1990年代研发出一种特殊的薄膜材料,能用来制造高端IC封装基板。这种材料的<strong>介电性能、热稳定性、机械强度</strong>都远超普通基板材料。2000年以后,英特尔、AMD、台积电的所有高端CPU/GPU封装,都用这种材料。<strong>40年下来,味之素垄断了全球95%以上的ABF树脂供应</strong>。</p>
+
+  <div class="analogy-box">
+    <div class="tag">类比讲解</div>
+    <h5>ABF载板 = 西装定制店</h5>
+    <p>想象一下:一颗英伟达GPU有<strong>1万多个引脚</strong>,这些引脚必须精确连接到PCB上的对应位置——位置差0.01毫米,信号就传不过去。</p>
+    <p>ABF载板做的事就像<strong>西装定制店</strong>——它根据每颗芯片的"身材"(引脚布局),量身定制一块"基板",一边连接芯片,一边连接PCB。这是芯片和PCB之间的<strong>不可或缺的转接层</strong>。</p>
+    <p>Rubin时代,GPU/NVSwitch/ConnectX等各种芯片都需要ABF载板,<strong>单台Rubin机柜消耗的ABF载板数量是GB300的2-3倍</strong>。</p>
+  </div>
+
+  <h3 class="section-title">ABF载板的产业链图谱</h3>
+
+  <div class="figure">
+    <div class="figure-title">ABF载板产业链:从味之素到国产替代</div>
+    <div class="figure-subtitle">CHIP-LEVEL TRANSLATOR · GLOBAL DUOPOLY · NATIONAL SUBSTITUTION</div>
+    
+    <svg viewBox="0 0 1000 580" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="m7g1" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#d4644a" stop-opacity="0.3"/>
+          <stop offset="100%" stop-color="#d4644a" stop-opacity="0.05"/>
+        </linearGradient>
+        <linearGradient id="m7g2" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#d4a574" stop-opacity="0.3"/>
+          <stop offset="100%" stop-color="#d4a574" stop-opacity="0.05"/>
+        </linearGradient>
+      </defs>
+      
+      <text x="500" y="30" class="svg-text-accent" font-size="16" text-anchor="middle" font-weight="600">ABF载板产业链:垄断、瓶颈、替代窗口</text>
+      
+      <!-- 第一层:原料垄断 -->
+      <g transform="translate(20, 70)">
+        <rect x="0" y="0" width="960" height="100" fill="url(#m7g1)" stroke="#d4644a" stroke-width="1.5" rx="4"/>
+        <text x="20" y="25" class="svg-text-accent" font-size="13" font-weight="600">① ABF原材料 — 几乎100%被海外垄断</text>
+        
+        <rect x="200" y="40" width="180" height="45" fill="#0a0e14" stroke="#3d4a5c" rx="2"/>
+        <text x="290" y="58" class="svg-text" font-size="11" text-anchor="middle">味之素 (日本)</text>
+        <text x="290" y="74" class="svg-text-dim" font-size="9" text-anchor="middle">ABF树脂 · 全球95%+垄断</text>
+        
+        <rect x="400" y="40" width="180" height="45" fill="#0a0e14" stroke="#3d4a5c" rx="2"/>
+        <text x="490" y="58" class="svg-text" font-size="11" text-anchor="middle">日东纺 (日本)</text>
+        <text x="490" y="74" class="svg-text-dim" font-size="9" text-anchor="middle">T-glass玻纤布</text>
+        
+        <rect x="600" y="40" width="180" height="45" fill="#0a0e14" stroke="#3d4a5c" rx="2"/>
+        <text x="690" y="58" class="svg-text" font-size="11" text-anchor="middle">三井金属 (日本)</text>
+        <text x="690" y="74" class="svg-text-dim" font-size="9" text-anchor="middle">HVLP4超薄铜箔</text>
+      </g>
+      
+      <!-- 第二层:全球载板厂 -->
+      <g transform="translate(20, 200)">
+        <rect x="0" y="0" width="960" height="100" fill="#1a212c" stroke="#3d4a5c" rx="4"/>
+        <text x="20" y="25" class="svg-text-accent" font-size="13" font-weight="600">② ABF载板厂 — 海外主导,国产追赶</text>
+        
+        <rect x="40" y="40" width="130" height="45" fill="#0a0e14" stroke="#3d4a5c" rx="2"/>
+        <text x="105" y="58" class="svg-text" font-size="11" text-anchor="middle">欣兴电子 (台)</text>
+        <text x="105" y="74" class="svg-text-dim" font-size="9" text-anchor="middle">全球17.7%</text>
+        
+        <rect x="180" y="40" width="130" height="45" fill="#0a0e14" stroke="#3d4a5c" rx="2"/>
+        <text x="245" y="58" class="svg-text" font-size="11" text-anchor="middle">南亚电路板 (台)</text>
+        <text x="245" y="74" class="svg-text-dim" font-size="9" text-anchor="middle">全球10.3%</text>
+        
+        <rect x="320" y="40" width="130" height="45" fill="#0a0e14" stroke="#3d4a5c" rx="2"/>
+        <text x="385" y="58" class="svg-text" font-size="11" text-anchor="middle">Ibiden (日)</text>
+        <text x="385" y="74" class="svg-text-dim" font-size="9" text-anchor="middle">全球9.7%</text>
+        
+        <rect x="460" y="40" width="130" height="45" fill="#0a0e14" stroke="#3d4a5c" rx="2"/>
+        <text x="525" y="58" class="svg-text" font-size="11" text-anchor="middle">SEMCO (韩)</text>
+        <text x="525" y="74" class="svg-text-dim" font-size="9" text-anchor="middle">全球9.1%</text>
+        
+        <rect x="600" y="40" width="130" height="45" fill="#0a0e14" stroke="#3d4a5c" rx="2"/>
+        <text x="665" y="58" class="svg-text" font-size="11" text-anchor="middle">Shinko (日)</text>
+        <text x="665" y="74" class="svg-text-dim" font-size="9" text-anchor="middle">全球8.5%</text>
+        
+        <rect x="745" y="40" width="200" height="45" fill="#1a212c" stroke="#d4a574" stroke-width="1.5" rx="2"/>
+        <text x="845" y="58" class="svg-text-accent" font-size="12" text-anchor="middle">中国大陆 (国产替代)</text>
+        <text x="845" y="74" class="svg-text-dim" font-size="9" text-anchor="middle">兴森·深南·珠海越亚</text>
+      </g>
+      
+      <!-- 第三层:国产替代窗口 -->
+      <g transform="translate(20, 330)">
+        <rect x="0" y="0" width="960" height="180" fill="url(#m7g2)" stroke="#d4a574" stroke-width="1.5" rx="4"/>
+        <text x="20" y="25" class="svg-text-accent" font-size="14" font-weight="600">③ 国产ABF载板厂 — A股核心标的</text>
+        <text x="20" y="42" class="svg-text-dim" font-size="10">2026年全球缺口10%,2027年27%,2028年35%-46% — 国产替代窗口大开</text>
+        
+        <!-- 兴森科技 -->
+        <rect x="40" y="60" width="280" height="100" fill="#0a0e14" stroke="#d4a574" stroke-width="1.5" rx="3"/>
+        <text x="180" y="82" class="svg-text-accent" font-size="14" text-anchor="middle" font-weight="600">兴森科技</text>
+        <text x="180" y="100" class="svg-text-dim" font-size="10" text-anchor="middle">国产ABF领先 · 鲲鹏一供</text>
+        <text x="180" y="116" class="svg-text-dim" font-size="9" text-anchor="middle">月产能8000平米×2条线</text>
+        <text x="180" y="130" class="svg-text-dim" font-size="9" text-anchor="middle">广州FC-BGA 120万平米/年</text>
+        <text x="180" y="146" class="svg-text-dim" font-size="9" text-anchor="middle">A股最纯ABF标的</text>
+        
+        <!-- 深南电路 -->
+        <rect x="345" y="60" width="280" height="100" fill="#0a0e14" stroke="#d4a574" stroke-width="1.5" rx="3"/>
+        <text x="485" y="82" class="svg-text-accent" font-size="14" text-anchor="middle" font-weight="600">深南电路</text>
+        <text x="485" y="100" class="svg-text-dim" font-size="10" text-anchor="middle">PCB+ABF双业务</text>
+        <text x="485" y="116" class="svg-text-dim" font-size="9" text-anchor="middle">月产能7500平米×2条线</text>
+        <text x="485" y="130" class="svg-text-dim" font-size="9" text-anchor="middle">22层FC-BGA已量产</text>
+        <text x="485" y="146" class="svg-text-dim" font-size="9" text-anchor="middle">4个项目同步推进</text>
+        
+        <!-- 二线 -->
+        <rect x="650" y="60" width="280" height="100" fill="#0a0e14" stroke="#3d4a5c" rx="3"/>
+        <text x="790" y="82" class="svg-text" font-size="14" text-anchor="middle">二线/材料配套</text>
+        <text x="790" y="100" class="svg-text-dim" font-size="10" text-anchor="middle">珠海越亚·礼鼎半导体</text>
+        <text x="790" y="116" class="svg-text-dim" font-size="9" text-anchor="middle">华正新材 (CBF膜对标味之素)</text>
+        <text x="790" y="130" class="svg-text-dim" font-size="9" text-anchor="middle">方邦股份 (载体铜箔)</text>
+        <text x="790" y="146" class="svg-text-dim" font-size="9" text-anchor="middle">中山芯承·新创元</text>
+      </g>
+      
+      <!-- 流向箭头 -->
+      <g stroke="#3d4a5c" stroke-width="1" fill="none" opacity="0.5">
+        <line x1="500" y1="170" x2="500" y2="200"/>
+        <line x1="500" y1="300" x2="500" y2="330"/>
+      </g>
+      
+      <!-- 底部小注 -->
+      <text x="500" y="555" class="svg-text-dim" font-size="11" text-anchor="middle">所有数据来自:大摩 / 高盛 / 汇丰 / 伯恩斯坦 2026年4-5月报告 + 公司公告</text>
+    </svg>
+    <div class="figure-caption">ABF载板的产业格局非常独特——上游材料几乎100%被日本垄断,中游载板厂被台日韩瓜分了84%份额,中国大陆只是个跟随者。但<strong>2027-2028年的供给缺口(27-35%)给国产厂商打开了真实的替代窗口</strong>。兴森科技和深南电路是A股仅有的两个核心受益者。</div>
+  </div>
+
+  <h3 class="section-title">ABF载板的当前周期</h3>
+
+  <h4 class="sub-title">驱动力一:Rubin拉动的需求暴增</h4>
+  
+  <p>大摩拆机报告显示,Rubin机柜的ABF载板价值量从GB300的1.12万美元升至2.03万美元,<strong>+82%</strong>。增长来自两个方面:</p>
+
+  <div class="data-grid">
+    <div class="data-card">
+      <div class="label">单颗GPU基板价</div>
+      <div class="value">$200</div>
+      <div class="desc">vs GB300时代$100,翻倍</div>
+    </div>
+    <div class="data-card">
+      <div class="label">NVSwitch颗数</div>
+      <div class="value">36</div>
+      <div class="desc">vs GB300的18,翻倍</div>
+    </div>
+    <div class="data-card">
+      <div class="label">ConnectX颗数</div>
+      <div class="value">72</div>
+      <div class="desc">vs GB300的36,翻倍</div>
+    </div>
+    <div class="data-card">
+      <div class="label">BlueField DPU</div>
+      <div class="value">18</div>
+      <div class="desc">GB300中无此模组,全新增量</div>
+    </div>
+  </div>
+
+  <h4 class="sub-title">驱动力二:供给受限的产能瓶颈</h4>
+  
+  <p>味之素的ABF树脂全球95%份额,2025年才宣布投资250亿日元在2030年前把产能提升50%——<strong>这个扩产速度远跟不上AI需求</strong>(年均增长36%)。同时上游T-glass玻纤布、HVLP4铜箔都在紧缺,导致载板厂的扩产计划普遍推迟6-12个月。</p>
+
+  <p>结果就是<strong>整个2026-2028年都将持续短缺</strong>:</p>
+
+  <div class="data-grid">
+    <div class="data-card">
+      <div class="label">2026 H2 缺口</div>
+      <div class="value">10<span class="unit">%</span></div>
+      <div class="desc">第一年明显短缺</div>
+    </div>
+    <div class="data-card">
+      <div class="label">2027 缺口</div>
+      <div class="value">21-27<span class="unit">%</span></div>
+      <div class="desc">大摩 + 汇丰一致预期</div>
+    </div>
+    <div class="data-card">
+      <div class="label">2028 缺口</div>
+      <div class="value">35-46<span class="unit">%</span></div>
+      <div class="desc">汇丰35% / 富邦证券46%</div>
+    </div>
+    <div class="data-card">
+      <div class="label">2026 ABF涨价</div>
+      <div class="value">+31<span class="unit">%</span></div>
+      <div class="desc">汇丰从市场共识18%大幅上修</div>
+    </div>
+  </div>
+
+  <h4 class="sub-title">驱动力三:台湾载板三雄的业绩拉爆</h4>
+  
+  <p>欣兴电子2026年1月营收127.67亿新台币(+34%),景硕单月营收39.61亿(+55%),南亚电路板3月营收42.9亿(+39%,创36个月新高)——<strong>这些数据是ABF需求暴增的最直接证据</strong>。高盛上调景硕"买入"目标价370新台币、南亚电路板"买入"655新台币。伯恩斯坦更激进,给欣兴电子990新台币的目标价。</p>
+
+  <p>对A股投资者的意义:<strong>台湾三雄业绩拉爆,意味着大陆做ABF的兴森科技、深南电路也将受益</strong>——因为终端需求是同一个(英伟达Rubin),只是大陆厂商需要时间证明良率和产能。</p>
+
+  <h3 class="section-title">卡位龙头分析</h3>
+
+  <!-- 深南电路(第5章已分析,这里简化) -->
+  <div class="company-card subcore">
+    <div class="company-card-header">
+      <div>
+        <div class="company-name">深南电路<span class="code">002916.SZ</span></div>
+        <p style="color: var(--text-dim); font-size: 14px; margin-top: 4px;">PCB+ABF双业务 · 第5章已详述 · 综合分4.10</p>
+      </div>
+      <div class="company-tier subcore">次核心</div>
+    </div>
+    
+    <div class="company-logic">
+      <h6>第5章已分析,这里补充ABF部分</h6>
+      <p>深南的ABF业务卡位在广州工厂:<strong>22层及以下FC-BGA已量产,24层在研发</strong>。月产能7500平米×2条线,总产能在国产ABF厂中排名第二(仅次于兴森)。</p>
+      
+      <p>关键产业事实:<strong>专家调研显示"如果明年深南的良率稳定得比较好加上单价下调的话,鲲鹏可能会有一部分份额给他们"</strong>——这意味着深南的ABF国产替代<strong>已经在客户认证窗口期</strong>。如果2026Q2-Q3良率突破,可以从兴森手中抢到部分订单。</p>
+    </div>
+  </div>
+
+  <!-- 兴森科技 -->
+  <div class="company-card subcore">
+    <div class="company-card-header">
+      <div>
+        <div class="company-name">兴森科技<span class="code">002436.SZ</span></div>
+        <p style="color: var(--text-dim); font-size: 14px; margin-top: 4px;">A股最纯ABF标的 · 华为鲲鹏一供 · 综合分3.90</p>
+      </div>
+      <div class="company-tier subcore">次核心</div>
+    </div>
+    
+    <div class="company-stats">
+      <div class="company-stat"><div class="label">月产能</div><div class="value">8000㎡×2条线</div></div>
+      <div class="company-stat"><div class="label">广州FC-BGA规划</div><div class="value">120万㎡/年</div></div>
+      <div class="company-stat"><div class="label">鲲鹏ABF</div><div class="value">独家供应</div></div>
+      <div class="company-stat"><div class="label">昇腾ABF</div><div class="value">一供</div></div>
+    </div>
+    
+    <div class="company-logic">
+      <h6>产业卡位 — A股最纯ABF标的</h6>
+      <p>兴森科技是<strong>A股最纯的ABF封装基板标的</strong>——和深南电路(PCB+ABF双业务)不同,兴森的核心叙事完全在封装基板上。从BT载板(2012年开始)到FC-BGA(高端ABF),兴森用了10年时间建立技术储备。</p>
+      
+      <h6>核心客户:鲲鹏+昇腾</h6>
+      <p>专家调研显示:</p>
+      <p>• <strong>华为鲲鹏</strong>:2024年要求50万台服务器,对应ABF载板1万多平方米,<strong>兴森独供</strong>,全年订单约12000平米。</p>
+      <p>• <strong>华为昇腾</strong>:2025年开始送样,<strong>预估兴森是一供</strong>。5月中旬样品测试验证结果出来,正常8月份之前小批量。</p>
+      <p>这两个国产AI芯片(对标英伟达H100/H200)是兴森的核心增长动力。</p>
+      
+      <h6>关键扩产:广州FC-BGA 120万㎡/年</h6>
+      <p>广州子公司兴科半导体的FC-BGA项目,远期产能<strong>120万平方米/年</strong>——这是国产ABF最大单笔扩产计划。如果按照华为鲲鹏+昇腾的需求爬坡,兴森的产能利用率可以在2027年达到较高水平。</p>
+      
+      <h6>风险点</h6>
+      <p>(1)<strong>FC-BGA封装基板项目费用投入和珠海兴科产能爬坡对短期利润有扰动</strong>——兴森短期利润不好看,但这是为未来产能扩张的必要投入;(2)兴森已经引入5名战略投资者,后续资金到位会缓解资本开支压力,但稀释股权;(3)国产ABF的客户(鲲鹏+昇腾)总量相对有限,需要英伟达/AMD的外部客户突破;(4)如果鲲鹏的良率提升超过预期,2026年深南可能拿到部分份额,兴森的"独供"地位会减弱。</p>
+      
+      <h6>vs 深南的对比</h6>
+      <p>兴森的卡位是<strong>"纯ABF + 华为深度绑定"</strong>,深南是<strong>"PCB+ABF双业务 + 多客户"</strong>。如果你看好华为生态(鲲鹏+昇腾)的爆发,兴森的弹性更大;如果你想要更稳健的双业务对冲,深南更合适。<strong>两者不需要二选一,可以同时配置</strong>(但仓位都低于核心档)。</p>
+    </div>
+  </div>
+
+  <!-- 华正新材 -->
+  <div class="company-card warning">
+    <div class="company-card-header">
+      <div>
+        <div class="company-name">华正新材<span class="code">603186.SH</span></div>
+        <p style="color: var(--text-dim); font-size: 14px; margin-top: 4px;">CBF膜对标味之素 · Q1占比5.9%警示 · 综合分3.66</p>
+      </div>
+      <div class="company-tier warning">假便宜陷阱</div>
+    </div>
+    
+    <div class="company-stats">
+      <div class="company-stat"><div class="label">2025年净利</div><div class="value">2.77亿</div></div>
+      <div class="company-stat"><div class="label">Q1占比</div><div class="value red">5.9%</div></div>
+      <div class="company-stat"><div class="label">3年CAGR</div><div class="value">69%</div></div>
+      <div class="company-stat"><div class="label">2026E PE</div><div class="value">37.1x</div></div>
+      <div class="company-stat"><div class="label">PEG</div><div class="value green">0.54</div></div>
+    </div>
+    
+    <div class="company-logic">
+      <h6>产业卡位 — 概念漂亮但兑现度极差</h6>
+      <p>华正新材的产业故事:<strong>CBF(Copper Build-up Film)对标味之素ABF</strong>——这是国产替代ABF树脂的方向之一。如果CBF能成功替代ABF树脂,理论上能打破日本垄断。</p>
+      
+      <h6>关键警讯 — Q1占比5.9%</h6>
+      <p>这是<strong>33家研究池中Q1占比最低的标的</strong>。机构对2026年净利5.23亿的预测建立在<strong>非常乐观的假设</strong>上(CBF量产+客户切换)。Q1实际净利只有3000万左右,要在Q2-Q4做到4.9亿——<strong>几乎不可能</strong>。</p>
+      
+      <h6>"假便宜"的本质</h6>
+      <p>PEG 0.54看起来很便宜,但这是因为机构2026/2027预测乐观+实际兑现节奏差。一旦机构预测下修(大概率事件),PEG瞬间会从0.54跳到0.9-1.5,届时<strong>不再便宜</strong>。这是典型的"假便宜陷阱"。</p>
+      
+      <h6>不纳入投资组合的判断</h6>
+      <p>CBF的产业方向是真实的,但<strong>商业化兑现节奏远超预期</strong>。和洁美科技、剑桥科技、长飞光纤是同一类问题——产业概念漂亮但Q1业绩远低于预测。<strong>不纳入投资组合</strong>,等Q2财报观察CBF具体进度。</p>
+    </div>
+  </div>
+
+  <!-- 方邦股份 -->
+  <div class="company-card warning">
+    <div class="company-card-header">
+      <div>
+        <div class="company-name">方邦股份<span class="code">688020.SH</span></div>
+        <p style="color: var(--text-dim); font-size: 14px; margin-top: 4px;">载体铜箔A股核心 · 2025仍亏损0.84亿</p>
+      </div>
+      <div class="company-tier warning">仍亏损</div>
+    </div>
+    
+    <div class="company-logic">
+      <h6>产业卡位真实但仍亏损</h6>
+      <p>方邦股份是<strong>A股载体铜箔(超薄铜箔)的核心标的</strong>。载体铜箔是IC封装载板内层用的特种铜箔,厚度只有1-3μm,是HVLP铜箔之外的另一种高端铜箔。技术方向真实,但<strong>2025年净利-0.84亿仍亏损</strong>。</p>
+      
+      <h6>暂不纳入投资组合</h6>
+      <p>方邦的产业逻辑可以理解,但<strong>仍亏损是硬约束</strong>。机构2026年预期净利仅0.25亿,2027年1.11亿——按照这个速度,2027年PE仍然在150倍以上。<strong>等业绩兑现到3亿以上再考虑</strong>。</p>
+    </div>
+  </div>
+
+  <h3 class="section-title">认知偏差识别</h3>
+
+  <div class="bias-box">
+    <div class="tag">认知偏差 #13</div>
+    <h5>"ABF被日本完全垄断,国产替代是炒概念"</h5>
+    <p><strong>真相</strong>:ABF树脂确实被味之素垄断,但<strong>ABF载板(成品)的国产替代是真实的</strong>。兴森独供华为鲲鹏ABF、月产能8000平米×2条线;深南22层FC-BGA已量产、24层在研发。<strong>味之素的产能扩张速度远跟不上需求(2030年才增50%),给了国产载板厂2-3年的窗口期</strong>。这不是"炒概念",是有具体产能数据和客户订单支撑的实质性突破。</p>
+  </div>
+
+  <div class="bias-box">
+    <div class="tag">认知偏差 #14</div>
+    <h5>"华正新材CBF对标味之素,国产替代龙头,应该重仓"</h5>
+    <p><strong>真相</strong>:CBF的方向是真实的,但<strong>Q1占比只有5.9%</strong>——意味着商业化节奏远落后于机构预测。机构对2026年净利5.23亿的预测,Q1只兑现了3000万。在<strong>没有看到Q2-Q3实质性放量之前,不应该用2027年估值定价</strong>。这是典型的"产业方向对+商业化时间表错"的标的。</p>
+  </div>
+
+  <div class="bias-box">
+    <div class="tag">认知偏差 #15</div>
+    <h5>"深南合同负债下降33.5%是订单流失,要规避"</h5>
+    <p><strong>真相</strong>:合同负债下降的解读不能简单化。<strong>专家调研明确显示</strong>:鲲鹏明年ABF订单中,"如果明年深南的良率稳定得比较好加上单价下调的话,鲲鹏可能会有一部分份额给他们"——这意味着<strong>深南正在客户认证窗口期,不是订单流失</strong>。同时,深南2026年的扩产数据(广州+无锡+南通+泰国)说明管理层对未来有信心。正确的处理是<strong>"降低仓位但保持持有",等Q2财报验证</strong>,而不是清仓。</p>
+  </div>
+
+  <div class="bias-box">
+    <div class="tag">认知偏差 #16</div>
+    <h5>"ABF缺口27%-35%意味着所有ABF标的都会大涨"</h5>
+    <p><strong>真相</strong>:供需缺口主要让<strong>已经有产能的厂商</strong>受益(欣兴、景硕、南亚电路板这些台湾载板三雄,Q1业绩同比50%+)。<strong>没有量产能力的国产替代标的并不会立刻受益</strong>——它们需要先突破良率、获得客户认证、扩产到位,这个过程至少需要1-2年。所以<strong>兴森、深南是优质标的,但不能期待它们立刻表现得像台湾载板三雄那样爆发</strong>。这是"产业景气度"和"个股兑现节奏"的区别。</p>
+  </div>
+
+  <div class="quote">
+    "ABF载板是Rubin时代<strong>最确定的供给瓶颈</strong>——大摩、高盛、汇丰、伯恩斯坦四家美系/欧系投行一致看多。但A股的兴森、深南还需要时间证明良率和扩产。<strong>这给我们一个独特的入场机会——在产业α被市场充分定价之前,而不是之后</strong>。关键是要区分'产业景气度'和'个股兑现节奏'这两个独立维度。"
+    <span class="source">本研究 · 第7章结论</span>
+  </div>
+
+</section>
+</div>
+
+
+<!-- ====== Footer ====== -->
+<div class="container">
+<div class="footer">
+  <div class="ornament"></div>
+  <p>END OF CHAPTERS 6-7 · 第二部分 第二次提交</p>
+  <p style="margin-top: 12px; letter-spacing: 0.15em;">NEXT — CHAPTERS 8-9 · CPU产业链 + MLCC</p>
+</div>
+</div>
+
+</body>
+</html>
