@@ -2,16 +2,16 @@
 """
 每日资金流向统计脚本（可定时运行）
 ===============================
-每天收盘后自动统计全市场资金流向，输出：
+每天收盘后统计 SOXX 前20 资金流向（dollar volume 代理），输出：
   1. 全市场资金净流入 Top N 排名
   2. 全市场资金净流出 Top N 排名（警惕风险）
   3. 连续N日净流入/流出个股
-  4. 板块资金流向汇总
+  4. 细分赛道资金流向
 
 用法：
-    python daily_money_flow.py                     # 默认Top50，统计当日
-    python daily_money_flow.py --top 100 --days 3   # 近3日累计，Top100
-    python daily_money_flow.py --market 主板         # 只看主板
+    python run/flow.py
+    python run/flow.py --days 5
+    python run/flow.py --market 设备
 
 输出文件（output/目录）：
     money_flow_top{N}_{date}.csv        - 净流入排名
@@ -35,7 +35,6 @@ from money_flow import (
     rank_all_by_money_flow,
     summarize_by_market,
     _fmt_amount,
-    _get_all_a_stock_codes,
     get_stock_fund_flow_summary,
     DEFAULT_TOP_N,
     DEFAULT_DAYS,
@@ -70,7 +69,7 @@ def run_daily_report(
     # ------------------------------------------------------------------
     log.info("[1/4] 全市场资金流向排名...")
     all_results = rank_all_by_money_flow(
-        top_n=max(top_n * 3, 500),  # 多取一些用于后续分析
+        top_n=20,
         days=days,
         workers=workers,
         market_filter=market,
@@ -159,7 +158,7 @@ def _save_flow_csv(results: list[dict], filepath: str, days: int):
             "日期": r.get("latest_date", ""),
             "收盘价": r.get("close", ""),
             "涨跌幅%": r.get("pct_change", ""),
-            f"主力净流入({days}日)": _fmt_amount(r.get("main_net_cum", 0)),
+            f"净流入({days}日)": _fmt_amount(r.get("main_net_cum", 0)),
             "主力净占比%": r.get("main_net_pct_avg", 0),
             f"主力流入({days}日)": _fmt_amount(r.get("main_inflow", 0)),
             f"主力流出({days}日)": _fmt_amount(r.get("main_outflow", 0)),
@@ -195,7 +194,7 @@ def _save_consecutive_csv(records: list[dict], filepath: str, days: int):
             "日期": r.get("latest_date", ""),
             "收盘价": r.get("close", ""),
             "涨跌幅%": r.get("pct_change", ""),
-            f"主力净流入({days}日)": _fmt_amount(r.get("main_net_cum", 0)),
+            f"净流入({days}日)": _fmt_amount(r.get("main_net_cum", 0)),
             "主力净占比%": r.get("main_net_pct_avg", 0),
             "连续流入天数": r.get("consecutive_inflow", 0),
             "连续流出天数": r.get("consecutive_outflow", 0),
@@ -215,7 +214,7 @@ def _save_market_summary_csv(summary: dict, filepath: str):
         rows.append({
             "板块": market,
             "个股数": s["count"],
-            "主力净流入(net)": _fmt_amount(s["main_net_cum"]),
+            "净流入(net)": _fmt_amount(s["main_net_cum"]),
             "主力流入总额": _fmt_amount(s["main_inflow"]),
             "主力流出总额": _fmt_amount(s["main_outflow"]),
             "净流入个股数": s["inflow_stocks"],
@@ -234,24 +233,24 @@ def _print_report_summary(top_inflow, top_outflow, market_summary, date_str, day
     print("=" * 80)
 
     # 净流入前5
-    print(f"\n  🔥 主力净流入 Top5 (近{days}日):")
-    print(f"  {'排名':<5} {'代码':<8} {'主力净流入':>14} {'净占比':>8} {'评分':>6}")
+    print(f"\n  🔥 净流入 Top5 (近{days}日):")
+    print(f"  {'排名':<5} {'代码':<8} {'净流入':>14} {'净占比':>8} {'评分':>6}")
     print("  " + "-" * 50)
     for r in top_inflow[:5]:
         print(f"  {r['rank']:<5} {r['code']:<8} {_fmt_amount(r.get('main_net_cum', 0)):>14} "
               f"{r.get('main_net_pct_avg', 0):>7.2f}% {r.get('flow_score', 0):>5.0f}")
 
     # 净流出前5
-    print(f"\n  ⚠️  主力净流出 Top5 (近{days}日) - 资金逃离预警:")
-    print(f"  {'排名':<5} {'代码':<8} {'主力净流出':>14} {'净占比':>8} {'评分':>6}")
+    print(f"\n  ⚠️  净流出 Top5 (近{days}日) - 资金逃离预警:")
+    print(f"  {'排名':<5} {'代码':<8} {'净流出':>14} {'净占比':>8} {'评分':>6}")
     print("  " + "-" * 50)
     for r in top_outflow[:5]:
         print(f"  {r['rank']:<5} {r['code']:<8} {_fmt_amount(r.get('main_net_cum', 0)):>14} "
               f"{r.get('main_net_pct_avg', 0):>7.2f}% {r.get('flow_score', 0):>5.0f}")
 
     # 板块汇总
-    print(f"\n  📈 板块资金流向汇总:")
-    print(f"  {'板块':<8} {'个股数':>6} {'主力净流入':>14} {'净流入占比':>10}")
+    print(f"\n  📈 细分赛道资金流向:")
+    print(f"  {'板块':<8} {'个股数':>6} {'净流入':>14} {'净流入占比':>10}")
     print("  " + "-" * 50)
     for market, s in sorted(market_summary.items()):
         pct = f"{s['inflow_stocks']/s['count']*100:.1f}%" if s["count"] > 0 else "0%"
@@ -275,7 +274,7 @@ def main():
     parser.add_argument("--workers", type=int, default=DEFAULT_WORKERS,
                         help="并发线程数（默认8）")
     parser.add_argument("--market", type=str, default=None,
-                        help="板块过滤: 主板/创业板/科创板/北交所")
+                        help="细分过滤: GPU/AI加速/存储/设备/代工/模拟/MCU 等")
 
     args = parser.parse_args()
 

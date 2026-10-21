@@ -2,14 +2,14 @@
 """
 趋势追涨交易策略引擎
 ====================
-基于"情绪周期+趋势动量"的A股追涨策略，整合GPT建议。
+基于"情绪周期+趋势动量"的 SOXX 追涨策略。
 
 核心逻辑：
-  1. 股票池过滤（ST/北交所/流动性不足/庄股）
+  1. 股票池过滤（SOXX 前20）
   2. 市场情绪过滤器（赚钱效应判断）
   3. 综合强势评分（RSI+动量+量比+资金）
   4. 情绪高潮过滤（避免追在极端位置）
-  5. 选股：排名11-30中取5只
+  5. 选股：排名4-15中取5只（避开最热3只）
   6. ATR动态止损
   7. 趋势移动止盈
   8. 情绪分档仓位管理
@@ -30,45 +30,16 @@ log = logging.getLogger(__name__)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# AI算力产业链股票池
+# 股票池 = SOXX 前20
 # ═══════════════════════════════════════════════════════════════════════════
 
-AI_CHAIN_CODES = {
-    # GPU/算力芯片
-    "688256", "688041", "688047", "688008", "603986", "688072",
-    "688120", "688019", "300474", "002371",
-    # 服务器/算力设备
-    "601138", "000977", "603019", "002281", "300308",
-    # 光模块/CPO
-    "300502", "300308", "002281", "300394", "688498",
-    "300570", "688205",
-    # PCB
-    "002463", "603228", "002916", "600183",
-    # 散热/液冷
-    "300684", "002837", "300499", "301018",
-    # 存储芯片
-    "603986", "688525", "002409", "688110",
-    # 铜缆连接器
-    "002475", "300136", "300433",
-    # IDC/算力运营
-    "600845", "300383", "300738", "000815",
-    # 先进封装
-    "002156", "600584", "002185",
-    # 半导体材料
-    "300346", "300666", "300655",
-    # AI应用
-    "688111", "002230", "300033", "600536", "002410",
-    # 机器人/具身智能
-    "300124", "002472", "688017", "300660",
-    # 新能源算力
-    "300750", "300014", "002459",
-}
+def _soxx_codes() -> set:
+    from universe import get_soxx_tickers
+    return set(get_soxx_tickers(top_n=20, live=False))
 
-# 默认排除的板块
-EXCLUDE_MARKETS_DEFAULT = ["北交所"]
-
-# 默认排除的关键词（ST等）
-EXCLUDE_NAME_KEYWORDS = ["ST", "*ST", "退"]
+AI_CHAIN_CODES = _soxx_codes()
+EXCLUDE_MARKETS_DEFAULT = []
+EXCLUDE_NAME_KEYWORDS = []
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -85,8 +56,8 @@ class TrendStrategy:
     def __init__(
         self,
         # 选股参数
-        select_start_rank: int = 11,       # 从第几名开始选
-        select_end_rank: int = 30,         # 到第几名截止
+        select_start_rank: int = 4,        # 从第几名开始选（避开最热）
+        select_end_rank: int = 15,         # 到第几名截止
         num_picks: int = 5,                # 每期选几只
         # 评分权重（量能加速度体系）
         w_vol_ratio: float = 0.25,         # 量比（当前放量程度）
@@ -94,11 +65,11 @@ class TrendStrategy:
         w_moneyflow: float = 0.25,         # 资金流向(CMF/OBV)
         w_momentum: float = 0.20,          # 价格动量（确认上涨方向）
         # 高潮过滤
-        max_consecutive_limit_up: int = 3,
+        max_consecutive_limit_up: int = 5,  # 美股无涨停，用连续大阳天数
         max_pct_5d: float = 35.0,
         max_ma20_distance: float = 35.0,
         # 流动性过滤
-        min_turnover_rate: float = 5.0,    # 最低换手率(%)
+        min_turnover_rate: float = 0.15,   # 美股大盘股换手低
         min_vol_ratio: float = 1.0,        # 最低量比（必须放量）
         # ATR止损止盈
         atr_stop_mult: float = 1.5,
@@ -341,18 +312,10 @@ class TrendStrategy:
 # ═══════════════════════════════════════════════════════════════════════════
 
 def get_ai_pool(exclude_markets: list[str] = None) -> list[str]:
-    """获取AI算力产业链股票池"""
-    if exclude_markets is None:
-        exclude_markets = EXCLUDE_MARKETS_DEFAULT
-
-    import sys, os
-    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    """获取 SOXX 前20 股票池。"""
+    from universe import get_soxx_tickers
     from market_filter import get_market
-
-    codes = []
-    for c in AI_CHAIN_CODES:
-        market = get_market(c)
-        if exclude_markets and market in exclude_markets:
-            continue
-        codes.append(c)
+    codes = get_soxx_tickers(top_n=20, live=True)
+    if exclude_markets:
+        codes = [c for c in codes if get_market(c) not in exclude_markets]
     return sorted(codes)

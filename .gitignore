@@ -33,3 +33,13 @@ stock_game/strategies_backup/__pycache__/
 # JSON outputs
 stock_game/output/
 *.json.bak
+# 运行时缓存 / 个人状态（不入库）
+data/ui_cache.json
+data/sec_tickers.json
+data/repurchase_cache.csv
+data/soxx_score_intermediate.csv
+data/cn_boards.json
+data/gui_cache/
+data/gui_lines.json
+data/gui_night.json
+data/moneyflow_watch.json

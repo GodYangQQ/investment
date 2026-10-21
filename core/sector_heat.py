@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 """
-板块景气度评估模块（sector_heat.py）
-
-通过腾讯行情API获取个股实时数据，聚合计算板块景气度。
-
+半导体细分赛道景气度（SOXX 池）
+==============================
 用法:
-    python core/sector_heat.py                           # 全板块排名
-    python core/sector_heat.py 半导体                     # 指定板块
-    python core/sector_heat.py --stock 603893             # 查某只股票所属板块景气度
-    python core/sector_heat.py --json output/pool_scores.json  # 从量化评分JSON聚合
+    python core/sector_heat.py
+    python core/sector_heat.py GPU/AI加速
+    python core/sector_heat.py --stock NVDA
+    python core/sector_heat.py --json output/pool_scores.json
 """
 
 import json
@@ -16,211 +14,96 @@ import logging
 import sys
 import time
 from collections import defaultdict
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Optional
 
 import numpy as np
-import requests
-import re
 
 log = logging.getLogger("sector_heat")
 
-# ============================================================================
-# 腾讯行情API（已验证可用）
-# ============================================================================
+from market_filter import get_market, resolve_industry, ALL_MARKETS, TICKER_INDUSTRY
+from universe import get_soxx_universe, get_soxx_tickers
+from us_data import fetch_batch_quotes, fetch_daily_kline
 
-TENCENT_BATCH_URL = "https://qt.gtimg.cn/q="
+
+def _build_sector_stocks(live: bool = False) -> dict[str, list[str]]:
+    sectors = defaultdict(list)
+    for s in get_soxx_universe(top_n=20, live=live):
+        ind = get_market(s["code"]) or "其他"
+        sectors[ind].append(s["code"])
+    return dict(sectors)
+
+
+SECTOR_STOCKS = _build_sector_stocks(live=False)
+CODE_SECTOR_MAP: dict[str, str] = dict(TICKER_INDUSTRY)
+SECTOR_ALIAS = {
+    "gpu": "GPU/AI加速", "ai": "GPU/AI加速", "nvidia": "GPU/AI加速",
+    "memory": "存储", "dram": "存储", "nand": "存储",
+    "equip": "设备", "设备": "设备",
+    "foundry": "代工", "tsmc": "代工", "代工": "代工",
+    "analog": "模拟/MCU", "mcu": "模拟/MCU",
+    "connect": "连接/高速接口", "连接": "连接/高速接口",
+    "power": "电源管理", "电源": "电源管理",
+    "qcom": "移动SoC/无线", "无线": "移动SoC/无线",
+    "intel": "CPU/逻辑", "cpu": "CPU/逻辑",
+    "存储": "存储", "gpu/ai加速": "GPU/AI加速",
+}
 
 
 def _fetch_tencent_quotes(codes: list[str], timeout: int = 15) -> list[dict]:
-    """批量获取腾讯实时行情。"""
+    """兼容旧函数名：批量行情。"""
+    quotes = fetch_batch_quotes(codes)
     results = []
-    batch_size = 50
-    for i in range(0, len(codes), batch_size):
-        batch = codes[i:i + batch_size]
-        prefix = ""
-        for c in batch:
-            if c.startswith(("60", "68")):
-                prefix += f"sh{c},"
-            else:
-                prefix += f"sz{c},"
-        url = f"{TENCENT_BATCH_URL}{prefix.rstrip(',')}"
-        try:
-            r = requests.get(url, timeout=timeout)
-            r.encoding = "gbk"
-            for line in r.text.strip().split("\n"):
-                m = re.search(r'="(.+?)"', line)
-                if not m:
-                    continue
-                f = m.group(1).split("~")
-                if len(f) < 45:
-                    continue
-                code_raw = f[2]
-                code = code_raw if code_raw else ""
-                results.append({
-                    "code": code,
-                    "name": f[1],
-                    "price": float(f[3]) if f[3] else 0,
-                    "pct_change": float(f[32]) if f[32] else 0,
-                    "pe_ttm": float(f[39]) if f[39] else 0,
-                    "volume": float(f[6]) if f[6] else 0,
-                })
-        except Exception as e:
-            log.warning(f"获取行情失败: {e}")
+    for c in codes:
+        q = quotes.get(c) or quotes.get(str(c).upper())
+        if not q:
             continue
+        results.append({
+            "code": q.get("code", c),
+            "name": q.get("name", c),
+            "price": q.get("price", 0),
+            "pct_change": q.get("pct_change", 0),
+            "pe_ttm": q.get("pe_ttm", 0),
+            "volume": q.get("volume", 0),
+        })
     return results
 
 
+_KL_CACHE: dict[str, "object"] = {}
+
+
 def _fetch_kline_pcts(codes: list[str], days: int = 5) -> dict[str, float]:
-    """批量获取N日涨跌幅（通过腾讯K线API）。"""
     results = {}
     for code in codes:
-        prefix = "sh" if code.startswith(("60", "68")) else "sz"
-        url = f"https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param={prefix}{code},day,,,{days+5},qfq"
         try:
-            r = requests.get(url, timeout=10)
-            data = r.json()
-            klines = data.get("data", {}).get(f"{prefix}{code}", {}).get("qfqday", [])
-            if not klines:
-                klines = data.get("data", {}).get(f"{prefix}{code}", {}).get("day", [])
-            if klines and len(klines) >= days + 1:
-                start_close = float(klines[-(days+1)][2])
-                end_close = float(klines[-1][2])
-                pct = (end_close - start_close) / start_close * 100 if start_close > 0 else 0
-                results[code] = round(pct, 2)
+            df = _KL_CACHE.get(code)
+            if df is None:
+                df = fetch_daily_kline(code, days=35)
+                _KL_CACHE[code] = df
+            if df is None or len(df) < days + 1:
+                continue
+            start = float(df["close"].iloc[-(days + 1)])
+            end = float(df["close"].iloc[-1])
+            results[code] = round((end - start) / start * 100, 2) if start else 0.0
         except Exception:
             continue
     return results
 
 
-# ============================================================================
-# 股票→板块映射表（代码前缀 + 名称关键词）
-# ============================================================================
-
-# 板块代表性股票（每个板块10-20只代表股）
-SECTOR_STOCKS = {
-    "半导体": [
-        "603893", "688981", "688012", "002049", "603986", "600703",
-        "688256", "688041", "688047", "688072", "002185", "600584",
-        "300373", "688608", "603501", "002371", "688019", "300623",
-        "688249", "603005",
-    ],
-    "PCB/元件": [
-        "002463", "600183", "603228", "002916", "002384", "300476",
-        "002938", "300782", "603920", "688183",
-    ],
-    "光模块/通信": [
-        "300308", "300502", "002281", "300394", "300570", "688498",
-        "603083", "300620", "002902", "300548",
-    ],
-    "消费电子": [
-        "002475", "002241", "601138", "002600", "300433", "002456",
-        "300115", "002273", "300136", "002681",
-    ],
-    "军工": [
-        "600760", "600893", "002013", "600391", "000768", "600316",
-        "002023", "600038", "300034", "300424",
-    ],
-    "化工": [
-        "600309", "600426", "600989", "002064", "603599", "002408",
-        "600160", "002493", "000830", "002092",
-        "605589", "601208", "300481", "002915", "603002", "300236",
-    ],
-    "稀土/有色": [
-        "600111", "000831", "002600", "000970", "002378", "601899",
-        "600549", "603993", "002155", "000975",
-    ],
-    "航运港口": [
-        "601919", "601872", "600026", "002320", "600428", "601598",
-        "600018", "601975", "603871", "601881",
-    ],
-    "新能源/电力": [
-        "600900", "601985", "000591", "601012", "600438", "002129",
-        "601865", "600674", "002202", "301155",
-    ],
-    "锂电": [
-        "002466", "002460", "002407", "300750", "300014", "002709",
-        "600884", "300073", "002074", "300390",
-    ],
-    "光伏": [
-        "601012", "600438", "002129", "688599", "300274", "002459",
-        "688223", "300118", "002610", "300763",
-    ],
-    "医药": [
-        "600276", "300347", "300760", "603259", "600085", "002821",
-        "300759", "688180", "603456", "002007",
-    ],
-    "汽车零部件": [
-        "601689", "002920", "603596", "300496", "300750", "002906",
-        "002050", "603786", "002085", "600741",
-    ],
-    "软件/AI应用": [
-        "600570", "300033", "300253", "300624", "688111", "300377",
-        "300454", "002230", "600588", "688088",
-    ],
-    "液冷/散热": [
-        "002837", "300499", "300990", "301310", "002126", "300124",
-        "002255", "603191", "301128",
-    ],
-    "电网设备": [
-        "601567", "600406", "600869", "002028", "300124", "600580",
-        "300750", "002121", "601877", "002339",
-    ],
-    "白酒": [
-        "600519", "000858", "000568", "002304", "000596", "600809",
-        "600702", "603369", "600559", "000799",
-    ],
-}
-
-# 反向索引：股票代码 → 板块
-CODE_SECTOR_MAP: dict[str, str] = {}
-for _sector, _codes in SECTOR_STOCKS.items():
-    for _c in _codes:
-        CODE_SECTOR_MAP[_c] = _sector
-
-# 板块名称关键词 → 板块标准名
-SECTOR_ALIAS = {
-    "半导体": "半导体", "芯片": "半导体", "集成电路": "半导体",
-    "pcb": "PCB/元件", "元件": "PCB/元件", "印制电路板": "PCB/元件",
-    "光模块": "光模块/通信", "光通信": "光模块/通信", "通信": "光模块/通信",
-    "消费电子": "消费电子", "苹果": "消费电子",
-    "军工": "军工", "国防": "军工", "航发": "军工", "船舶": "军工",
-    "化工": "化工", "化学": "化工", "制冷剂": "化工", "新材料": "化工",
-    "稀土": "稀土/有色", "有色": "稀土/有色", "黄金": "稀土/有色",
-    "航运": "航运港口", "港口": "航运港口", "油运": "航运港口",
-    "电力": "新能源/电力", "核电": "新能源/电力", "新能源": "新能源/电力",
-    "锂电": "锂电", "锂": "锂电", "能源金属": "锂电",
-    "光伏": "光伏", "太阳能": "光伏",
-    "医药": "医药", "生物": "医药", "cro": "医药",
-    "汽车": "汽车零部件", "新能源车": "汽车零部件",
-    "软件": "软件/AI应用", "ai": "软件/AI应用", "算力": "软件/AI应用",
-    "液冷": "液冷/散热", "散热": "液冷/散热",
-    "电网": "电网设备", "电气": "电网设备",
-    "白酒": "白酒", "酒": "白酒", "食品饮料": "白酒",
-}
-
-
 def resolve_sector(name: str, code: str = "") -> str:
-    """根据名称或代码查找所属板块。"""
-    # 先查硬编码映射
-    if code and code in CODE_SECTOR_MAP:
-        return CODE_SECTOR_MAP[code]
-    # 关键词匹配
-    combined = name.lower()
-    for kw, sector in SECTOR_ALIAS.items():
-        if kw in combined:
-            return sector
-    return "其他"
+    return resolve_industry(name, code)
 
 
 def get_sector_stocks(sector: str) -> list[str]:
-    """获取板块的代表性股票列表。"""
-    return SECTOR_STOCKS.get(sector, [])
+    stocks = SECTOR_STOCKS.get(sector)
+    if stocks:
+        return stocks
+    # 动态刷新一次
+    rebuilt = _build_sector_stocks(live=False)
+    return rebuilt.get(sector, [])
 
 
 def list_sectors() -> list[str]:
-    """列出所有支持的板块。"""
-    return list(SECTOR_STOCKS.keys())
+    return list(SECTOR_STOCKS.keys()) or ALL_MARKETS
 
 
 # ============================================================================
@@ -595,10 +478,8 @@ def find_stock_sector(stock_code: str) -> str:
     """根据股票代码查找所属板块。"""
     if stock_code in CODE_SECTOR_MAP:
         return CODE_SECTOR_MAP[stock_code]
-    # 尝试从名称匹配
     try:
-        codes = [stock_code]
-        quotes = _fetch_tencent_quotes(codes)
+        quotes = _fetch_tencent_quotes([stock_code])
         if quotes:
             return resolve_sector(quotes[0]["name"], stock_code)
     except Exception:

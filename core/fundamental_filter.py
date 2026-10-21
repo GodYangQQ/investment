@@ -4,15 +4,15 @@
 对量化排名结果进行基本面硬过滤，剔除：
   - PE < 0（亏损）
   - PE > 200（估值离谱）
-  - 以及可选：通过 akshare 查 ROE/毛利率/现金流
+  - 以及可选：通过 yfinance 查 ROE/毛利率/现金流
 
 用法：
     from fundamental_filter import quick_pe_filter, batch_fetch_fundamentals, apply_fundamental_filter
 
-    # 快速PE过滤（无需akshare，基于已有行情数据）
+    # 快速PE过滤（基于已有行情数据）
     df = quick_pe_filter(df, max_pe=200, exclude_negative_pe=True)
 
-    # 深度过滤（需要akshare，仅对Top N执行）
+    # 深度过滤（yfinance，仅对Top N执行）
     result = apply_fundamental_filter(top_df, min_roe=8, min_gross_margin=15)
 """
 
@@ -24,16 +24,12 @@ import pandas as pd
 
 log = logging.getLogger(__name__)
 
-# akshare 是否为可用状态
-try:
-    import akshare as ak
-    _HAS_AKSHARE = True
-except ImportError:
-    _HAS_AKSHARE = False
+from us_data import fetch_financial_data, _HAS_YFINANCE
+_HAS_AKSHARE = _HAS_YFINANCE
 
 
 # ============================================================================
-# 1. 快速 PE 过滤（无需 akshare）
+# 1. 快速 PE 过滤
 # ============================================================================
 
 def quick_pe_filter(
@@ -77,12 +73,12 @@ def quick_pe_filter(
 
 
 # ============================================================================
-# 2. 深度基本面获取（需 akshare，对少量股票）
+# 2. 深度基本面获取（yfinance）
 # ============================================================================
 
 def fetch_single_fundamentals(code: str) -> dict:
     """
-    获取单只股票的关键基本面指标（通过 akshare）。
+    获取单只股票的关键基本面指标（yfinance）。
     返回: {"roe": float, "gross_margin": float, "net_margin": float,
            "net_profit_yoy": float, "revenue_yoy": float,
            "cf_ratio": float, "debt_ratio": float, "error": str|None}
@@ -93,63 +89,30 @@ def fetch_single_fundamentals(code: str) -> dict:
         "cf_ratio": None, "debt_ratio": None, "error": None,
     }
 
-    if not _HAS_AKSHARE:
-        result["error"] = "akshare未安装"
+    if not _HAS_YFINANCE:
+        result["error"] = "yfinance未安装"
         return result
 
     try:
-        # 使用同花顺新版财务摘要接口（stock_financial_abstract 旧版已不可用）
-        df = ak.stock_financial_abstract_new_ths(symbol=code, indicator="按报告期")
+        fin = fetch_financial_data(code)
     except Exception as e:
         result["error"] = f"获取失败: {e}"
         return result
 
-    try:
-        if df.empty:
-            result["error"] = "无数据"
-            return result
+    if not fin:
+        result["error"] = "无数据"
+        return result
 
-        # 取最新报告期数据
-        latest_date = df["report_date"].max()
-        latest = df[df["report_date"] == latest_date].set_index("metric_name")
-
-        def _get(metric: str) -> Optional[float]:
-            """从 latest 中按 metric_name 提取数值"""
-            if metric in latest.index:
-                val = latest.loc[metric, "value"]
-                if val is None or (isinstance(val, float) and pd.isna(val)):
-                    return None
-                try:
-                    return float(val)
-                except (ValueError, TypeError):
-                    return None
-            return None
-
-        result["roe"] = _get("index_weighted_avg_roe")
-        result["gross_margin"] = _get("sale_gross_margin")
-        result["net_margin"] = _get("sale_net_interest_ratio")
-        result["debt_ratio"] = _get("assets_debt_ratio")
-        result["net_profit_yoy"] = _get("calculate_parent_holder_net_profit_yoy_growth_ratio")
-        result["revenue_yoy"] = _get("calculate_operating_income_total_yoy_growth_ratio")
-
-        # 经营现金流/净利润比
-        # 计算公式: (每股经营现金流 × 总股本) / 归母净利润
-        # 总股本 = 归母净利润 / 基本每股收益
-        net_profit = _get("parent_holder_net_profit")
-        eps_cf = _get("index_per_operating_cash_flow_net")
-        eps = _get("basic_eps")
-        if net_profit and net_profit > 0 and eps_cf is not None and eps and eps > 0:
-            total_shares = net_profit / eps
-            cf_total = eps_cf * total_shares
-            result["cf_ratio"] = cf_total / net_profit
-        elif net_profit and net_profit > 0 and eps_cf is not None and eps_cf > 0:
-            result["cf_ratio"] = 1.0  # 正现金流但无法精确计算，标记为正
-        elif net_profit and net_profit > 0 and eps_cf is not None:
-            result["cf_ratio"] = -1.0  # 负现金流
-
-    except Exception as e:
-        result["error"] = f"解析失败: {e}"
-
+    result["roe"] = fin.get("净资产收益率(ROE)")
+    result["gross_margin"] = fin.get("毛利率")
+    result["net_margin"] = fin.get("销售净利率")
+    result["debt_ratio"] = fin.get("资产负债率")
+    result["net_profit_yoy"] = fin.get("净利润同比增长率")
+    result["revenue_yoy"] = fin.get("营业总收入同比")
+    ni = fin.get("归母净利润")
+    ocf = fin.get("经营现金流量净额")
+    if ni and ni != 0 and ocf is not None:
+        result["cf_ratio"] = ocf / ni
     return result
 
 
@@ -175,7 +138,7 @@ def batch_fetch_fundamentals(codes: list[str]) -> pd.DataFrame:
         fin = fetch_single_fundamentals(code)
         fin["code"] = code
         results.append(fin)
-        time.sleep(0.3)  # akshare 频率限制
+        time.sleep(0.05)
 
     return pd.DataFrame(results)
 
@@ -336,7 +299,7 @@ def apply_fundamental_filter(
 
     流程：
     1. 先做快速 PE 过滤（全量，但不再一刀切排除亏损）
-    2. 对前 deep_check_top 只做深度基本面检查（需 akshare）
+    2. 对前 deep_check_top 只做深度基本面检查（yfinance）
     3. 应用亏损股分级 + 各项过滤
     4. 按可买度排序输出最终结果
 
@@ -462,7 +425,7 @@ if __name__ == "__main__":
 
     # 测试 fetch_single_fundamentals
     print("=== 测试: 单只基本面获取 ===")
-    for code in ["600519", "600026", "002475"]:
+    for code in ["NVDA", "AMD", "TSM"]:
         fin = fetch_single_fundamentals(code)
         print(f"  {code}: ROE={fin['roe']}, 毛利率={fin['gross_margin']}, "
               f"CF/NI={fin['cf_ratio']}, 负债={fin['debt_ratio']}, err={fin['error']}")
@@ -470,10 +433,10 @@ if __name__ == "__main__":
     # 测试 PE 过滤
     print("\n=== 测试: PE 过滤 ===")
     test_df = pd.DataFrame([
-        {"代码": "600519", "PE_TTM": 25},
-        {"代码": "000001", "PE_TTM": -5},
-        {"代码": "002475", "PE_TTM": 300},
-        {"代码": "600026", "PE_TTM": 22},
+        {"代码": "NVDA", "PE_TTM": 45},
+        {"代码": "INTC", "PE_TTM": -5},
+        {"代码": "ALAB", "PE_TTM": 300},
+        {"代码": "TXN", "PE_TTM": 22},
     ])
     filtered = quick_pe_filter(test_df)
     print(filtered[["代码", "PE_TTM", "PE过滤"]].to_string(index=False))

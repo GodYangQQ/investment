@@ -1,0 +1,21 @@
+﻿code,name,weight,exchange,industry
+INTC,Intel Corporation,9.38,NASDAQ,CPU/逻辑
+AMD,Advanced Micro Devices,9.34,NASDAQ,GPU/AI加速
+MU,Micron Technology,7.95,NASDAQ,存储
+NVDA,Nvidia,7.5,NASDAQ,GPU/AI加速
+AVGO,Broadcom Inc,6.83,NASDAQ,连接/高速接口
+MRVL,Marvell Technology,4.31,NASDAQ,连接/高速接口
+QCOM,Qualcomm,3.98,NASDAQ,移动SoC/无线
+ADI,Analog Devices,3.95,NASDAQ,模拟/MCU
+KLAC,Kla,3.9,NASDAQ,设备
+TXN,Texas Instrument Inc,3.86,NASDAQ,模拟/MCU
+AMAT,Applied Material Inc,3.84,NASDAQ,设备
+LRCX,Lam Research,3.77,NASDAQ,设备
+MPWR,Monolithic Power Systems Inc,3.2,NASDAQ,电源管理
+TER,Teradyne,3.12,NASDAQ,设备
+SKHY,Sk Hynix American Depositary Share,3.06,NASDAQ,存储
+TSM,Taiwan Semiconductor Manufacturing,3.02,NYSE,代工
+NXPI,Nxp Semiconductors Nv,2.98,NASDAQ,模拟/MCU
+ALAB,Astera Labs,2.5,NASDAQ,连接/高速接口
+MCHP,Microchip Technology Inc,2.08,NASDAQ,模拟/MCU
+CRDO,Credo Technology Group Holding Ltd,1.63,NASDAQ,连接/高速接口

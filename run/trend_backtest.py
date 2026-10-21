@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-趋势追涨策略回测引擎
+趋势追涨策略回测（SOXX）
 ====================
 基于 trend_strategy.py 的追涨策略，进行历史数据回测。
 
@@ -15,7 +15,7 @@
     python backtest_trend.py                                    # 默认参数
     python backtest_trend.py --start 2025-01-01 --top 5          # 2025年起
     python backtest_trend.py --rebalance 10 --pool-size 200      # 10日轮动
-    python backtest_trend.py --no-ai-pool --pool hs300.csv       # 自定义池
+    python run/trend_backtest.py --pool data/my_pool.csv
 """
 
 import argparse
@@ -30,13 +30,13 @@ import pandas as pd
 
 _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, _PROJECT_ROOT)
+sys.path.insert(0, os.path.join(_PROJECT_ROOT, "core"))
 
 from core.stock_strategy import (
     fetch_daily_kline,
     compute_indicators,
     get_latest_signals,
 )
-from core.quant_score import calc_rsi_slope_curvature
 from core.trend_strategy import (
     TrendStrategy,
     get_ai_pool,
@@ -64,11 +64,11 @@ DEFAULT_REBALANCE_DAYS = 5
 DEFAULT_LOOKBACK_DAYS = 250
 DEFAULT_INIT_CASH = 1_000_000
 
-# 交易成本
-COMMISSION_RATE = 0.0003
-STAMP_TAX_RATE = 0.001
-MIN_COMMISSION = 5
-SLIPPAGE = 0.001
+# 交易成本（美股零售）
+COMMISSION_RATE = 0.0
+STAMP_TAX_RATE = 0.0
+MIN_COMMISSION = 0
+SLIPPAGE = 0.0005
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -89,33 +89,11 @@ class DataFeed:
         total = len(self.codes)
         log.info("预加载 %d 只股票K线（先拉名称，再逐只取K线，大池子请耐心等待）...", total)
 
-        import requests
-        import time
-        # Phase 1: 批量获取名称
-        batch_size = 50
-        for i in range(0, total, batch_size):
-            batch = self.codes[i:i + batch_size]
-            symbols = []
-            for c in batch:
-                prefix = "sh" if c.startswith(("6", "9")) else "sz"
-                symbols.append(f"{prefix}{c}")
-            try:
-                url = "http://qt.gtimg.cn/q=" + ",".join(symbols)
-                resp = requests.get(url, timeout=10)
-                resp.encoding = "gbk"
-                for line in resp.text.strip().split("\n"):
-                    if "~" not in line:
-                        continue
-                    parts = line.split('"')
-                    if len(parts) < 2:
-                        continue
-                    fields = parts[1].split("~")
-                    if len(fields) >= 2:
-                        self.names[fields[2]] = fields[1]
-            except Exception:
-                pass
-            if i + batch_size < total:
-                time.sleep(0.05)
+        from universe import get_soxx_universe
+        for s in get_soxx_universe(top_n=20, live=False):
+            self.names[s["code"]] = s["name"]
+        for c in self.codes:
+            self.names.setdefault(c, c)
         log.info("名称获取完成: %d 只", len(self.names))
 
         # Phase 2: 逐只拉K线（最耗时，每25只汇报一次）
@@ -183,11 +161,10 @@ def extract_features(df: pd.DataFrame) -> dict:
         "cmf_20d": signals.get("cmf_20d", 0),
     }
 
-    # RSI斜率和曲率（区分"超买且上升" vs "超买但拐头"）
-    rsi_info = calc_rsi_slope_curvature(list(closes))
-    features["rsi_slope_5d"] = rsi_info.get("rsi_slope_5d", 0) or 0
-    features["rsi_curvature"] = rsi_info.get("rsi_curvature", 0) or 0
-    features["rsi_arrow"] = rsi_info.get("rsi_arrow", "→")
+    # RSI 由 signals 提供（简化：不看斜率曲率）
+    features["rsi_slope_5d"] = 0
+    features["rsi_curvature"] = 0
+    features["rsi_arrow"] = "→"
 
     # 5日涨跌幅
     if n >= 6:
@@ -393,7 +370,7 @@ class Portfolio:
                 "date": today, "code": stock["code"], "action": "BUY",
                 "shares": shares, "price": price, "cost": cost, "reason": "调仓买入",
             })
-            log.info("  [买入] %s %s  %d股 @%.2f  成本%.0f元",
+            log.info("  [买入] %s %s  %d股 @%.2f  成本$%.0f",
                      stock["code"], stock.get("name", ""), shares, price, cost)
 
         # 更新持仓天数
@@ -406,7 +383,7 @@ class Portfolio:
             except Exception:
                 pass
 
-        log.info("  📊 调仓完成: 现金%.0f元 | 持仓%d只 | 总资产%.0f元",
+        log.info("  📊 调仓完成: 现金$%.0f | 持仓%d只 | 总资产$%.0f",
                  self.cash, len(self.positions), self.total_value)
 
     def _sell(self, code: str, shares: int, price: float, date: str, reason: str):
@@ -658,8 +635,8 @@ def _print_report(report: dict):
 
     print(f"  回测区间: {report.get('start_date', 'N/A')} ~ {report.get('end_date', 'N/A')}")
     print(f"  交易日数: {report.get('trading_days', 'N/A')}")
-    print(f"  初始资金: {report.get('init_cash', 0):,.0f} 元")
-    print(f"  最终资金: {report.get('final_value', 0):,.0f} 元")
+    print(f"  初始资金: ${report.get('init_cash', 0):,.0f}")
+    print(f"  最终资金: ${report.get('final_value', 0):,.0f}")
     print("-" * 55)
     print(f"  总收益率:   {report.get('total_return_pct', 0):+.2f}%")
     print(f"  年化收益:   {report.get('annual_return_pct', 0):+.2f}%")
@@ -691,14 +668,14 @@ def _print_report(report: dict):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="趋势追涨策略回测 — A股AI算力池追涨",
+        description="趋势追涨策略回测 — SOXX 前20",
     )
     parser.add_argument("--start", default=DEFAULT_START, help="起始日期 YYYY-MM-DD")
     parser.add_argument("--end", default=DEFAULT_END, help="结束日期（默认今天）")
     parser.add_argument("--top", type=int, default=DEFAULT_TOP_N, help="持仓股数（默认5）")
     parser.add_argument("--rebalance", type=int, default=DEFAULT_REBALANCE_DAYS, help="调仓周期（默认5天）")
     parser.add_argument("--cash", type=float, default=DEFAULT_INIT_CASH, help="初始资金")
-    parser.add_argument("--no-ai-pool", action="store_true", help="不使用AI算力池")
+    parser.add_argument("--no-ai-pool", action="store_true", help="不使用 SOXX 池（需 --pool）")
     parser.add_argument("--pool", type=str, default=None, help="自定义股票池CSV（含'代码'列）")
     parser.add_argument("--pool-size", type=int, default=200, help="自定义池时取前N只")
     parser.add_argument("--plot", action="store_true", help="画收益曲线")
@@ -711,17 +688,11 @@ def main():
         stock_codes = df["代码"].tolist()[:args.pool_size]
         log.info("自定义股票池: %d 只", len(stock_codes))
     elif args.no_ai_pool:
-        # 用沪深300
-        try:
-            import akshare as ak
-            df = ak.index_stock_cons(symbol="000300")
-            stock_codes = df["品种代码"].tolist()
-        except Exception:
-            log.error("无法获取沪深300成分股")
-            sys.exit(1)
+        log.error("--no-ai-pool 需要同时提供 --pool CSV")
+        sys.exit(1)
     else:
         stock_codes = get_ai_pool()
-        log.info("AI算力池: %d 只", len(stock_codes))
+        log.info("SOXX 池: %d 只", len(stock_codes))
 
     if len(stock_codes) < args.top * 2:
         log.error("股票池(%d只)至少需要top的2倍(%d)", len(stock_codes), args.top * 2)

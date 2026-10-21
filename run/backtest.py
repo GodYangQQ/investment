@@ -11,7 +11,7 @@
   - 调仓：每M个交易日轮动一次，等权分配
   - 止盈止损：回撤止盈 + 固定止损 + 均线止损
 
-数据源：腾讯前复权K线（完全本地，不依赖聚宽/akshare）
+数据源：yfinance 前复权K线（SOXX 池）
 
 用法：
     python backtest.py                          # 默认参数回测
@@ -38,6 +38,7 @@ import pandas as pd
 # 确保可以 import core/ 下的模块
 _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, _PROJECT_ROOT)
+sys.path.insert(0, os.path.join(_PROJECT_ROOT, "core"))
 
 from core.stock_strategy import (
     fetch_daily_kline,
@@ -76,13 +77,13 @@ DEFAULT_REBALANCE_DAYS = 5   # 调仓周期（交易日）
 # - 最小持有天数约束（防频繁换仓）
 # - 可选放弃涨幅第一名（防追高）
 DEFAULT_LOOKBACK_DAYS = 300  # 打分所需K线天数
-DEFAULT_INIT_CASH = 1_000_000  # 初始资金（元）
+DEFAULT_INIT_CASH = 100_000  # 初始资金（美元）
 
-# 交易成本
-COMMISSION_RATE = 0.0003      # 佣金万分之三
-STAMP_TAX_RATE = 0.001        # 卖出印花税千分之一
-MIN_COMMISSION = 5            # 最低佣金
-SLIPPAGE = 0.001              # 滑点 0.1%
+# 交易成本（美股零售：零佣金 + 滑点）
+COMMISSION_RATE = 0.0
+STAMP_TAX_RATE = 0.0
+MIN_COMMISSION = 0
+SLIPPAGE = 0.0005              # 滑点 0.05%
 
 # 止盈止损（多级体系）
 STOP_LOSS_PCT = 0.08          # 固定止损 -8%
@@ -98,7 +99,7 @@ RISK_FREE_NEXT_DAY = True     # 买入次日不触发止损止盈（给1天观�
 
 # 基本面快速过滤
 MAX_PE = 200
-EXCLUDE_ST = True             # 排除ST
+EXCLUDE_ST = False
 EXCLUDE_NEW_STOCK = True      # 排除上市<60天的股票（数据不足）
 
 
@@ -124,34 +125,11 @@ class DataFeed:
         total = len(self.codes)
         log.info("预加载 %d 只股票的历史K线及名称...", total)
 
-        # 批量获取名称（通过腾讯行情）
-        import requests, time
-        batch_size = 50
-        for i in range(0, total, batch_size):
-            batch = self.codes[i:i + batch_size]
-            symbols = []
-            for c in batch:
-                prefix = "sh" if c.startswith(("6", "9")) else "sz"
-                symbols.append(f"{prefix}{c}")
-            try:
-                url = "http://qt.gtimg.cn/q=" + ",".join(symbols)
-                resp = requests.get(url, timeout=10)
-                resp.encoding = "gbk"
-                for line in resp.text.strip().split("\n"):
-                    if "~" not in line:
-                        continue
-                    parts = line.split('"')
-                    if len(parts) < 2:
-                        continue
-                    fields = parts[1].split("~")
-                    if len(fields) >= 2:
-                        code = fields[2]
-                        name = fields[1]
-                        self.names[code] = name
-            except Exception:
-                pass
-            if i + batch_size < total:
-                time.sleep(0.05)
+        from universe import get_soxx_universe
+        for s in get_soxx_universe(top_n=20, live=False):
+            self.names[s["code"]] = s["name"]
+        for c in self.codes:
+            self.names.setdefault(c, c)
 
         for i, code in enumerate(self.codes):
             if (i + 1) % 50 == 0:
@@ -216,6 +194,7 @@ def score_universe(datafeed: DataFeed, as_of_date, top_n: int) -> list[dict]:
                 "score": total,
                 "price": price,
                 "signals": signals,
+                "factors": score_result.get("factors", {}),
             })
         except Exception:
             continue
@@ -239,7 +218,7 @@ class Portfolio:
         self.cash = init_cash
         self.positions: dict[str, dict] = {}  # code -> {shares, avg_cost, highest_price, current_price, buy_date}
         self.nav_history: list[dict] = []
-        self.benchmark_nav: list[dict] = []   # 上证指数基准净值序列
+        self.benchmark_nav: list[dict] = []   # SOXX 基准净值序列
         self.trade_log: list[dict] = []
         self._rebalance_count = 0
         self.stock_names: dict[str, str] = {}  # code -> name（每期更新）
@@ -441,7 +420,7 @@ class Portfolio:
                     cost = pos["avg_cost"]
                     pnl_pct = (price - cost) / cost * 100 if cost > 0 else 0
                     revenue = pos["shares"] * price * (1 - COMMISSION_RATE - STAMP_TAX_RATE)
-                    log.info("  [执行] 卖出 %s %s  %d股 @%.2f  盈亏%+.2f%%  回收%s元  (原因: 轮动淘汰)",
+                    log.info("  [执行] 卖出 %s %s  %d股 @%.2f  盈亏%+.2f%%  回收$%s  (原因: 轮动淘汰)",
                              code, name, pos["shares"], price, pnl_pct, _fmt_amount(revenue))
                     self._sell(code, pos["shares"], price, today, "轮动卖出")
 
@@ -485,7 +464,7 @@ class Portfolio:
                 "date": today, "code": stock["code"], "action": "BUY",
                 "shares": shares, "price": price, "cost": cost, "reason": "调仓买入",
             })
-            log.info("  [执行] 买入 %s %s  %d股 @%.2f  成本%s元",
+            log.info("  [执行] 买入 %s %s  %d股 @%.2f  成本$%s",
                      stock["code"], stock.get("name", ""), shares, price, _fmt_amount(cost))
 
         # ================================================================
@@ -665,24 +644,20 @@ def _print_rankings(target_stocks: list[dict], holdings_before: set):
     """打印新一期打分排名"""
     log.info("")
     log.info("  🏆 新一期打分 Top%d (满分100):", len(target_stocks))
-    log.info("  %-4s %-10s %6s %6s %6s %6s %6s %6s %5s",
-             "排名", "代码", "总分", "趋势", "位置", "量价", "RSI", "波动", "附加")
+    log.info("  %-4s %-10s %6s %10s %6s %6s %5s",
+             "排名", "代码", "总分", "趋势+位置", "量价PA", "波动", "结构")
     log.info("  " + "-" * 60)
 
-    from core.quant_score import score_trend, score_position, score_volume_price, score_rsi, score_volatility, score_bonus
-
     for i, r in enumerate(target_stocks):
-        s = r.get("signals", {})
-        s_trend = round(score_trend(s)[0], 1)
-        s_pos = round(score_position(s)[0], 1)
-        s_vol = round(score_volume_price(s)[0], 1)
-        s_rsi = round(score_rsi(s)[0], 1)
-        s_atr = round(score_volatility(s)[0], 1)
-        s_bonus = round(score_bonus(s)[0], 1)
+        f = r.get("factors", {}) or {}
+        s_trend = round(f.get("趋势+位置", {}).get("score", 0), 1)
+        s_vol = round(f.get("量价+PriceAction", {}).get("score", 0), 1)
+        s_atr = round(f.get("波动率", {}).get("score", 0), 1)
+        s_struct = round(f.get("斐波那契/结构", {}).get("score", 0), 1)
         mark = " *" if r["code"] in holdings_before else " +"
-        log.info("  %-4d %-10s %5.1f %5.1f %5.1f %5.1f %5.1f %5.1f %+5.1f%s",
+        log.info("  %-4d %-10s %5.1f %9.1f %6.1f %5.1f %5.1f%s",
                  i + 1, r["code"], r["score"],
-                 s_trend, s_pos, s_vol, s_rsi, s_atr, s_bonus, mark)
+                 s_trend, s_vol, s_atr, s_struct, mark)
     log.info("  " + "-" * 60)
     log.info("  * = 已持有  + = 新买入")
 
@@ -705,7 +680,7 @@ def _print_stop(tag: str, code: str, name: str, pos: dict, price: float, pnl_pct
     log.info("")
     log.info("  " + "─" * 50)
     log.info("  %s | %s %s", tag, code, name)
-    log.info("  成本价: %.2f  |  现价: %.2f  |  盈亏: %+.2f%% (%+.0f元)",
+    log.info("  成本价: %.2f  |  现价: %.2f  |  盈亏: %+.2f%% ($%+.0f)",
              cost, price, pnl_pct * 100, profit)
     log.info("  持仓天数: %d  |  持仓市值: %s  |  股数: %d",
              hold_days, _fmt_amount(amount), shares)
@@ -994,8 +969,8 @@ def _print_report(report: dict):
 
     print(f"  回测区间: {report.get('start_date', 'N/A')} ~ {report.get('end_date', 'N/A')}")
     print(f"  交易日数: {report.get('trading_days', 'N/A')}")
-    print(f"  初始资金: {report.get('init_cash', 0):,.0f} 元")
-    print(f"  最终资金: {report.get('final_value', 0):,.0f} 元")
+    print(f"  初始资金: ${report.get('init_cash', 0):,.0f}")
+    print(f"  最终资金: ${report.get('final_value', 0):,.0f}")
     print("-" * 55)
     print(f"  总收益率:   {report.get('total_return_pct', 0):+.2f}%")
     print(f"  年化收益:   {report.get('annual_return_pct', 0):+.2f}%")
@@ -1005,7 +980,7 @@ def _print_report(report: dict):
     print(f"  总交易次数: {report.get('total_trades', 0)}")
     print("-" * 55)
     # 基准对比
-    bm = report.get("benchmark_name", "上证指数")
+    bm = report.get("benchmark_name", "SOXX")
     bm_ret = report.get("benchmark_return_pct", 0)
     ex_ret = report.get("excess_return_pct", 0)
     ex_max = report.get("excess_max_pct", 0)
@@ -1024,42 +999,13 @@ def _print_report(report: dict):
 # ============================================================================
 
 def get_default_stock_pool(exclude_markets: list[str] = None) -> list[str]:
-    """
-    获取回测用的股票池。
-    默认用沪深300成分股（避免小盘股K线质量问题）。
-    """
-    if exclude_markets is None:
-        exclude_markets = ["科创板", "北交所"]  # 默认排除
-
-    # 用 akshare 获取沪深300成分股
-    try:
-        import akshare as ak
-        df = ak.index_stock_cons(symbol="000300")
-        codes = df["品种代码"].tolist()
-    except Exception:
-        # 备用：手动指定一批代表性股票
-        codes = [
-            "600519", "000858", "000568", "600809",  # 白酒
-            "601318", "600036", "601166",              # 金融
-            "000333", "600690",                        # 家电
-            "600276", "300760", "603259",              # 医药
-            "002475", "300750", "002594",              # 科技/新能源
-            "600900", "601857",                        # 能源
-            "002415", "600585", "601899",              # 制造/水泥/矿业
-            "600030", "000651", "600887",              # 证券/格力/伊利
-        ]
-
-    # 板块过滤 + 代码规范化
-    filtered = []
-    for c in codes:
-        c = str(c).strip()
-        market = get_market(c)
-        if exclude_markets and market in exclude_markets:
-            continue
-        filtered.append(c)
-
-    log.info("股票池: %d 只", len(filtered))
-    return filtered
+    """默认股票池 = SOXX 前20。"""
+    from universe import get_soxx_tickers
+    codes = get_soxx_tickers(top_n=20, live=True)
+    if exclude_markets:
+        codes = [c for c in codes if get_market(c) not in exclude_markets]
+    log.info("股票池: %d 只", len(codes))
+    return codes
 
 
 # ============================================================================
@@ -1074,9 +1020,9 @@ def main():
     parser.add_argument("--end", default=DEFAULT_END, help="回测结束日期（默认今天）")
     parser.add_argument("--top", type=int, default=DEFAULT_TOP_N, help="持仓股票数")
     parser.add_argument("--rebalance", type=int, default=DEFAULT_REBALANCE_DAYS, help="调仓周期（交易日）")
-    parser.add_argument("--cash", type=float, default=DEFAULT_INIT_CASH, help="初始资金（元）")
-    parser.add_argument("--pool", type=str, default=None, help="自定义股票池CSV（含'代码'列），不填则用沪深300")
-    parser.add_argument("--no-exclude", action="store_true", help="不过滤板块（默认排除科创/北交所）")
+    parser.add_argument("--cash", type=float, default=DEFAULT_INIT_CASH, help="初始资金（美元）")
+    parser.add_argument("--pool", type=str, default=None, help="自定义股票池CSV（含'代码'列），不填则用 SOXX 前20")
+    parser.add_argument("--no-exclude", action="store_true", help="不过滤细分赛道")
     parser.add_argument("--plot", action="store_true", help="输出收益曲线图（需安装matplotlib）")
 
     args = parser.parse_args()
@@ -1086,7 +1032,7 @@ def main():
         df = pd.read_csv(args.pool, dtype={"代码": str})
         stock_codes = df["代码"].tolist()
     else:
-        exclude = None if args.no_exclude else ["科创板", "北交所"]
+        exclude = None if args.no_exclude else None
         stock_codes = get_default_stock_pool(exclude)
 
     if len(stock_codes) < args.top:

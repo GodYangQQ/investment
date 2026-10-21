@@ -1,11 +1,10 @@
 """
-Undervalued Stock Screener
-Combines quantitative metrics (Sina+Tencent real-time data) with optional LLM analysis
-to find undervalued A-stocks.
+Undervalued Stock Screener (SOXX)
+Combines quantitative metrics (yfinance) with optional LLM analysis
+to rank SOXX top-20 names by undervaluation.
 """
 
 import os
-import re
 import sys
 import time
 import json
@@ -14,171 +13,60 @@ import logging
 from datetime import datetime
 from typing import Optional
 
-# 确保可以 import core/ 下的模块
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "core"))
 
-import requests
 import pandas as pd
 from openai import OpenAI
 
-from market_filter import (
-    get_market,
-    filter_by_market,
-    filter_codes_by_market,
-    ALL_MARKETS,
-)
+from market_filter import get_market, filter_by_market, ALL_MARKETS
+from universe import get_soxx_universe
+from us_data import fetch_batch_quotes, fetch_financial_data, fetch_daily_kline
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
-# Data fetching
-# ---------------------------------------------------------------------------
-
-def _get_all_a_stock_codes() -> list[str]:
-    """Get all A-stock codes from Sina Finance."""
-    log.info("Fetching all A-stock codes from Sina ...")
-    count_url = "https://vip.stock.finance.sina.com.cn/quotes_service/api/json_v2.php/Market_Center.getHQNodeStockCount?node=hs_a"
-    count = int(requests.get(count_url, timeout=10).text.strip('"'))
-    log.info("Total A-stocks: %d", count)
-
-    codes = []
-    page_size = 80
-    for page in range(1, count // page_size + 2):
-        url = (
-            "https://vip.stock.finance.sina.com.cn/quotes_service/api/json_v2.php"
-            "/Market_Center.getHQNodeData"
-        )
-        params = {
-            "page": page, "num": page_size, "sort": "symbol",
-            "asc": 1, "node": "hs_a", "symbol": "", "_s_r_a": "page",
-        }
-        try:
-            r = requests.get(url, params=params, timeout=15)
-            data = r.json()
-            if not data:
-                break
-            codes.extend([item["code"] for item in data])
-        except Exception:
-            break
-        time.sleep(0.1)
-
-    log.info("Got %d stock codes", len(codes))
-    return codes
-
-
-def _parse_tencent_quote(raw: str) -> Optional[dict]:
-    """Parse a single Tencent quote string into a dict."""
-    match = re.search(r'="(.+?)"', raw)
-    if not match:
-        return None
-    fields = match.group(1).split("~")
-    if len(fields) < 54:
-        return None
-
-    price = fields[3]
-    pe = fields[39]
-    pb = fields[53]
-    if not price or not pe or not pb:
-        return None
-
-    try:
-        price_f = float(price)
-        pe_f = float(pe)
-        pb_f = float(pb)
-    except (ValueError, TypeError):
-        return None
-
-    if price_f <= 0 or pe_f <= 0 or pb_f <= 0:
-        return None
-
-    def safe_float(v: str, default: float = 0.0) -> float:
-        try:
-            return float(v) if v else default
-        except (ValueError, TypeError):
-            return default
-
-    return {
-        "code": fields[2],
-        "name": fields[1],
-        "price": price_f,
-        "pct_change": safe_float(fields[32]),
-        "pe_ttm": pe_f,
-        "pb": pb_f,
-        "total_mv": safe_float(fields[44]) * 1e8,
-        "circ_mv": safe_float(fields[45]) * 1e8,
-        "turnover": safe_float(fields[38]),
-        "pct_60d": safe_float(fields[46]),
-        "pct_ytd": safe_float(fields[46]),
-    }
-
-
 def fetch_realtime_quotes() -> pd.DataFrame:
-    """Fetch real-time A-stock quotes using Sina (codes) + Tencent (batch quotes)."""
-    codes = _get_all_a_stock_codes()
-    if not codes:
-        raise RuntimeError("Failed to fetch stock codes")
-
-    log.info("Fetching real-time quotes from Tencent (%d stocks) ...", len(codes))
-    all_data = []
-    batch_size = 600
-
-    for i in range(0, len(codes), batch_size):
-        batch = codes[i:i + batch_size]
-        tencent_codes = []
-        for c in batch:
-            if c.startswith("6"):
-                tencent_codes.append(f"sh{c}")
-            else:
-                tencent_codes.append(f"sz{c}")
-
-        query = ",".join(tencent_codes)
+    universe = get_soxx_universe(top_n=20, live=True)
+    codes = [s["code"] for s in universe]
+    names = {s["code"]: s["name"] for s in universe}
+    quotes = fetch_batch_quotes(codes)
+    rows = []
+    for s in universe:
+        code = s["code"]
+        q = quotes.get(code) or {}
         try:
-            r = requests.get(f"https://qt.gtimg.cn/q={query}", timeout=30)
-            r.encoding = "gbk"
-            for line in r.text.strip().split("\n"):
-                parsed = _parse_tencent_quote(line)
-                if parsed:
-                    all_data.append(parsed)
-        except Exception as e:
-            log.warning("Batch %d fetch failed: %s", i // batch_size + 1, e)
-        time.sleep(0.2)
-
-    if not all_data:
-        raise RuntimeError("Failed to fetch any stock data")
-
-    df = pd.DataFrame(all_data)
-    log.info("Fetched %d valid stocks", len(df))
+            df = fetch_daily_kline(code, days=260)
+            pct_60d = (df["close"].iloc[-1] / df["close"].iloc[-61] - 1) * 100 if len(df) >= 61 else 0
+            pct_ytd = (df["close"].iloc[-1] / df["close"].iloc[0] - 1) * 100 if len(df) else 0
+        except Exception:
+            pct_60d = pct_ytd = 0
+        rows.append({
+            "code": code,
+            "name": q.get("name") or names.get(code, code),
+            "price": q.get("price", 0),
+            "pct_change": q.get("pct_change", 0),
+            "pe_ttm": q.get("pe_ttm", 0),
+            "pb": q.get("pb", 0),
+            "total_mv": (q.get("market_cap") or q.get("total_mv_yi", 0) * 1e8),
+            "turnover": q.get("turnover", 0),
+            "pct_60d": pct_60d,
+            "pct_ytd": pct_ytd,
+        })
+    df = pd.DataFrame(rows)
+    log.info("Fetched %d SOXX names", len(df))
     return df
 
 
 def fetch_financial_indicators(code: str) -> Optional[pd.DataFrame]:
-    """Fetch financial indicators for a single stock."""
-    try:
-        df = ak.stock_financial_analysis_indicator(symbol=code)
-        return df
-    except Exception as e:
-        log.debug("Failed to fetch financials for %s: %s", code, e)
+    fin = fetch_financial_data(code)
+    if not fin:
         return None
+    return pd.DataFrame([fin])
 
 
 def fetch_individual_info(code: str) -> dict:
-    """Fetch individual stock info (industry, region, etc.)."""
-    try:
-        df = ak.stock_individual_info_em(symbol=code)
-        info = {}
-        for _, row in df.iterrows():
-            key = row.get("item", "")
-            val = row.get("value", "")
-            info[str(key)] = str(val)
-        return info
-    except Exception as e:
-        log.debug("Failed to fetch info for %s: %s", code, e)
-        return {}
+    return {"行业": get_market(code) or "半导体"}
 
 
 # ---------------------------------------------------------------------------
@@ -242,7 +130,7 @@ def compute_quant_score(row: pd.Series) -> float:
 # LLM analysis
 # ---------------------------------------------------------------------------
 
-LLM_PROMPT = """你是一位资深的A股价值分析师。请根据以下股票的基本面和行情数据，评估其是否被低估，并给出0-100的"低估评分"（越高越低估）。
+LLM_PROMPT = """你是一位资深的美股半导体价值分析师。请根据以下股票的基本面和行情数据，评估其是否被低估，并给出0-100的"低估评分"（越高越低估）。
 
 股票信息：
 - 代码: {code}
@@ -251,7 +139,7 @@ LLM_PROMPT = """你是一位资深的A股价值分析师。请根据以下股票
 - 最新价: {price}
 - 动态市盈率(PE-TTM): {pe}
 - 市净率(PB): {pb}
-- 总市值: {total_mv} 亿元
+- 总市值: {total_mv} 亿美元
 - 60日涨跌幅: {pct_60d}%
 - 年初至今涨跌幅: {pct_ytd}%
 - 近期财务指标摘要: {financials}
@@ -275,7 +163,7 @@ def analyze_with_llm(
         latest = financials.head(4)
         fin_text = latest.to_string(index=False)
 
-    total_mv_yi = row.get("total_mv", 0) / 1e8
+    total_mv_yi = row.get("total_mv", 0) / 1e8  # 亿美元
 
     prompt = LLM_PROMPT.format(
         code=row["code"],
@@ -330,7 +218,7 @@ def screen_undervalued_stocks(
     """Main screening pipeline.
 
     Args:
-        exclude_markets: 排除的板块，如 ["创业板", "科创板"]。默认不排除。
+        exclude_markets: 排除的细分，如 ["设备", "存储"]。默认不排除。
         keep_markets: 仅保留的板块，如 ["主板"]。与 exclude 二选一。
     """
     # Init LLM client
@@ -418,7 +306,7 @@ def screen_undervalued_stocks(
 
 
 def main():
-    parser = argparse.ArgumentParser(description="A股低估股票筛选 (量化 + LLM)")
+    parser = argparse.ArgumentParser(description="SOXX 低估股票筛选 (量化 + LLM)")
     parser.add_argument("--api-key", default=os.getenv("OPENAI_API_KEY", ""), help="LLM API key")
     parser.add_argument("--base-url", default=os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1"), help="LLM API base URL")
     parser.add_argument("--model", default="gpt-4o-mini", help="LLM model name")
@@ -430,7 +318,7 @@ def main():
                         help="Output directory for CSV (默认: 项目根/output/)")
     parser.add_argument(
         "--exclude-markets", type=str, default=None,
-        help=f"排除的板块（逗号分隔），可选: {','.join(ALL_MARKETS)}。例: --exclude-markets 创业板,科创板"
+        help=f"排除的板块（逗号分隔），可选: {','.join(ALL_MARKETS)}。例: --exclude-markets 设备,存储"
     )
     parser.add_argument(
         "--keep-markets", type=str, default=None,

@@ -5,8 +5,8 @@
 从财务数据中提取6项硬指标，客观评估一只股票的供需状况。
 
 用法:
-    python core/supply_demand.py 603893
-    python core/supply_demand.py 600519
+    python core/supply_demand.py NVDA
+    python core/supply_demand.py AMD
 
 输出:
     - 需求得分 (demand_score, 0-50)
@@ -48,71 +48,33 @@ def fetch_supply_demand_data(code: str) -> dict:
     }
 
     try:
-        import akshare as ak
-        df = ak.stock_financial_abstract_new_ths(symbol=code, indicator="按报告期")
+        from us_data import fetch_quarterly_table, fetch_realtime_quote
+        quarters_data = fetch_quarterly_table(code, n=8)
+        try:
+            q = fetch_realtime_quote(code)
+            result["name"] = q.get("name", "")
+        except Exception:
+            pass
     except Exception as e:
-        result["error"] = f"akshare获取失败: {e}"
+        result["error"] = f"yfinance获取失败: {e}"
         return result
 
-    if df.empty:
+    if not quarters_data:
         result["error"] = "无财务数据"
         return result
 
-    try:
-        # 按报告期分组，提取关键指标
-        quarters_data = []
-        report_dates = sorted(df["report_date"].unique(), reverse=True)
-
-        for rd in report_dates[:8]:  # 取最近8个季度
-            qd = df[df["report_date"] == rd].set_index("metric_name")
-            row = {
-                "report_date": str(rd),
-                "report_name": qd.loc["report_name", "value"] if "report_name" in qd.index else "",
-            }
-
-            # 提取核心指标
-            def _v(metric: str, default=None):
-                if metric in qd.index:
-                    val = qd.loc[metric, "value"]
-                    if val is not None and not (isinstance(val, float) and pd.isna(val)):
-                        try:
-                            return float(val)
-                        except (ValueError, TypeError):
-                            return default
-                return default
-
-            row["revenue"] = _v("operating_income_total")            # 营业总收入
-            row["net_profit"] = _v("parent_holder_net_profit")       # 归母净利润
-            row["gross_margin"] = _v("sale_gross_margin")            # 毛利率
-            row["roe"] = _v("index_weighted_avg_roe")                # ROE
-            row["inventory_turnover"] = _v("inventory_turnover_ratio")  # 存货周转率
-            row["inventory_days"] = _v("inventory_turnover_days")    # 存货周转天数
-            row["cf_ratio"] = _v("index_per_operating_cash_flow_net")  # 每股经营现金流
-            row["eps"] = _v("basic_eps")                             # 基本每股收益
-            row["revenue_yoy"] = _v("calculate_operating_income_total_yoy_growth_ratio")
-            row["profit_yoy"] = _v("calculate_parent_holder_net_profit_yoy_growth_ratio")
-
-            quarters_data.append(row)
-
-        result["quarters"] = quarters_data
-
-        # 当前指标
-        if quarters_data:
-            latest = quarters_data[0]
-            result["indicators"] = {
-                "revenue": latest.get("revenue"),
-                "net_profit": latest.get("net_profit"),
-                "gross_margin": latest.get("gross_margin"),
-                "roe": latest.get("roe"),
-                "inventory_turnover": latest.get("inventory_turnover"),
-                "inventory_days": latest.get("inventory_days"),
-                "revenue_yoy": latest.get("revenue_yoy"),
-                "profit_yoy": latest.get("profit_yoy"),
-            }
-
-    except Exception as e:
-        result["error"] = f"解析失败: {e}"
-
+    result["quarters"] = quarters_data
+    latest = quarters_data[0]
+    result["indicators"] = {
+        "revenue": latest.get("revenue"),
+        "net_profit": latest.get("net_profit"),
+        "gross_margin": latest.get("gross_margin"),
+        "roe": latest.get("roe"),
+        "inventory_turnover": latest.get("inventory_turnover"),
+        "inventory_days": latest.get("inventory_days"),
+        "revenue_yoy": latest.get("revenue_yoy"),
+        "profit_yoy": latest.get("profit_yoy"),
+    }
     return result
 
 
@@ -411,7 +373,7 @@ def format_supply_demand_output(result: dict) -> str:
     quarters = result.get("quarters", [])
     if len(quarters) >= 3:
         lines.append("### 季度营收趋势")
-        lines.append(f"{'季度':<14} {'营收(亿)':<12} {'净利(亿)':<12} {'毛利率':<8} {'营收YoY'}")
+        lines.append(f"{'季度':<14} {'营收($亿)':<12} {'净利($亿)':<12} {'毛利率':<8} {'营收YoY'}")
         lines.append("-" * 60)
         for r in quarters[:4]:
             rev = r.get("revenue")
@@ -435,7 +397,7 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="供需评估")
-    parser.add_argument("code", help="股票代码")
+    parser.add_argument("code", help="美股代码")
     parser.add_argument("--pe", type=float, default=None, help="PE(TTM)值，用于PEG计算")
 
     args = parser.parse_args()

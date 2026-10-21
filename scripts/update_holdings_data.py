@@ -20,12 +20,11 @@ OUTPUT_PATH = ROOT / "dashboards" / "holdings_data.json"
 
 # ─── 手动填充：基本面⭐/概念⭐/等级（基于 AI 分析结果，不随量化自动变化）───
 MANUAL_GRADES = {
-    "002463": {"name": "沪电股份",   "fStar": 4, "cStar": 5, "grade": "A+", "drawdownLine": 10},
-    "600026": {"name": "中远海能",  "fStar": 4, "cStar": 3, "grade": "A",  "drawdownLine": 8},
-    "603893": {"name": "瑞芯微",    "fStar": 4, "cStar": 5, "grade": "A+", "drawdownLine": 10},
-    "002466": {"name": "天齐锂业",  "fStar": 2, "cStar": 3, "grade": "B",  "drawdownLine": 6},
-    "002475": {"name": "立讯精密",  "fStar": 2, "cStar": 3, "grade": "B",  "drawdownLine": 6},
-    "601138": {"name": "工业富联",  "fStar": 2, "cStar": 3, "grade": "B",  "drawdownLine": 6},
+    "NVDA": {"name": "NVIDIA", "fStar": 5, "cStar": 5, "grade": "A+", "drawdownLine": 10},
+    "AVGO": {"name": "Broadcom", "fStar": 5, "cStar": 5, "grade": "A+", "drawdownLine": 10},
+    "TSM":  {"name": "TSMC", "fStar": 5, "cStar": 5, "grade": "A+", "drawdownLine": 10},
+    "AMD":  {"name": "AMD", "fStar": 4, "cStar": 5, "grade": "A", "drawdownLine": 8},
+    "MU":   {"name": "Micron", "fStar": 3, "cStar": 4, "grade": "B", "drawdownLine": 6},
 }
 
 

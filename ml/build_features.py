@@ -2,13 +2,13 @@
 """
 特征矩阵构建脚本
 ================
-拉取全A股历史K线 → 计算技术指标 → 存为 Parquet 文件。
+拉取 SOXX 前20 历史K线 → 计算技术指标 → 存为 Parquet 文件。
 生成后供 dataset.py 动态切片，避免预先生成庞大的序列文件。
 
 用法:
-    python ml/build_features.py                  # 首次构建（约15-30分钟）
+    python ml/build_features.py                  # 首次构建（SOXX 20只，约1-2分钟）
     python ml/build_features.py --update         # 增量更新（只补最新N天）
-    python ml/build_features.py --pool-size 3000  # 限定股票数量
+    python ml/build_features.py --pool-size 10     # 限定股票数量
 
 输出:
     data/ml/features.parquet    - 特征矩阵 (N_stocks × T_days, 30+特征列)
@@ -28,10 +28,12 @@ import numpy as np
 import pandas as pd
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "core"))
 
 from core.stock_strategy import (
     fetch_daily_kline,
     compute_indicators,
+    fetch_realtime_quote,
 )
 
 logging.basicConfig(
@@ -105,50 +107,10 @@ assert len(FEATURE_COLS) == 28
 
 
 def _get_all_a_stock_codes() -> list[str]:
-    """获取全部A股代码（优先用akshare，失败降级到新浪）"""
-    # 方法1: akshare (更稳定)
-    try:
-        import akshare as ak
-        df = ak.stock_info_a_code_name()
-        codes = [str(c).zfill(6) for c in df["code"].values]
-        log.info("从akshare获取到 %d 个股票代码", len(codes))
-        return codes
-    except Exception as e:
-        log.warning("akshare获取代码失败: %s，降级到新浪", e)
-
-    # 方法2: 新浪 (可能被限流)
-    import requests
-    log.info("从新浪获取全A股代码列表...")
-    count_url = ("https://vip.stock.finance.sina.com.cn/quotes_service/api/"
-                 "json_v2.php/Market_Center.getHQNodeStockCount?node=hs_a")
-    try:
-        count = int(requests.get(count_url, timeout=10).text.strip('"'))
-    except Exception:
-        log.error("新浪API不可用，无法获取股票代码")
-        raise RuntimeError("无法获取A股代码列表，请检查网络或安装akshare")
-
-    log.info("全A股数量: %d", count)
-
-    codes = []
-    page_size = 80
-    for page in range(1, count // page_size + 2):
-        url = ("https://vip.stock.finance.sina.com.cn/quotes_service/api/"
-               "json_v2.php/Market_Center.getHQNodeData")
-        params = {
-            "page": page, "num": page_size, "sort": "symbol",
-            "asc": 1, "node": "hs_a", "symbol": "", "_s_r_a": "page",
-        }
-        try:
-            r = requests.get(url, params=params, timeout=15)
-            data = r.json()
-            if not data:
-                break
-            codes.extend([item["code"] for item in data])
-        except Exception:
-            break
-        time.sleep(0.1)
-
-    log.info("获取到 %d 个股票代码", len(codes))
+    """获取 SOXX 前20 ticker。"""
+    from core.universe import get_soxx_tickers
+    codes = get_soxx_tickers(top_n=20, live=True)
+    log.info("SOXX 池: %d 只", len(codes))
     return codes
 
 
@@ -251,34 +213,14 @@ def _extract_features(df: pd.DataFrame, df_bench: pd.DataFrame | None = None) ->
 
 
 def fetch_benchmark() -> pd.DataFrame:
-    """获取沪深300指数K线作为基准"""
-    log.info("获取沪深300(000300)基准K线...")
-    # 使用腾讯K线接口
-    pure, prefix = "000300", "sh"
-    url = (f"https://web.ifzq.gtimg.cn/appstock/app/fqkline/get"
-           f"?param={prefix}{pure},day,,,{KLINE_DAYS},qfq")
-    import requests
-    r = requests.get(url, timeout=15)
-    data = r.json()
-
-    key = f"{prefix}{pure}"
-    klines = data.get("data", {}).get(key, {}).get("qfqday", [])
-    if not klines:
-        klines = data.get("data", {}).get(key, {}).get("day", [])
-
-    rows = []
-    for k in klines:
-        if len(k) >= 6:
-            rows.append({
-                "date": k[0],
-                "close": float(k[2]),
-            })
-
-    df = pd.DataFrame(rows)
-    df["date"] = pd.to_datetime(df["date"])
-    df = df.sort_values("date").reset_index(drop=True)
-    df["return"] = df["close"].pct_change() * 100
-    return df
+    """获取 SOXX ETF K线作为基准。"""
+    log.info("获取 SOXX 基准K线...")
+    df = fetch_daily_kline("SOXX", days=KLINE_DAYS)
+    out = df[["date", "close"]].copy()
+    out["date"] = pd.to_datetime(out["date"])
+    out = out.sort_values("date").reset_index(drop=True)
+    out["return"] = out["close"].pct_change() * 100
+    return out
 
 
 def process_single_stock(args: tuple) -> pd.DataFrame | None:
@@ -301,7 +243,7 @@ def process_single_stock(args: tuple) -> pd.DataFrame | None:
 
 
 def build_features(pool_size: int | None = None, update: bool = False):
-    """主流程：构建全市场特征矩阵"""
+    """主流程：构建 SOXX 特征矩阵"""
     os.makedirs(ML_DIR, exist_ok=True)
 
     # 0. 构建/加载基准（必须，用于 rel_strength_20d）
@@ -413,7 +355,7 @@ def _save_results(results: list[pd.DataFrame], existing_codes: set, update: bool
 def enrich_features():
     """
     对已有 features.parquet 补充 PE/PB/换手率。
-    通过腾讯实时行情快速获取，不调用 akshare。
+    通过 yfinance 获取 PE/PB/换手率。
     """
     if not os.path.exists(FEATURES_PARQUET):
         log.error("特征文件不存在，请先运行 build_features.py")
@@ -448,7 +390,7 @@ def enrich_features():
 # ============================================================================
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="构建全A股特征矩阵")
+    parser = argparse.ArgumentParser(description="构建 SOXX 特征矩阵")
     parser.add_argument("--update", action="store_true", help="增量更新")
     parser.add_argument("--pool-size", type=int, default=None,
                         help="限定股票数量（调试用）")
