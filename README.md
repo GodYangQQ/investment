@@ -24,6 +24,7 @@ python core/stock_strategy.py AMD        # 结构化个股数据（给 LLM）
 | 回测 | `python run/backtest.py --start 2025-01-01` |
 | 特征矩阵 | `python ml/build_features.py` |
 | 世界大事件→标的 | `python run/events.py --top 20` |
+| 板块划线看盘（A股/美股 Web） | `python run/sector_monitor_web.py` |
 
 ## 股票池
 
@@ -106,11 +107,61 @@ python run/cn_pick.py --timespan 30d --top-modules 12
 
 > 仅研究用途；短线追涨风险极高，注意情绪退潮与量价背离。
 
+## 板块划线看盘（Web · A股 / 美股）
+
+`run/sector_monitor_web.py` 是 `run/soxx_monitor.py`（PyQt5）的 **Web 版**：画线交互完全照搬 Qt 版，标的从单只 ETF 换成**板块**，浏览器里就能用。
+
+```bash
+python run/sector_monitor_web.py              # http://127.0.0.1:8771
+python run/sector_monitor_web.py --port 8888
+python run/sector_monitor_web.py --host 0.0.0.0   # 局域网访问
+python run/sector_monitor_web.py --no-warm        # 不预热、不后台刷新（只读缓存）
+```
+
+- **标的池**
+  - A股：东方财富行业 / 概念板块，可按 **成交额 / 涨跌幅 / 量比 / 主力净额** 排序，搜索框过滤；
+  - 美股：SPDR 11 大行业 + 半导体·科技（SOXX/SMH/IGV…）+ 主题（XBI/KRE/XOP/GLD…）；
+    想增删 ETF 改 `run/sector_monitor_web.py` 顶部的 `US_GROUPS` 即可。
+- **文件**：后端 `run/sector_monitor_web.py`，前端 `run/sector_monitor_web.html`（需与 .py 同目录，由服务端读取）。
+- **图表**：分时 / 5 / 15 / 30 / 60 分 / 日 / 周 / 月；收盘折线加粗高亮 + 成交量，MA5/17/21/45 **每条可单独开关**（默认全关，只看收盘折线）；
+  **纵轴默认对数坐标**（`对数` 按钮可切回普通价格坐标，选择存 `localStorage.sm_log`），长期看涨幅不失真；十字光标、OHLC 浮窗、滚轮缩放、拖拽平移。
+- **自选：全屏看板**
+  - 左侧列表点 ☆ 收藏，右侧「自选」按钮打开**全屏看板**；所有自选排成一行卡片，**不需要翻页**，
+    按住空白处拖动即可横向滚动（滚轮也能横向滚）；
+  - 每张卡片可拖右下角**单独改宽高**（存 `localStorage.sm_watch`，下次打开保持），显示迷你收盘折线、
+    已画的线、最新价，以及**最近的支撑（绿）和压力（红）**；
+  - 单击卡片选中，**双击 = 放大**（打开该板块并进入单图专注模式，`Esc` 退出），也可点卡片上的「放大」；
+  - 看板开着时卡片每 60 秒自动刷新一次；顶部标题栏也会实时显示当前板块的支撑 / 压力。
+- **画线（与 Qt 版一致）**：
+  - 水平线 / 趋势线（两点成线）/ **纵向线**（同一时刻上下两价，直接标出这段涨幅 %），**画完一根自动退出画线模式**，按钮复位；
+  - 画线模式开着时点到已有线，会**优先选中那条线并自动退出画线模式**，不会再多画一条（避免串线）；
+  - 点线选中 → 拖线体平移、拖两端圆点调整；`Delete` 删除；`Ctrl+Z / Ctrl+Y` 撤销重做；右键 / `Esc` 退出；
+  - 颜色：现价在线上方 = 支撑（绿），下方 = 压力（红），随行情实时重算；
+  - 按 `市场:板块代码|周期` 存 `data/sector_lines.json`，schema 与 Qt 版相同（`{type:"h",y}` / `{type:"trend",x1,y1,x2,y2}` / `{type:"v",x,y1,y2}`）。
+- **数据源与兜底**
+
+| 市场 | 列表/实时 | 分时 | 日/周/月 |
+|---|---|---|---|
+| A股 | 东财 `clist`（失败→同花顺行业表→本地缓存） | 东财 `trends2`/`kline` → 同花顺板块分时 | 东财 `kline` → 同花顺指数 → 东财资金流收盘价 |
+| 美股 | 新浪 `gb_` 批量实时 | 新浪 `MinK` | 新浪 `DailyK` → Nasdaq |
+
+指数条（上证/深证/创业板）东财不通时自动切新浪。所有接口失败时回落到本地数据库的最近一次数据，并在右上角标注「缓存」。
+
+> 同花顺兜底板块（代码以 `T` 开头）同样支持分时 / 5 / 15 / 30 / 60 分钟、日/周/月；
+> 分时用当日 1 分钟实时合成，历史不足时自动回退到 `last.js` 的最近 140 根。
+
+- **本地数据库（秒开 + 断网可看）**
+  - `data/sector_monitor.db`（SQLite / WAL）：`bars` 存K线（只追加、反复读）、`meta` 存每份K线的抓取时间与来源、`snapshots` 存板块列表/行情快照；分时只保留最近 25 天。
+  - **SWR（先给旧数据，再后台刷新）**：有数据立刻返回，过期才在后台补拉；同一 key 同时只有一个请求。启动时预热列表 + 成交额前 12 个 A 股板块 / 前 8 个美股 ETF 的日线，已有新鲜数据则跳过，重启不重复打接口。
+  - **周/月线由日线本地重采样**，不再单独请求，切换周期毫秒级。
+  - 前端还有一层：内存 LRU 缓存 36 条、`AbortController` 取消旧请求、选中板块后预取日/周/月、刷新页面从 `sessionStorage` 恢复上次视图（含画线位置）。
+  - HTTP 走 `HTTP/1.1` keep-alive + gzip（>900B 的 JSON）。
+
 ## 目录
 
 ```
 core/     美股数据/打分/供需/资金流/细分 + 全球事件/A股炒作
-run/      rank / flow / screen / backtest / events / cn_pick
+run/      rank / flow / screen / backtest / events / cn_pick / soxx_monitor / sector_monitor_web
 ml/       特征矩阵
 data/     my_pool.csv、event_chains.json、cn_event_chains.json
 docs/     分析模板、仓位风控

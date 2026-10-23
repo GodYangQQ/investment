@@ -100,16 +100,26 @@ def search_stocks(q: str, n: int = 10) -> list[dict]:
             r = requests.get(host + "/api/suggest/get", params=params, headers=_SEARCH_H, timeout=10)
             data = ((r.json() or {}).get("QuotationCodeTable", {}) or {}).get("Data") or []
             out = []
+            seen = set()
             for it in data:
                 code = str(it.get("Code", ""))
                 name = it.get("Name", "")
                 if len(code) != 6 or not code.isdigit():
                     continue
                 stn = it.get("SecurityTypeName", "") or ""
-                # 仅保留 A 股
-                if stn and not any(k in stn for k in ("沪A", "深A", "京A", "科创", "创业")):
+                cls = it.get("Classify", "") or ""
+                mkt = str(it.get("MktNum", ""))
+                is_index = (cls == "Index") or ("指数" in stn)
+                # 保留 A 股 与 指数
+                if not is_index and stn and not any(k in stn for k in ("沪A", "深A", "京A", "科创", "创业")):
                     continue
-                out.append({"code": code, "name": name, "type": stn})
+                secid = f"{mkt}.{code}" if mkt in ("0", "1") else ""
+                key = secid or code
+                if key in seen:
+                    continue
+                seen.add(key)
+                out.append({"code": code, "name": name, "type": stn,
+                            "cls": cls, "is_index": is_index, "secid": secid})
             if out:
                 dc_set("q:" + q, out, ttl=30 * 24 * 3600)
                 return out[:n]
@@ -321,6 +331,35 @@ _HIST_LOCK = threading.Lock()
 _HIST_TTL = 6 * 3600  # 秒
 
 
+def _index_weekly(secid: str) -> list[dict]:
+    out = []
+    url = ("https://push2his.eastmoney.com/api/qt/stock/kline/get"
+           f"?secid={secid}&klt=102&fqt=1&lmt=200&end=20500101"
+           "&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56,f57")
+    kl = ((_em_get(url) or {}).get("data", {}) or {}).get("klines") or []
+    for k in kl:
+        p = str(k).split(",")
+        try:
+            out.append({"t": p[0][:10], "c": float(p[2])})
+        except (IndexError, ValueError):
+            continue
+    if out:
+        return out
+    try:
+        import akshare as ak
+        code = secid.split(".", 1)[-1]
+        prefix = "sh" if secid.startswith("1.") else "sz"
+        df = ak.stock_zh_index_daily_em(symbol=prefix + code)
+        if df is not None and not df.empty:
+            for _, r in df.tail(160).iterrows():
+                d = r.get("date", r.get("日期"))
+                cv = r.get("close", r.get("收盘"))
+                out.append({"t": str(d)[:10], "c": float(cv)})
+    except Exception:
+        pass
+    return out
+
+
 def fetch_history(h_type: str, key: str) -> list[dict]:
     """近3年周线收盘。h_type: industry / concept / stock。key: 板块名 或 股票代码。"""
     ck = f"{h_type}:{key}"
@@ -337,7 +376,10 @@ def fetch_history(h_type: str, key: str) -> list[dict]:
     try:
         import akshare as ak
         end = datetime.now().strftime("%Y%m%d")
-        if h_type == "stock":
+        df = None
+        if h_type == "index":
+            data = _index_weekly(key)
+        elif h_type == "stock":
             df = ak.stock_zh_a_hist(symbol=key, period="weekly",
                                     start_date="20200101", end_date=end, adjust="qfq")
         elif h_type == "concept":
@@ -555,11 +597,48 @@ def daily_flow(code: str, n: int = 5) -> list:
     return out
 
 
-def fetch_stock(code: str) -> dict:
-    """个股资金流（含资金来源四档）。"""
+def fetch_index_quote(secid: str) -> dict:
+    """指数行情 + 资金流（东财 ulist）。"""
+    url = ("https://push2.eastmoney.com/api/qt/ulist.np/get?fltt=2&invt=2"
+           f"&secids={secid}&fields=f12,f14,f2,f3,f62,f184,f66,f72,f78,f84,f6,f10,f8")
+    items = _items(_em_get(url))
+    if items:
+        it = items[0]
+        inst = _num(it.get("f66")); hot = _num(it.get("f72"))
+        mid = _num(it.get("f78")); small = _num(it.get("f84"))
+        return {
+            "code": it.get("f12"), "name": it.get("f14"), "secid": secid, "is_index": True,
+            "price": _num(it.get("f2")), "pct": _num(it.get("f3")),
+            "main": inst + hot, "inst": inst, "hot": hot,
+            "retail": mid + small, "mid": mid, "small": small,
+            "amount": _num(it.get("f6")), "vr": _num(it.get("f10")), "turnover": _num(it.get("f8")),
+            "beh": None, "repurchase": [], "changes": None, "daily5": [],
+        }
+    # 兜底：单标的接口
+    d = ((_em_get("https://push2.eastmoney.com/api/qt/stock/get"
+                  f"?secid={secid}&fields=f43,f57,f58,f60,f169,f170,f47,f48") or {}).get("data") or {})
+    if d.get("f43"):
+        price = _num(d.get("f43")) / 100.0
+        prev = (_num(d.get("f60")) / 100.0) or price
+        return {
+            "code": d.get("f57"), "name": d.get("f58"), "secid": secid, "is_index": True,
+            "price": price, "pct": _num(d.get("f170")) / 100.0 if d.get("f170") is not None else 0.0,
+            "main": 0.0, "inst": 0.0, "hot": 0.0, "retail": 0.0, "mid": 0.0, "small": 0.0,
+            "amount": None, "vr": None, "turnover": None,
+            "beh": None, "repurchase": [], "changes": None, "daily5": [],
+        }
+    return {"error": f"未找到指数 {secid}"}
+
+
+def fetch_stock(code: str, secid: str = "", is_index: bool = False) -> dict:
+    """个股/指数资金流（含资金来源四档）。"""
     code = str(code).strip()
     if not code.isdigit() or len(code) != 6:
-        return {"error": "请输入 6 位股票代码"}
+        return {"error": "请输入 6 位代码"}
+    inferred_index = is_index or code.startswith(("399", "899", "950"))
+    if inferred_index:
+        sid = secid or (("0." if code.startswith(("399", "899")) else "1.") + code)
+        return fetch_index_quote(sid)
     url = ("https://push2.eastmoney.com/api/qt/ulist.np/get?fltt=2&invt=2"
            f"&secids={_secid(code)}&fields=f12,f14,f2,f3,f62,f184,f66,f72,f78,f84,f6,f10,f8")
     items = _items(_em_get(url))
@@ -589,6 +668,7 @@ def fetch_stock(code: str) -> dict:
         "amount": _num(it.get("f6")), "vr": _num(it.get("f10")), "turnover": _num(it.get("f8")),
         "beh": beh, "repurchase": rep, "changes": chg,
         "daily5": daily_flow(code),
+        "secid": _secid(code), "is_index": False,
     }
 
 
@@ -694,6 +774,14 @@ border-radius:10px;padding:12px 14px;font-size:14px;box-shadow:0 12px 34px rgba(
 .tip .load{color:var(--muted);font-size:12px}
 .tipchart{margin-top:9px;border-top:1px solid var(--line);padding-top:8px}
 .tipchart svg{display:block}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;z-index:200}
+.modalbox{background:#0e1116;border:1px solid var(--line);border-radius:12px;padding:16px 18px;width:min(940px,94vw);position:relative}
+.mtitle{font-size:16px;font-weight:800;color:#fff;margin-bottom:10px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.mchart{min-height:320px}
+.mchart .cap{color:var(--muted);font-size:12px;margin-top:6px}
+.modalclose{position:absolute;top:10px;right:14px;cursor:pointer;color:var(--muted);font-size:18px}
+.enlarge{position:absolute;right:11px;bottom:8px;cursor:pointer;color:#fff;font-size:15px;opacity:.7}
+.enlarge:hover{opacity:1}
 .up{color:var(--up)}.down{color:var(--down)}
 </style>
 </head>
@@ -764,6 +852,7 @@ border-radius:10px;padding:12px 14px;font-size:14px;box-shadow:0 12px 34px rgba(
 <div class="selgrid" id="stockgrid"><div class="empty">输入股票代码后点击添加，查看该股资金流（分资金来源）</div></div>
 <div class="secttl">全部板块 <span id="cnt" class="tag"></span></div>
 <div class="grid" id="grid"></div>
+<div class="modal" id="modal"></div>
 <div class="tip" id="tip"></div>
 <script>
 let kind="industry", auto=true, timer=null, data=[], selected=[], stocks=[], stockCache={}, behMap={}, hoverReq=0, watchLoaded=false;
@@ -795,6 +884,7 @@ function daily5HTML(r){
 }
 const CLS=v=>v>0?"up":v<0?"down":"";
 const GT=b=>b?'<span class="gtag bull">利好</span>':'<span class="gtag bear">利空</span>';
+const idOf=x=>(x&&(x.secid||x.code))||"";
 function repHTML(r){
   const rep=r&&r.repurchase;
   if(rep===undefined||rep===null) return "";
@@ -894,7 +984,8 @@ function toggle(r){
   renderGrid(); renderSel(); saveWatch(); loadBeh();
 }
 function saveWatch(){
-  const body={sectors:selected.map(s=>s.code), stocks:stocks.map(s=>s.code)};
+  const body={sectors:selected.map(s=>s.code),
+              stocks:stocks.map(s=>({code:s.code,name:s.name,secid:s.secid||"",is_index:!!s.is_index}))};
   fetch("/api/watch",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).catch(()=>{});
 }
 async function loadWatch(){
@@ -902,9 +993,14 @@ async function loadWatch(){
     const r=await fetch("/api/watch"); const j=await r.json();
     selected=(j.sectors||[]).map(c=>data.find(d=>d.code===c)).filter(Boolean);
     renderGrid(); renderSel();
-    for(const c of (j.stocks||[])){
-      try{ const rr=await fetch("/api/stock?code="+encodeURIComponent(c)); const s=await rr.json();
-        if(s && !s.error && !stocks.some(x=>x.code===s.code)) stocks.push(s);
+    for(const item of (j.stocks||[])){
+      try{
+        const c=(typeof item==="string")?{code:item}:item;
+        let url="/api/stock?code="+encodeURIComponent(c.code);
+        if(c.secid) url+="&secid="+encodeURIComponent(c.secid);
+        if(c.is_index) url+="&is_index=1";
+        const rr=await fetch(url); const s=await rr.json();
+        if(s && !s.error && !stocks.some(x=>idOf(x)===idOf(s))) stocks.push(s);
       }catch(e){}
     }
     renderStocks(); renderGrid(); renderSel(); loadBeh();
@@ -956,7 +1052,9 @@ async function loadTipChart(type,key){
 }
 function showTip(e,r,noSub){
   const t=$("#tip");
-  const hist = noSub ? {type:"stock", key:(r.code||"")} : {type:kind, key:(r.name||"")};
+  const hist = noSub
+    ? (r.is_index ? {type:"index", key:(r.secid||r.code||"")} : {type:"stock", key:(r.code||"")})
+    : {type:kind, key:(r.name||"")};
   if(noSub){
     t.innerHTML=tipBody(r)+`<div class="tipchart" id="tipchart">周线加载中…</div>`;
     const el=document.getElementById("tipchart"); if(el) el.dataset.ck=hist.type+":"+hist.key;
@@ -979,13 +1077,16 @@ function showTip(e,r,noSub){
 function stockCard(s){
   const el=document.createElement("div");
   el.className="box"; el.style.background=heat(s.main);
+  const idxTag=s.is_index?'<span class="tag">指数</span>':'';
   el.innerHTML=`<span class="x" title="移除">✕</span>
-    <div class="top"><span class="bnm">${s.name} <small class="tag">${s.code}</small></span>
+    <span class="enlarge" title="放大查看">⤢</span>
+    <div class="top"><span class="bnm">${s.name} <small class="tag">${s.code}</small> ${idxTag}</span>
     <span class="bpct">${(s.price||0).toFixed(2)} ${s.pct>0?"+":""}${s.pct.toFixed(2)}%</span></div>
     <div class="bmain">${YI(s.main)}<small class="tag"> 净流入</small></div>
     <div style="margin:-2px 0 6px">${behBadge(s,true)}</div>
     ${volHTML(s)}`;
-  el.querySelector(".x").onclick=e=>{e.stopPropagation();stocks=stocks.filter(x=>x.code!==s.code);renderStocks();saveWatch()};
+  el.querySelector(".x").onclick=e=>{e.stopPropagation();stocks=stocks.filter(x=>idOf(x)!==idOf(s));renderStocks();saveWatch()};
+  el.querySelector(".enlarge").onclick=e=>{e.stopPropagation();openDetail(s);};
   el.onmouseenter=e=>showTip(e,s,true); el.onmousemove=moveTip; el.onmouseleave=hideTip;
   return el;
 }
@@ -995,17 +1096,22 @@ function renderStocks(){
   g.innerHTML="";
   [...stocks].sort((a,b)=>b.main-a.main).forEach(s=>g.appendChild(stockCard(s)));
 }
-async function addStock(){
-  const code=$("#codeIn").value.trim();
+async function addStock(item){
+  let code, secid, isIndex;
+  if(item && typeof item==="object"){ code=item.code; secid=item.secid||""; isIndex=!!item.is_index; }
+  else { code=$("#codeIn").value.trim(); secid=""; isIndex=false; }
   hideSug();
   if(!code)return;
   $("#stockMsg").textContent="查询中…";
   try{
-    const r=await fetch("/api/stock?code="+encodeURIComponent(code));
-    const j=await r.json();
+    let url="/api/stock?code="+encodeURIComponent(code);
+    if(secid) url+="&secid="+encodeURIComponent(secid);
+    if(isIndex) url+="&is_index=1";
+    const r=await fetch(url); const j=await r.json();
     if(j.error){$("#stockMsg").textContent=j.error;return;}
     $("#stockMsg").textContent="";
-    if(stocks.some(x=>x.code===j.code)) stocks=stocks.map(x=>x.code===j.code?j:x);
+    j.id=idOf(j);
+    if(stocks.some(x=>idOf(x)===j.id)) stocks=stocks.map(x=>idOf(x)===j.id?j:x);
     else stocks.push(j);
     $("#codeIn").value=""; renderStocks(); saveWatch();
   }catch(e){$("#stockMsg").textContent="失败 "+e;}
@@ -1014,11 +1120,53 @@ async function refreshStocks(){
   if(!stocks.length)return;
   const out=[];
   for(const s of stocks){
-    try{const r=await fetch("/api/stock?code="+s.code);const j=await r.json();out.push(j.error?s:j);}
-    catch(e){out.push(s)}
+    try{
+      let url="/api/stock?code="+encodeURIComponent(s.code);
+      if(s.secid) url+="&secid="+encodeURIComponent(s.secid);
+      if(s.is_index) url+="&is_index=1";
+      const r=await fetch(url);const j=await r.json();out.push(j.error?s:j);
+    }catch(e){out.push(s)}
   }
   stocks=out; renderStocks();
 }
+async function openDetail(s){
+  const m=$("#modal"); m.style.display="flex";
+  m.innerHTML=`<div class="modalbox">
+     <span class="modalclose" id="mclose">✕</span>
+     <div class="mtitle">${s.name} <small class="tag">${s.code}</small> ${s.is_index?'<span class="tag">指数</span>':''}
+        <span class="${CLS(s.pct)}">${(s.price||0).toFixed(2)} ${s.pct>0?'+':''}${s.pct.toFixed(2)}%</span></div>
+     <div class="mchart" id="mchart">加载中…</div></div>`;
+  const close=()=>{m.style.display="none";};
+  $("#mclose").onclick=close;
+  m.onclick=e=>{if(e.target===m) close();};
+  const type = s.is_index ? "index" : "stock";
+  const key = s.secid || s.code;
+  try{
+    const r=await fetch("/api/history?type="+type+"&key="+encodeURIComponent(key));
+    const j=await r.json(); const w=j.w||[];
+    $("#mchart").innerHTML = w.length ? bigSVG(w) : '<span class="load">无历史数据</span>';
+  }catch(e){ $("#mchart").textContent="加载失败"; }
+}
+function bigSVG(pts){
+  const w=860,h=300,padL=58,padR=20,padT=18,padB=34,N=pts.length;
+  const vals=pts.map(p=>p.c), min=Math.min(...vals), max=Math.max(...vals), rng=(max-min)||1;
+  const X=i=>padL+i*(w-padL-padR)/((N-1)||1);
+  const Y=v=>h-padB-(v-min)/rng*(h-padT-padB);
+  const path=pts.map((p,i)=>`${i?'L':'M'}${X(i).toFixed(1)},${Y(p.c).toFixed(1)}`).join(' ');
+  const chg=vals[N-1]/vals[0]-1, color=chg>=0?'#ff4d4f':'#26a69a';
+  let grid="";
+  for(let k=0;k<=4;k++){const v=min+rng*k/4;const y=Y(v);
+    grid+=`<line x1="${padL}" y1="${y.toFixed(1)}" x2="${w-padR}" y2="${y.toFixed(1)}" stroke="#2b333d"/>
+      <text x="${padL-8}" y="${(y+4).toFixed(1)}" text-anchor="end" font-size="11" fill="#94a0ad">${v.toFixed(1)}</text>`;}
+  let xt="";
+  for(let k=0;k<=5;k++){const i=Math.round((N-1)*k/5);
+    xt+=`<text x="${X(i).toFixed(1)}" y="${h-12}" text-anchor="middle" font-size="11" fill="#94a0ad">${pts[i].t}</text>`;}
+  return `<svg width="100%" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet">
+    ${grid}<path d="${path}" fill="none" stroke="${color}" stroke-width="2"/>${xt}</svg>
+    <div class="cap">${pts[0].t} → ${pts[N-1].t}　<span class="${chg>=0?'up':'down'}">${chg>=0?'+':''}${(chg*100).toFixed(1)}%</span>　高 ${max.toFixed(2)} 低 ${min.toFixed(2)}　共 ${N} 周</div>`;
+}
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){const m=$("#modal"); if(m) m.style.display="none"; hideSug();}});
+
 function moveTip(e){
   const t=$("#tip"); let x=e.clientX+16, y=e.clientY+14;
   const w=t.offsetWidth||320, h=t.offsetHeight||260;
@@ -1031,11 +1179,14 @@ function hideSug(){ const s=$("#sug"); if(s) s.style.display="none"; }
 function renderSug(){
   const s=$("#sug");
   if(!sugData.length){ s.innerHTML='<div class="none">无匹配股票</div>'; s.style.display="block"; return; }
-  s.innerHTML=sugData.map((x,i)=>`<div class="it" data-i="${i}"><span>${x.name}</span><span class="c">${x.code} ${x.type||""}</span></div>`).join("");
+  s.innerHTML=sugData.map((x,i)=>{
+    const tag=x.is_index?"指数":(x.type||"");
+    return `<div class="it" data-i="${i}"><span>${x.name}</span><span class="c">${x.code} ${tag}</span></div>`;
+  }).join("");
   s.style.display="block";
   s.querySelectorAll(".it").forEach(el=>el.onclick=()=>{
     const x=sugData[+el.dataset.i];
-    $("#codeIn").value=x.code; hideSug(); addStock();
+    $("#codeIn").value=x.code; hideSug(); addStock(x);
   });
 }
 function renderSpark(pts){
@@ -1154,8 +1305,10 @@ class Handler(BaseHTTPRequestHandler):
         elif u.path == "/api/stock":
             q = parse_qs(u.query)
             code = (q.get("code", [""])[0] or "").strip()
+            secid = (q.get("secid", [""])[0] or "").strip()
+            is_index = (q.get("is_index", ["0"])[0] or "0") in ("1", "true", "True")
             try:
-                data = fetch_stock(code)
+                data = fetch_stock(code, secid=secid, is_index=is_index)
             except Exception as e:
                 data = {"error": str(e)[:60]}
             self._send(json.dumps(data, ensure_ascii=False).encode("utf-8"),

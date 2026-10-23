@@ -43,3 +43,10 @@ data/gui_cache/
 data/gui_lines.json
 data/gui_night.json
 data/moneyflow_watch.json
+
+# 板块划线看盘（Web）运行时状态
+data/sector_lines.json
+data/sector_monitor.db
+data/sector_monitor.db-wal
+data/sector_monitor.db-shm
+data/sector_cache/
