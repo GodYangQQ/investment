@@ -157,11 +157,39 @@ python run/sector_monitor_web.py --no-warm        # 不预热、不后台刷新�
   - 前端还有一层：内存 LRU 缓存 36 条、`AbortController` 取消旧请求、选中板块后预取日/周/月、刷新页面从 `sessionStorage` 恢复上次视图（含画线位置）。
   - HTTP 走 `HTTP/1.1` keep-alive + gzip（>900B 的 JSON）。
 
+## 仓位管家（Web · 规则引擎 + 看板）
+
+`run/position_manager.py` 按 `prompt/` 的蓝图实现「判断归人、计算归机器、纪律归系统」：
+你在图上画颈线 / 量度目标并确认，系统每天收盘后只用**日线收盘价**做数学比较，到点提醒。
+
+```bash
+python run/position_manager.py                 # http://127.0.0.1:8781
+python run/position_manager.py --port 8782
+POSITION_DB=/tmp/x.db python run/position_manager.py   # 换库（测试用）
+python -m unittest tests.test_position_rules tests.test_position_store -v
+```
+
+- **铁律**：方向标签由人设定并压制自动判断；价位必须点「确认入库」才生效；规则只读 `daily_bars`；
+  质地分不参与信号；不接任何交易接口。
+- **页面**：看板（方向统计 / 指数基准 / 操作提示 / 哨兵热度 / 持仓完成度）、标的库（搜索个股/指数/ETF，
+  改方向标签与池子）、详情（K 线 + 画线 + 突破确立 + 头部确立 + 回撤区 + 哨兵 + 信号）、信号、账户、设置。
+- **规则**（`core/position_rules.py`，纯函数，17 个单测）：
+  结构生命周期（待突破→进行中→已兑现→已衰竭）、共振入场（指数右侧 + 指数晚期半仓）、
+  70/80/90 阶梯减仓（只提示新跨过的最高一档）、到目标按指数终减、-20% 移动止盈、
+  颈线×0.95 假突破清仓、头部颈线跌破、回撤买回/作废、左侧→筑底自动流转、筑底三判据、哨兵分档。
+- **画线**：水平线 / 趋势线 / 纵向线；画完弹窗选类型（颈线/目标/头部/前高/回撤区）→「确认入库」，
+  以 `source=drawing` 写入价位表；改版自动生成 v2 并 supersede 旧版。
+- **存储**：`data/position.db`（SQLite / WAL），核心表装触发器**禁止硬删**；标的删除只写 `deleted_at`。
+  信号按 `(标的, 规则, state_key)` 永久去抖，价位改版 / 换战役会重新武装。
+- **日报**：工作日 16:30 自动评估并生成 Markdown；配置 `feishu_webhook`（或 `POSITION_FEISHU_WEBHOOK`）
+  后 `POST /api/push` 推送。历史回放：`GET /api/replay?code=SZ002463&days=250`。
+- **需求台账 / 回归清单**：`docs/REQUIREMENTS.md`、`docs/REGRESSION.md`。
+
 ## 目录
 
 ```
 core/     美股数据/打分/供需/资金流/细分 + 全球事件/A股炒作
-run/      rank / flow / screen / backtest / events / cn_pick / soxx_monitor / sector_monitor_web
+run/      rank / flow / screen / backtest / events / cn_pick / soxx_monitor / sector_monitor_web / position_manager
 ml/       特征矩阵
 data/     my_pool.csv、event_chains.json、cn_event_chains.json
 docs/     分析模板、仓位风控

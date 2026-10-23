@@ -50,3 +50,8 @@ data/sector_monitor.db
 data/sector_monitor.db-wal
 data/sector_monitor.db-shm
 data/sector_cache/
+
+# 仓位管家运行时状态
+data/position.db
+data/position.db-wal
+data/position.db-shm
