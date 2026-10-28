@@ -9,20 +9,19 @@
 ```bash
 pip install -r requirements.txt
 python core/datasets/universe.py                  # 刷新 SOXX 前20 → data/my_pool.csv
-python core/quant_score.py NVDA          # 单股打分 + SOXX 仓位上限
+python core/scoring/quant_score.py NVDA          # 单股打分 + SOXX 仓位上限
 python apps/cli/rank.py --top 10              # 池内排名
-python core/stock_strategy.py AMD        # 结构化个股数据（给 LLM）
+python core/strategies/stock_strategy.py AMD        # 结构化个股数据（给 LLM）
 ```
 
 | 你想做什么 | 命令 |
 |---|---|
 | 刷新标的池 | `python core/datasets/universe.py` |
-| 给某只打分 | `python core/quant_score.py NVDA --cost 120 --shares 50 --buy-date 2026-05-10` |
+| 给某只打分 | `python core/scoring/quant_score.py NVDA --cost 120 --shares 50 --buy-date 2026-05-10` |
 | 全池排名 | `python apps/cli/rank.py` |
 | 资金流向 | `python apps/cli/flow.py --days 5` |
-| 细分景气度 | `python core/sector_heat.py` |
-| 回测 | `python apps/research/backtest.py --start 2025-01-01` |
-| 特征矩阵 | `python ml/build_features.py` |
+| 细分景气度 | `python core/strategies/sector_heat.py` |
+| 回测游戏 | `python apps/web/backtest_game.py --port 8123` |
 | 世界大事件→标的 | `python apps/cli/events.py --top 20` |
 | 板块划线看盘（A股/美股 Web） | `python apps/web/sector_monitor_web.py` |
 
@@ -109,7 +108,7 @@ python apps/cli/cn_pick.py --timespan 30d --top-modules 12
 
 ## 板块划线看盘（Web · A股 / 美股）
 
-`apps/web/sector_monitor_web.py` 是 `apps/cli/soxx_monitor.py`（PyQt5）的 **Web 版**：画线交互完全照搬 Qt 版，标的从单只 ETF 换成**板块**，浏览器里就能用。
+`apps/web/sector_monitor_web.py` 是板块划线看盘的 **Web 版**：画线交互完全照搬 Qt 版，标的从单只 ETF 换成**板块**，浏览器里就能用。
 
 ```bash
 python apps/web/sector_monitor_web.py              # http://127.0.0.1:8771
@@ -189,8 +188,7 @@ python -m unittest tests.test_position_rules tests.test_position_store -v
 
 ```
 core/     美股数据/打分/供需/资金流/细分 + 全球事件/A股炒作
-apps/     web（看盘/仓位/回测游戏）· cli（选股/资金/事件）· research（回测/实验）
-ml/       特征矩阵
+apps/     web（看盘/仓位/回测游戏）· cli（选股/资金/事件）
 data/     my_pool.csv、event_chains.json、cn_event_chains.json
 docs/     分析模板、仓位风控
 scripts/  持仓看板、RSRS、监控
