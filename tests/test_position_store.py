@@ -17,7 +17,7 @@ sys.path.insert(0, ROOT)
 _TMP = tempfile.mkdtemp(prefix="position_store_test_")
 os.environ["POSITION_DB"] = os.path.join(_TMP, "test.db")
 
-from core import position_store as store  # noqa: E402
+from core.position import position_store as store  # noqa: E402
 
 
 def tearDownModule():

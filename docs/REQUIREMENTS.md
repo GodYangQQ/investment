@@ -6,7 +6,7 @@
 
 | 编号 | 需求 | 状态 | 验收标准 | 证据 |
 |---|---|---|---|---|
-| R-001 | 标的库：指数/个股/ETF 同表，含方向标签、池子、星标、分组、期权备注 | ✅ | 搜索添加后可在列表改标签/池子；指数与个股同表 | `core/position_store.py`、`run/position_manager.html` 标的页 |
+| R-001 | 标的库：指数/个股/ETF 同表，含方向标签、池子、星标、分组、期权备注 | ✅ | 搜索添加后可在列表改标签/池子；指数与个股同表 | `core/position/position_store.py`、`apps/web/position_manager.html` 标的页 |
 | R-002 | 指数基准带：每个标的绑定主关联指数，指数方向标签参与入场闸门 | ✅ | 标的页可绑定主指数；看板顶部显示指数收盘/涨跌/标签/完成度 | `index_links`、`Service._idx_state` |
 | R-003 | 价位必须经界面确认才入库；支持候选、确认、版本、失效替代 | ✅ | 未确认价位不参与评估；再次确认生成 v2 并 supersede v1 | `tests/test_position_store.py`、`active_levels()` |
 | R-004 | 结构生命周期：待突破→进行中→已兑现→已衰竭；完成度纯数学 | ✅ | 收盘 > 颈线激活；峰值完成度 ≥90% 兑现；兑现后回撤 ≥15% 衰竭 | `tests/test_position_rules.py::TestStructure` |
@@ -22,7 +22,7 @@
 | R-014 | 模拟战役：入场自动记账、减仓/清仓、收益 | ✅ | 账户页显示入场价、剩余仓位、收益；不接交易接口 | `campaigns`、`campaign_pnl` 单测 |
 | R-015 | 设置页：02 册参数全部可改，立即影响下一次计算 | ✅ | 参数落 SQLite；保存后评估使用新值 | `settings` 表、设置页 |
 | R-016 | 禁硬删：核心表装触发器；删除一律软删/归档 | ✅ | 对核心表 DELETE 抛错；标的删除只写 `deleted_at` | `NO_DELETE_TABLES`、`test_no_hard_delete` |
-| R-017 | 铁律③：规则引擎只吃日线收盘，不接触盘中/分钟数据 | ✅ | 规则模块输入仅 `daily_bars`；无分钟数据引用 | `core/position_rules.py` 无 I/O；`daily_bars` 表 |
+| R-017 | 铁律③：规则引擎只吃日线收盘，不接触盘中/分钟数据 | ✅ | 规则模块输入仅 `daily_bars`；无分钟数据引用 | `core/position/position_rules.py` 无 I/O；`daily_bars` 表 |
 | R-018 | 沙箱标的（TEST*）排除出列表/看板/统计/评估 | 🟡 | 列表默认过滤 `TEST%`；尚未提供合成 K 线夹具 | `list_instruments(exclude_test=True)` |
 | R-019 | 图表画线：水平线/趋势线/纵向线；画完弹窗确认才入库 | 🟡 | 水平线/趋势线可确认入库；纵向线仅视觉参考；未做整线拖动/端点拖动 | `drawChart`、`finishDraw` |
 | R-020 | 搜索个股/指数/ETF（名称/代码） | ✅ | 输入「沪电股份」或「002463」出建议；点击即添加 | `/api/search`（腾讯 smartbox） |
@@ -34,11 +34,11 @@
 
 ## 本轮新增文件
 
-- `core/position_rules.py` — 规则引擎（纯函数）
-- `core/position_store.py` — SQLite 存储 / 版本 / 去抖 / 软删
-- `core/price_data.py` — 日线抓取 + 搜索
-- `run/position_manager.py` — HTTP API / 调度 / 日报 / 回放
-- `run/position_manager.html` — 六页签 UI + K 线画线
+- `core/position/position_rules.py` — 规则引擎（纯函数）
+- `core/position/position_store.py` — SQLite 存储 / 版本 / 去抖 / 软删
+- `core/datasets/price_data.py` — 日线抓取 + 搜索
+- `apps/web/position_manager.py` — HTTP API / 调度 / 日报 / 回放
+- `apps/web/position_manager.html` — 六页签 UI + K 线画线
 - `tests/test_position_rules.py`、`tests/test_position_store.py`
 
 ## 未决问题

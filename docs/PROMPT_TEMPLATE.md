@@ -8,12 +8,12 @@
 ## 0. 先跑脚本，再写结论
 
 ```bash
-python core/universe.py                         # 刷新池
+python core/datasets/universe.py                         # 刷新池
 python core/quant_score.py NVDA                 # 单股打分 + SOXX 风控
 python core/quant_score.py NVDA --cost 120 --shares 50 --buy-date 2026-05-10
 python core/stock_strategy.py NVDA --kline-days 250
-python run/rank.py --top 10
-python run/flow.py --days 5
+python apps/cli/rank.py --top 10
+python apps/cli/flow.py --days 5
 python core/sector_heat.py
 python core/sector_heat.py GPU/AI加速
 ```
@@ -103,7 +103,7 @@ AI 必须补：消息面四层、供应链卡点、形态、买点、止盈止�
 
 ## 7. 输出结构（全池排名）
 
-对 `run/rank.py` Top N：只点评可买度≥关注的票。每只 8–12 行：为什么排这、最大风险、买点。最后给 1 张仓位建议表（受 SOXX 上限约束）。
+对 `apps/cli/rank.py` Top N：只点评可买度≥关注的票。每只 8–12 行：为什么排这、最大风险、买点。最后给 1 张仓位建议表（受 SOXX 上限约束）。
 
 ---
 

@@ -10,9 +10,9 @@ sys.path.insert(0, os.path.join(ROOT, "core"))
 OUTPUT_DIR = os.path.join(ROOT, "output")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-from universe import get_soxx_universe
-from us_data import fetch_realtime_quote, fetch_index_quote
-from stock_strategy import fetch_daily_kline, compute_indicators, get_latest_signals
+from core.datasets.universe import get_soxx_universe
+from core.datasets.us_data import fetch_realtime_quote, fetch_index_quote
+from core.strategies.stock_strategy import fetch_daily_kline, compute_indicators, get_latest_signals
 
 
 def main():

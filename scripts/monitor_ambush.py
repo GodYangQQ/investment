@@ -68,7 +68,7 @@ def pad_str(s: str, width: int, align: str = "<") -> str:
 def fetch_quotes(codes: list[str]) -> dict[str, dict]:
     """Fetch prices + hi/lo for all codes via yfinance."""
     sys.path.insert(0, os.path.join(ROOT_DIR, "core"))
-    from us_data import fetch_batch_quotes
+    from core.datasets.us_data import fetch_batch_quotes
     raw = fetch_batch_quotes(codes)
     quotes = {}
     for code in codes:
@@ -87,7 +87,7 @@ def fetch_quotes(codes: list[str]) -> dict[str, dict]:
 
 def fetch_kline(code: str, days: int = 30) -> list[float]:
     sys.path.insert(0, os.path.join(ROOT_DIR, "core"))
-    from us_data import fetch_daily_kline
+    from core.datasets.us_data import fetch_daily_kline
     try:
         df = fetch_daily_kline(code, days=days)
         return df["close"].tolist()

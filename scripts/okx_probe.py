@@ -45,7 +45,7 @@ def main():
     for base in BASES:
         probe(base, q)
     print("\n如果上面有命中，用它的 instId 启动看盘：")
-    print(f'  python run/soxx_monitor.py --source okx --okx-inst <上面命中的instId>')
+    print(f'  python apps/cli/soxx_monitor.py --source okx --okx-inst <上面命中的instId>')
 
 
 if __name__ == "__main__":

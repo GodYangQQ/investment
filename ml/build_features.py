@@ -30,7 +30,7 @@ import pandas as pd
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "core"))
 
-from core.stock_strategy import (
+from core.strategies.stock_strategy import (
     fetch_daily_kline,
     compute_indicators,
     fetch_realtime_quote,
@@ -108,7 +108,7 @@ assert len(FEATURE_COLS) == 28
 
 def _get_all_a_stock_codes() -> list[str]:
     """获取 SOXX 前20 ticker。"""
-    from core.universe import get_soxx_tickers
+    from core.datasets.universe import get_soxx_tickers
     codes = get_soxx_tickers(top_n=20, live=True)
     log.info("SOXX 池: %d 只", len(codes))
     return codes

@@ -8,27 +8,27 @@
 
 ```bash
 pip install -r requirements.txt
-python core/universe.py                  # 刷新 SOXX 前20 → data/my_pool.csv
+python core/datasets/universe.py                  # 刷新 SOXX 前20 → data/my_pool.csv
 python core/quant_score.py NVDA          # 单股打分 + SOXX 仓位上限
-python run/rank.py --top 10              # 池内排名
+python apps/cli/rank.py --top 10              # 池内排名
 python core/stock_strategy.py AMD        # 结构化个股数据（给 LLM）
 ```
 
 | 你想做什么 | 命令 |
 |---|---|
-| 刷新标的池 | `python core/universe.py` |
+| 刷新标的池 | `python core/datasets/universe.py` |
 | 给某只打分 | `python core/quant_score.py NVDA --cost 120 --shares 50 --buy-date 2026-05-10` |
-| 全池排名 | `python run/rank.py` |
-| 资金流向 | `python run/flow.py --days 5` |
+| 全池排名 | `python apps/cli/rank.py` |
+| 资金流向 | `python apps/cli/flow.py --days 5` |
 | 细分景气度 | `python core/sector_heat.py` |
-| 回测 | `python run/backtest.py --start 2025-01-01` |
+| 回测 | `python apps/research/backtest.py --start 2025-01-01` |
 | 特征矩阵 | `python ml/build_features.py` |
-| 世界大事件→标的 | `python run/events.py --top 20` |
-| 板块划线看盘（A股/美股 Web） | `python run/sector_monitor_web.py` |
+| 世界大事件→标的 | `python apps/cli/events.py --top 20` |
+| 板块划线看盘（A股/美股 Web） | `python apps/web/sector_monitor_web.py` |
 
 ## 股票池
 
-默认 20 只来自 iShares SOXX 最新权重（失败回退 `core/universe.py` 内置快照，截至 2026-09-28）：
+默认 20 只来自 iShares SOXX 最新权重（失败回退 `core/datasets/universe.py` 内置快照，截至 2026-09-28）：
 
 INTC / AMD / MU / NVDA / AVGO / MRVL / QCOM / ADI / KLAC / TXN / AMAT / LRCX / MPWR / TER / SKHY / TSM / NXPI / ALAB / MCHP / CRDO
 
@@ -69,7 +69,7 @@ SKHY（海力士 ADR）若 Yahoo 无数据，自动回退 `000660.KS`。
 
 ## 世界大事件 → 逻辑链 → 候选标的
 
-`python run/events.py` 扫描当前全球重大事件（地震/飓风/洪水/干旱/野火/高温/疫情/战争/制裁/航运/能源/网攻/联储/AI 资本开支），按 `data/event_chains.json` 的逻辑链映射到可能受益/受损的美股标的。
+`python apps/cli/events.py` 扫描当前全球重大事件（地震/飓风/洪水/干旱/野火/高温/疫情/战争/制裁/航运/能源/网攻/联储/AI 资本开支），按 `data/event_chains.json` 的逻辑链映射到可能受益/受损的美股标的。
 
 - 知识库 `data/event_chains.json` 可自行增改：类别 → 关键词/地区 → 逻辑 → 多/空标的。
 - 输出：事件热度概览 + 候选标的（含方向、分数、逻辑、关联事件），并写 `output/events_YYYYMMDD.csv`。
@@ -82,10 +82,10 @@ SKHY（海力士 ADR）若 Yahoo 无数据，自动回退 `000660.KS`。
 与上面美股 SOXX 系统并列的一条独立链路，只做**题材炒作**（短线情绪），不做价值。
 
 ```bash
-python run/cn_pick.py                     # 全量：炒作模块 + 每模块前3龙头
-python run/cn_pick.py --category plague   # 只看鼠疫/烈性传染病链
-python run/cn_pick.py --module 抗生素      # 直接查某模块
-python run/cn_pick.py --timespan 30d --top-modules 12
+python apps/cli/cn_pick.py                     # 全量：炒作模块 + 每模块前3龙头
+python apps/cli/cn_pick.py --category plague   # 只看鼠疫/烈性传染病链
+python apps/cli/cn_pick.py --module 抗生素      # 直接查某模块
+python apps/cli/cn_pick.py --timespan 30d --top-modules 12
 ```
 
 **两级 pipeline**：
@@ -109,20 +109,20 @@ python run/cn_pick.py --timespan 30d --top-modules 12
 
 ## 板块划线看盘（Web · A股 / 美股）
 
-`run/sector_monitor_web.py` 是 `run/soxx_monitor.py`（PyQt5）的 **Web 版**：画线交互完全照搬 Qt 版，标的从单只 ETF 换成**板块**，浏览器里就能用。
+`apps/web/sector_monitor_web.py` 是 `apps/cli/soxx_monitor.py`（PyQt5）的 **Web 版**：画线交互完全照搬 Qt 版，标的从单只 ETF 换成**板块**，浏览器里就能用。
 
 ```bash
-python run/sector_monitor_web.py              # http://127.0.0.1:8771
-python run/sector_monitor_web.py --port 8888
-python run/sector_monitor_web.py --host 0.0.0.0   # 局域网访问
-python run/sector_monitor_web.py --no-warm        # 不预热、不后台刷新（只读缓存）
+python apps/web/sector_monitor_web.py              # http://127.0.0.1:8771
+python apps/web/sector_monitor_web.py --port 8888
+python apps/web/sector_monitor_web.py --host 0.0.0.0   # 局域网访问
+python apps/web/sector_monitor_web.py --no-warm        # 不预热、不后台刷新（只读缓存）
 ```
 
 - **标的池**
   - A股：东方财富行业 / 概念板块，可按 **成交额 / 涨跌幅 / 量比 / 主力净额** 排序，搜索框过滤；
   - 美股：SPDR 11 大行业 + 半导体·科技（SOXX/SMH/IGV…）+ 主题（XBI/KRE/XOP/GLD…）；
-    想增删 ETF 改 `run/sector_monitor_web.py` 顶部的 `US_GROUPS` 即可。
-- **文件**：后端 `run/sector_monitor_web.py`，前端 `run/sector_monitor_web.html`（需与 .py 同目录，由服务端读取）。
+    想增删 ETF 改 `apps/web/sector_monitor_web.py` 顶部的 `US_GROUPS` 即可。
+- **文件**：后端 `apps/web/sector_monitor_web.py`，前端 `apps/web/sector_monitor_web.html`（需与 .py 同目录，由服务端读取）。
 - **图表**：分时 / 5 / 15 / 30 / 60 分 / 日 / 周 / 月；收盘折线加粗高亮 + 成交量，MA5/17/21/45 **每条可单独开关**（默认全关，只看收盘折线）；
   **纵轴默认对数坐标**（`对数` 按钮可切回普通价格坐标，选择存 `localStorage.sm_log`），长期看涨幅不失真；十字光标、OHLC 浮窗、滚轮缩放、拖拽平移。
 - **自选：全屏看板**
@@ -159,13 +159,13 @@ python run/sector_monitor_web.py --no-warm        # 不预热、不后台刷新�
 
 ## 仓位管家（Web · 规则引擎 + 看板）
 
-`run/position_manager.py` 按 `prompt/` 的蓝图实现「判断归人、计算归机器、纪律归系统」：
+`apps/web/position_manager.py` 按 `prompt/` 的蓝图实现「判断归人、计算归机器、纪律归系统」：
 你在图上画颈线 / 量度目标并确认，系统每天收盘后只用**日线收盘价**做数学比较，到点提醒。
 
 ```bash
-python run/position_manager.py                 # http://127.0.0.1:8781
-python run/position_manager.py --port 8782
-POSITION_DB=/tmp/x.db python run/position_manager.py   # 换库（测试用）
+python apps/web/position_manager.py                 # http://127.0.0.1:8781
+python apps/web/position_manager.py --port 8782
+POSITION_DB=/tmp/x.db python apps/web/position_manager.py   # 换库（测试用）
 python -m unittest tests.test_position_rules tests.test_position_store -v
 ```
 
@@ -173,7 +173,7 @@ python -m unittest tests.test_position_rules tests.test_position_store -v
   质地分不参与信号；不接任何交易接口。
 - **页面**：看板（方向统计 / 指数基准 / 操作提示 / 哨兵热度 / 持仓完成度）、标的库（搜索个股/指数/ETF，
   改方向标签与池子）、详情（K 线 + 画线 + 突破确立 + 头部确立 + 回撤区 + 哨兵 + 信号）、信号、账户、设置。
-- **规则**（`core/position_rules.py`，纯函数，17 个单测）：
+- **规则**（`core/position/position_rules.py`，纯函数，17 个单测）：
   结构生命周期（待突破→进行中→已兑现→已衰竭）、共振入场（指数右侧 + 指数晚期半仓）、
   70/80/90 阶梯减仓（只提示新跨过的最高一档）、到目标按指数终减、-20% 移动止盈、
   颈线×0.95 假突破清仓、头部颈线跌破、回撤买回/作废、左侧→筑底自动流转、筑底三判据、哨兵分档。
@@ -189,7 +189,7 @@ python -m unittest tests.test_position_rules tests.test_position_store -v
 
 ```
 core/     美股数据/打分/供需/资金流/细分 + 全球事件/A股炒作
-run/      rank / flow / screen / backtest / events / cn_pick / soxx_monitor / sector_monitor_web / position_manager
+apps/     web（看盘/仓位/回测游戏）· cli（选股/资金/事件）· research（回测/实验）
 ml/       特征矩阵
 data/     my_pool.csv、event_chains.json、cn_event_chains.json
 docs/     分析模板、仓位风控

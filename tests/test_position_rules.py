@@ -8,7 +8,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from core.position_rules import (  # noqa: E402
+from core.position.position_rules import (  # noqa: E402
     DEFAULTS, campaign_pnl, completion, evaluate, structure_state,
 )
 

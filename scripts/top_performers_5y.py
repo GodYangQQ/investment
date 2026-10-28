@@ -5,8 +5,8 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "core"))
 
-from universe import get_soxx_universe
-from us_data import fetch_daily_kline
+from core.datasets.universe import get_soxx_universe
+from core.datasets.us_data import fetch_daily_kline
 
 
 def main():
