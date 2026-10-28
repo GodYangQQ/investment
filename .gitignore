@@ -72,5 +72,6 @@ data/backtest_game_trades.json
 # 外部克隆的开源仓库（本地参考，不入库）
 external/*
 !external/.gitkeep
+!external/README.md
 
 
