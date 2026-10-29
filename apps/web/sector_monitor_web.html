@@ -2007,19 +2007,21 @@ async function loadBars(opts = {}) {
         showMsg("同花顺分时接口暂时没返回数据（可能被限流）<br>点一下左侧该板块会立即重试，或先看「日 / 周 / 月」", true);
         setStatus("该板块分时数据获取失败，点板块重试");
         requestDraw();
-      } else if (!cached && (opts.tries || 0) < 2) {
+      } else if (!cached && (opts.tries || 0) < (d.pending ? 10 : 2)) {
         const tries = opts.tries || 0;
         showMsg("正在获取 " + esc(S.name) + " 的K线…", false);
-        setStatus(d.pending ? "后台抓取中，稍候自动更新…" : "首次获取失败，正在自动重试…");
+        setStatus(d.pending ? "数据源抓取中，稍候自动显示…" : "首次获取失败，正在自动重试…");
         requestDraw();
         setTimeout(() => {
           if (key === cacheKey(S.market, S.code, S.tf)) {
             loadBars({reset, retry: tries >= 1, tries: tries + 1});
           }
-        }, tries === 0 ? 1000 : 2200);
+        }, d.pending ? 1500 : (tries === 0 ? 1000 : 2200));
       } else if (!cached) {
-        showMsg("没有拿到 " + esc(S.name) + " 的K线数据（数据源暂时不通）。<br>稍后点一下该板块会立即重试。", true);
-        setStatus("数据获取失败：" + S.name);
+        showMsg(d.pending
+          ? "数据源抓取较慢，后台仍在抓取…<br>稍后再点一下该标的会立即显示。"
+          : "没有拿到 " + esc(S.name) + " 的K线数据（数据源暂时不通）。<br>稍后点一下该板块会立即重试。", true);
+        setStatus(d.pending ? "后台抓取中，稍后自动显示" : "数据获取失败：" + S.name);
         requestDraw();
       }
       return;

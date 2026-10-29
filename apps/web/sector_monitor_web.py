@@ -2403,12 +2403,15 @@ def _bars_fetch(
             bars, src = cn_bars(code, tf, name, kind, retry, tail=tail)
     except Exception:
         bars, src = [], ""
-    bars = _append_today_bar(bars, market, code, kind, tf, name, retry)
     if bars:
         if tail is None and market == "us":
             db_bars_replace(market, code, tf, bars, src)
         else:
             db_bars_put(market, code, tf, bars, src)
+    before = len(bars)
+    bars = _append_today_bar(bars, market, code, kind, tf, name, retry)
+    if len(bars) > before:
+        db_bars_put(market, code, tf, bars[-1:], src)
     return bars, src
 
 
