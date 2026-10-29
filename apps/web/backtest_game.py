@@ -26,6 +26,7 @@
     python apps/web/backtest_game.py [--port 8123]
 然后浏览器打开 http://127.0.0.1:8123
 """
+
 from __future__ import annotations
 
 import argparse
@@ -58,52 +59,159 @@ CMD_DIR = os.path.join(DATA_DIR, "cmd")
 
 # 商品（新浪全球期货日线）。code 同时作为接口代码，symbol 为新浪代码。
 COMMODITIES = [
-    {"code": "OIL", "symbol": "OIL", "name": "布伦特原油", "unit": "美元/桶",
-     "alias": ["布伦特", "布油", "原油", "brent", "oil"]},
-    {"code": "CL", "symbol": "CL", "name": "WTI原油", "unit": "美元/桶",
-     "alias": ["wti", "美油", "原油", "cl"]},
-    {"code": "XAU", "symbol": "XAU", "name": "伦敦金", "unit": "美元/盎司",
-     "alias": ["黄金", "伦敦金", "gold", "xau"]},
-    {"code": "XAG", "symbol": "XAG", "name": "伦敦银", "unit": "美元/盎司",
-     "alias": ["白银", "伦敦银", "silver", "xag"]},
-    {"code": "GC", "symbol": "GC", "name": "COMEX黄金", "unit": "美元/盎司",
-     "alias": ["黄金", "comex", "gold", "gc"]},
-    {"code": "SI", "symbol": "SI", "name": "COMEX白银", "unit": "美元/盎司",
-     "alias": ["白银", "comex", "silver", "si"]},
-    {"code": "HG", "symbol": "HG", "name": "COMEX铜", "unit": "美元/磅",
-     "alias": ["铜", "copper", "hg"]},
-    {"code": "NG", "symbol": "NG", "name": "天然气", "unit": "美元/百万英热",
-     "alias": ["天然气", "gas", "ng"]},
+    {
+        "code": "OIL",
+        "symbol": "OIL",
+        "name": "布伦特原油",
+        "unit": "美元/桶",
+        "alias": ["布伦特", "布油", "原油", "brent", "oil"],
+    },
+    {
+        "code": "CL",
+        "symbol": "CL",
+        "name": "WTI原油",
+        "unit": "美元/桶",
+        "alias": ["wti", "美油", "原油", "cl"],
+    },
+    {
+        "code": "XAU",
+        "symbol": "XAU",
+        "name": "伦敦金",
+        "unit": "美元/盎司",
+        "alias": ["黄金", "伦敦金", "gold", "xau"],
+    },
+    {
+        "code": "XAG",
+        "symbol": "XAG",
+        "name": "伦敦银",
+        "unit": "美元/盎司",
+        "alias": ["白银", "伦敦银", "silver", "xag"],
+    },
+    {
+        "code": "GC",
+        "symbol": "GC",
+        "name": "COMEX黄金",
+        "unit": "美元/盎司",
+        "alias": ["黄金", "comex", "gold", "gc"],
+    },
+    {
+        "code": "SI",
+        "symbol": "SI",
+        "name": "COMEX白银",
+        "unit": "美元/盎司",
+        "alias": ["白银", "comex", "silver", "si"],
+    },
+    {
+        "code": "HG",
+        "symbol": "HG",
+        "name": "COMEX铜",
+        "unit": "美元/磅",
+        "alias": ["铜", "copper", "hg"],
+    },
+    {
+        "code": "NG",
+        "symbol": "NG",
+        "name": "天然气",
+        "unit": "美元/百万英热",
+        "alias": ["天然气", "gas", "ng"],
+    },
 ]
 _CMD_BY_CODE = {c["code"]: c for c in COMMODITIES}
 
 # 东财板块接口不稳定时的兜底板块（保证「选板块」永远可用）
 FALLBACK_BOARDS = [
-    {"code": "fb_semicon", "name": "半导体", "stocks": [
-        ("002371", "北方华创"), ("603501", "韦尔股份"), ("002049", "紫光国微"),
-        ("688981", "中芯国际"), ("002463", "沪电股份"), ("002384", "东山精密"),
-        ("600745", "闻泰科技")]},
-    {"code": "fb_ai", "name": "AI/算力", "stocks": [
-        ("002230", "科大讯飞"), ("002415", "海康威视"), ("000063", "中兴通讯"),
-        ("688111", "金山办公"), ("300059", "东方财富")]},
-    {"code": "fb_newenergy", "name": "新能源", "stocks": [
-        ("300750", "宁德时代"), ("002594", "比亚迪"), ("601012", "隆基绿能"),
-        ("600438", "通威股份"), ("002460", "赣锋锂业"), ("300014", "亿纬锂能")]},
-    {"code": "fb_baijiu", "name": "白酒消费", "stocks": [
-        ("600519", "贵州茅台"), ("000858", "五粮液"), ("000568", "泸州老窖"),
-        ("600809", "山西汾酒"), ("600887", "伊利股份")]},
-    {"code": "fb_finance", "name": "金融地产", "stocks": [
-        ("600036", "招商银行"), ("601318", "中国平安"), ("601166", "兴业银行"),
-        ("600030", "中信证券"), ("000002", "万科A"), ("600048", "保利发展")]},
-    {"code": "fb_medicine", "name": "医药", "stocks": [
-        ("600276", "恒瑞医药"), ("300760", "迈瑞医疗"), ("600436", "片仔癀"),
-        ("300015", "爱尔眼科"), ("000538", "云南白药")]},
-    {"code": "fb_resource", "name": "资源能源", "stocks": [
-        ("601899", "紫金矿业"), ("601088", "中国神华"), ("601225", "陕西煤业"),
-        ("600028", "中国石化"), ("601857", "中国石油")]},
-    {"code": "fb_consume", "name": "消费制造", "stocks": [
-        ("002475", "立讯精密"), ("000651", "格力电器"), ("000333", "美的集团"),
-        ("601633", "长城汽车"), ("002714", "牧原股份")]},
+    {
+        "code": "fb_semicon",
+        "name": "半导体",
+        "stocks": [
+            ("002371", "北方华创"),
+            ("603501", "韦尔股份"),
+            ("002049", "紫光国微"),
+            ("688981", "中芯国际"),
+            ("002463", "沪电股份"),
+            ("002384", "东山精密"),
+            ("600745", "闻泰科技"),
+        ],
+    },
+    {
+        "code": "fb_ai",
+        "name": "AI/算力",
+        "stocks": [
+            ("002230", "科大讯飞"),
+            ("002415", "海康威视"),
+            ("000063", "中兴通讯"),
+            ("688111", "金山办公"),
+            ("300059", "东方财富"),
+        ],
+    },
+    {
+        "code": "fb_newenergy",
+        "name": "新能源",
+        "stocks": [
+            ("300750", "宁德时代"),
+            ("002594", "比亚迪"),
+            ("601012", "隆基绿能"),
+            ("600438", "通威股份"),
+            ("002460", "赣锋锂业"),
+            ("300014", "亿纬锂能"),
+        ],
+    },
+    {
+        "code": "fb_baijiu",
+        "name": "白酒消费",
+        "stocks": [
+            ("600519", "贵州茅台"),
+            ("000858", "五粮液"),
+            ("000568", "泸州老窖"),
+            ("600809", "山西汾酒"),
+            ("600887", "伊利股份"),
+        ],
+    },
+    {
+        "code": "fb_finance",
+        "name": "金融地产",
+        "stocks": [
+            ("600036", "招商银行"),
+            ("601318", "中国平安"),
+            ("601166", "兴业银行"),
+            ("600030", "中信证券"),
+            ("000002", "万科A"),
+            ("600048", "保利发展"),
+        ],
+    },
+    {
+        "code": "fb_medicine",
+        "name": "医药",
+        "stocks": [
+            ("600276", "恒瑞医药"),
+            ("300760", "迈瑞医疗"),
+            ("600436", "片仔癀"),
+            ("300015", "爱尔眼科"),
+            ("000538", "云南白药"),
+        ],
+    },
+    {
+        "code": "fb_resource",
+        "name": "资源能源",
+        "stocks": [
+            ("601899", "紫金矿业"),
+            ("601088", "中国神华"),
+            ("601225", "陕西煤业"),
+            ("600028", "中国石化"),
+            ("601857", "中国石油"),
+        ],
+    },
+    {
+        "code": "fb_consume",
+        "name": "消费制造",
+        "stocks": [
+            ("002475", "立讯精密"),
+            ("000651", "格力电器"),
+            ("000333", "美的集团"),
+            ("601633", "长城汽车"),
+            ("002714", "牧原股份"),
+        ],
+    },
 ]
 
 _CN_CACHE: dict = {}
@@ -130,19 +238,28 @@ INDEX_BROAD = [
 ]
 
 INDEX_ALIASES = {
-    "上证": "上证指数", "大盘": "上证指数", "沪指": "上证指数",
-    "深成指": "深证成指", "深指": "深证成指",
-    "创业板": "创业板指", "科创": "科创50",
+    "上证": "上证指数",
+    "大盘": "上证指数",
+    "沪指": "上证指数",
+    "深成指": "深证成指",
+    "深指": "深证成指",
+    "创业板": "创业板指",
+    "科创": "科创50",
     "半导体设备": "半导体",
 }
 
 _INDEX_FALLBACK = {
     "industry": [
-        {"code": "881121", "name": "半导体"}, {"code": "881129", "name": "通信设备"},
-        {"code": "881272", "name": "软件开发"}, {"code": "881122", "name": "光学光电子"},
-        {"code": "881130", "name": "计算机设备"}, {"code": "881117", "name": "通用设备"},
-        {"code": "881118", "name": "专用设备"}, {"code": "881171", "name": "自动化设备"},
-        {"code": "881278", "name": "电网设备"}, {"code": "881279", "name": "光伏设备"},
+        {"code": "881121", "name": "半导体"},
+        {"code": "881129", "name": "通信设备"},
+        {"code": "881272", "name": "软件开发"},
+        {"code": "881122", "name": "光学光电子"},
+        {"code": "881130", "name": "计算机设备"},
+        {"code": "881117", "name": "通用设备"},
+        {"code": "881118", "name": "专用设备"},
+        {"code": "881171", "name": "自动化设备"},
+        {"code": "881278", "name": "电网设备"},
+        {"code": "881279", "name": "光伏设备"},
         {"code": "881280", "name": "风电设备"},
     ],
     "concept": [
@@ -177,11 +294,25 @@ _US_POPULAR = [
     {"code": "TQQQ", "name": "ProShares UltraPro QQQ"},
 ]
 _US_ALIAS = {
-    "苹果": "AAPL", "微软": "MSFT", "英伟达": "NVDA", "特斯拉": "TSLA",
-    "亚马逊": "AMZN", "谷歌": "GOOGL", "脸书": "META", "博通": "AVGO",
-    "超微": "AMD", "奈飞": "NFLX", "台积电": "TSM", "阿里巴巴": "BABA",
-    "拼多多": "PDD", "标普": "SPY", "标普500": "SPY", "纳斯达克": "QQQ",
-    "纳指": "QQQ", "半导体": "SOXX", "三倍做多半导体": "SOXL",
+    "苹果": "AAPL",
+    "微软": "MSFT",
+    "英伟达": "NVDA",
+    "特斯拉": "TSLA",
+    "亚马逊": "AMZN",
+    "谷歌": "GOOGL",
+    "脸书": "META",
+    "博通": "AVGO",
+    "超微": "AMD",
+    "奈飞": "NFLX",
+    "台积电": "TSM",
+    "阿里巴巴": "BABA",
+    "拼多多": "PDD",
+    "标普": "SPY",
+    "标普500": "SPY",
+    "纳斯达克": "QQQ",
+    "纳指": "QQQ",
+    "半导体": "SOXX",
+    "三倍做多半导体": "SOXL",
 }
 _US_NAME_CACHE = {it["code"]: it["name"] for it in _US_POPULAR}
 _US_SEARCH_CACHE = {}
@@ -199,8 +330,10 @@ HTML = r"""<!DOCTYPE html>
 *{box-sizing:border-box}
 body{margin:0;font:14px/1.5 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
      background:var(--bg);color:var(--txt);display:flex;flex-direction:column;height:100vh;overflow:hidden}
-header{height:50px;display:flex;align-items:center;gap:10px;padding:0 12px;
-       border-bottom:1px solid var(--border);background:var(--panel2);flex-wrap:nowrap;overflow:visible;position:relative;z-index:20}
+header{display:flex;flex-direction:column;gap:6px;padding:8px 12px;
+       border-bottom:1px solid var(--border);background:var(--panel2);flex-wrap:wrap;position:relative;z-index:20}
+.hrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.hrow .hint{color:var(--dim);font-size:12px;margin-left:auto}
 header h1{font-size:15px;margin:0;font-weight:700;white-space:nowrap}
 select,input,button{font:inherit;background:var(--panel);color:var(--txt);border:1px solid var(--border);
        border-radius:7px;padding:5px 9px;font-size:13px}
@@ -283,28 +416,33 @@ label{display:block;margin:4px 0 2px;color:var(--dim)}
 </head>
 <body>
 <header>
-  <h1>回测游戏</h1>
-  <label>市场<select id="market">
-    <option value="cn">A股</option><option value="us">美股</option><option value="idx">指数</option><option value="cmd">商品</option>
-  </select></label>
-  <label><span id="boardLabel">板块</span>
-    <div class="combo"><input id="boardInput" placeholder="中文/代码" autocomplete="off" spellcheck="false">
-      <div class="menu" id="boardMenu"></div></div>
-  </label>
-  <label>标的
-    <div class="combo"><input id="symbolInput" placeholder="中文/代码" autocomplete="off" spellcheck="false">
-      <div class="menu" id="symbolMenu"></div></div>
-  </label>
-  <label>开始日期<select id="start"></select></label>
-  <label>速度<select id="speed">
-    <option value="1500">慢</option><option value="700" selected>中</option>
-    <option value="250">快</option><option value="80">极快</option>
-  </select></label>
-  <label>自动 <input type="checkbox" id="autoPlay"></label>
-  <button id="btnPause" disabled>⏹ 停止</button>
-  <button id="btnPrev" disabled>◀ 上一步</button>
-  <button id="btnStep" disabled>下一步</button>
-  <button id="btnReset">↺ 重置</button>
+  <div class="hrow">
+    <h1>回测游戏</h1>
+    <label>市场<select id="market">
+      <option value="cn">A股</option><option value="us">美股</option><option value="idx">指数</option><option value="cmd">商品</option>
+    </select></label>
+    <label><span id="boardLabel">板块</span>
+      <div class="combo"><input id="boardInput" placeholder="中文/代码" autocomplete="off" spellcheck="false">
+        <div class="menu" id="boardMenu"></div></div>
+    </label>
+    <label>标的
+      <div class="combo"><input id="symbolInput" placeholder="中文/代码" autocomplete="off" spellcheck="false">
+        <div class="menu" id="symbolMenu"></div></div>
+    </label>
+    <label>开始日期<select id="start"></select></label>
+  </div>
+  <div class="hrow">
+    <label>速度<select id="speed">
+      <option value="1500">慢</option><option value="700" selected>中</option>
+      <option value="250">快</option><option value="80">极快</option>
+    </select></label>
+    <label>自动 <input type="checkbox" id="autoPlay"></label>
+    <button class="primary" id="btnStart" disabled>▶ 开始回放</button>
+    <button id="btnPause" disabled>⏹ 停止</button>
+    <button id="btnPrev" disabled>◀ 上一步</button>
+    <button id="btnStep" disabled>下一步</button>
+    <button id="btnReset">↺ 重置</button>
+  </div>
 </header>
 <div id="wrap">
   <div id="sidebar">
@@ -315,11 +453,9 @@ label{display:block;margin:4px 0 2px;color:var(--dim)}
         <option value="day">一日（收盘）</option>
         <option value="week">周线（周收盘）</option>
       </select></label>
-      <div id="unitHint" style="margin-top:6px;color:var(--dim)">半日：09:55 = 开盘价，14:55 = 收盘价</div>
       <div style="display:flex;gap:5px;margin-top:8px">
         <button class="buy" id="btnBuy" style="flex:1">买入</button>
         <button class="sell" id="btnSell" style="flex:1">卖出</button>
-        <button class="primary" id="btnStart" style="flex:1.7;font-size:12px;padding:5px 4px" disabled>▶ 开始回放</button>
       </div>
       <label style="margin-top:8px">买卖比例 <select id="buySize">
         <option value="1">全部</option><option value="0.5">半仓</option>
@@ -333,7 +469,6 @@ label{display:block;margin:4px 0 2px;color:var(--dim)}
     <div class="sec">
       <h3>至今表现</h3>
       <div id="perfStats" style="line-height:1.9">--</div>
-      <div style="margin-top:4px;color:var(--dim)">波动率见右上角最大回撤一行<br>至少 30 个交易日才显示</div>
     </div>
     <div class="sec">
       <h3>均线</h3>
@@ -343,7 +478,6 @@ label{display:block;margin:4px 0 2px;color:var(--dim)}
         <label><input type="checkbox" id="ma21" checked><span style="color:#c77dff">MA21</span></label>
         <label><input type="checkbox" id="ma42"><span style="color:#4dd0e1">MA42</span></label>
       </div>
-      <div style="margin-top:6px;color:var(--dim)">周期按当前操作单位计算</div>
       <label style="display:flex;align-items:center;gap:6px;margin-top:7px">
         <input type="checkbox" id="logScale"> 对数坐标
       </label>
@@ -351,7 +485,6 @@ label{display:block;margin:4px 0 2px;color:var(--dim)}
     <div class="sec">
       <h3>波动性</h3>
       <div id="volStats" style="line-height:1.8;color:var(--txt)">--</div>
-      <div style="margin-top:4px;color:var(--dim)">HV = 当前单位20周期年化波动率<br>ATR = 20日平均真实波幅</div>
     </div>
     <div class="sec">
       <h3>仓位参考（波动率目标）</h3>
@@ -373,7 +506,6 @@ label{display:block;margin:4px 0 2px;color:var(--dim)}
         </label>
       </div>
       <div id="vtStats" style="line-height:1.9;margin-top:7px">--</div>
-      <div style="margin-top:4px;color:var(--dim)">建议仓位 = min(1, 目标波动 ÷ 年化波动)<br>始终做多，只调仓位；不自动交易</div>
     </div>
     <div class="sec">
       <h3>估值</h3>
@@ -383,7 +515,6 @@ label{display:block;margin:4px 0 2px;color:var(--dim)}
         <span><i style="background:#f2c94c"></i>中性</span>
         <span><i style="background:#ff6b6b"></i>偏贵</span>
       </div>
-      <div style="margin-top:4px;color:var(--dim)">分位 = 截至当日向前 5 年<br>绿 &lt;30% · 黄 30–70% · 红 &gt;70%<br>只用当日及之前数据，无未来函数</div>
     </div>
     <div class="sec">
       <h3>画线</h3>
@@ -405,8 +536,6 @@ label{display:block;margin:4px 0 2px;color:var(--dim)}
           <input id="limitV" type="number" min="1" max="100" value="5" style="width:100%;margin-top:2px">
         </label>
       </div>
-      <div id="lineHint" style="margin-top:6px;color:var(--dim)">趋势线最多20条 · 纵向线最多5条（新增自动去掉最旧）</div>
-      <div style="margin-top:2px;color:var(--dim)">拖拽平移 · 滚轮缩放 · 右键/Esc退出画线 · Delete删线</div>
     </div>
     <div class="sec">
       <h3>自选标的</h3>
@@ -2037,7 +2166,6 @@ async function deleteRecord(rec){
 function applyLineLimitsUI(){
   $('limitTrend').value=S.lineLimitTrend;
   $('limitV').value=S.lineLimitV;
-  $('lineHint').textContent=`趋势线最多${S.lineLimitTrend}条 · 纵向线最多${S.lineLimitV}条（新增自动去掉最旧）`;
 }
 function readLineLimits(){
   const rawT=parseInt($('limitTrend').value);
@@ -2546,6 +2674,7 @@ def _cn_etf_list() -> list:
         out, seen = [], set()
         try:
             import akshare as ak
+
             df = ak.fund_etf_category_sina(symbol="ETF基金")
             for _, r in df.iterrows():
                 raw = str(r.get("代码") or "").strip()
@@ -2598,9 +2727,16 @@ def _etf_from_tencent(code: str) -> list:
         for _, r in df.iterrows():
             d = r["date"]
             ds = d.strftime("%Y-%m-%d") if hasattr(d, "strftime") else str(d)[:10]
-            out.append([ds, round(_fnum(r["open"]), 3), round(_fnum(r["high"]), 3),
-                        round(_fnum(r["low"]), 3), round(_fnum(r["close"]), 3),
-                        _fnum(r["volume"]) * 100])
+            out.append(
+                [
+                    ds,
+                    round(_fnum(r["open"]), 3),
+                    round(_fnum(r["high"]), 3),
+                    round(_fnum(r["low"]), 3),
+                    round(_fnum(r["close"]), 3),
+                    _fnum(r["volume"]) * 100,
+                ]
+            )
         return out
     except Exception:
         return []
@@ -2631,9 +2767,16 @@ def _etf_merge(sina: list, tencent: list) -> list:
     for row in sina:
         if row[0] >= cut:
             break
-        out.append([row[0], round(row[1] * factor, 3), round(row[2] * factor, 3),
-                    round(row[3] * factor, 3), round(row[4] * factor, 3),
-                    row[5] / factor if factor else row[5]])
+        out.append(
+            [
+                row[0],
+                round(row[1] * factor, 3),
+                round(row[2] * factor, 3),
+                round(row[3] * factor, 3),
+                round(row[4] * factor, 3),
+                row[5] / factor if factor else row[5],
+            ]
+        )
     out.extend(tencent[first:])
     return out
 
@@ -2649,13 +2792,21 @@ def _bars_etf(code: str) -> list:
     sina = []
     try:
         import akshare as ak
+
         df = ak.fund_etf_hist_sina(symbol=sym)
         for _, r in df.iterrows():
             d = r["date"]
             ds = d.strftime("%Y-%m-%d") if hasattr(d, "strftime") else str(d)[:10]
-            sina.append([ds, round(_fnum(r["open"]), 3), round(_fnum(r["high"]), 3),
-                         round(_fnum(r["low"]), 3), round(_fnum(r["close"]), 3),
-                         _fnum(r["volume"])])
+            sina.append(
+                [
+                    ds,
+                    round(_fnum(r["open"]), 3),
+                    round(_fnum(r["high"]), 3),
+                    round(_fnum(r["low"]), 3),
+                    round(_fnum(r["close"]), 3),
+                    _fnum(r["volume"]),
+                ]
+            )
     except Exception:
         sina = []
     sina = _etf_split_adjust(sina)
@@ -2668,6 +2819,7 @@ def _cn_name(code: str) -> str:
     code = str(code)
     try:
         from core.datasets.cn_data import get_quote
+
         q = get_quote(code)
         if q and q.get("name"):
             return str(q["name"]).strip()
@@ -2693,15 +2845,27 @@ def _bars_cn(code: str):
     if not bars:
         try:
             import akshare as ak
-            df = ak.stock_zh_a_daily(symbol=_cn_prefix(code) + code, start_date="20200101",
-                                     end_date="20261023", adjust="qfq")
+
+            df = ak.stock_zh_a_daily(
+                symbol=_cn_prefix(code) + code,
+                start_date="20200101",
+                end_date="20261023",
+                adjust="qfq",
+            )
             if df is not None and len(df):
                 for _, r in df.iterrows():
                     d = r["date"]
                     ds = d.strftime("%Y-%m-%d") if hasattr(d, "strftime") else str(d)[:10]
-                    bars.append([ds, round(float(r["open"]), 3), round(float(r["high"]), 3),
-                                 round(float(r["low"]), 3), round(float(r["close"]), 3),
-                                 float(r["volume"])])
+                    bars.append(
+                        [
+                            ds,
+                            round(float(r["open"]), 3),
+                            round(float(r["high"]), 3),
+                            round(float(r["low"]), 3),
+                            round(float(r["close"]), 3),
+                            float(r["volume"]),
+                        ]
+                    )
         except Exception:
             bars = []
     if not bars:
@@ -2710,9 +2874,16 @@ def _bars_cn(code: str):
         df = get_kline(code, days=1600)
         if df is not None and not df.empty:
             for _, r in df.iterrows():
-                bars.append([r["date"].strftime("%Y-%m-%d"), round(float(r["open"]), 3),
-                             round(float(r["high"]), 3), round(float(r["low"]), 3),
-                             round(float(r["close"]), 3), float(r["volume"])])
+                bars.append(
+                    [
+                        r["date"].strftime("%Y-%m-%d"),
+                        round(float(r["open"]), 3),
+                        round(float(r["high"]), 3),
+                        round(float(r["low"]), 3),
+                        round(float(r["close"]), 3),
+                        float(r["volume"]),
+                    ]
+                )
     _CN_CACHE[code] = bars
     return bars
 
@@ -2723,9 +2894,16 @@ def _bars_us(code: str):
         return []
     out = []
     for _, r in df.iterrows():
-        out.append([str(r["date"].date()), round(float(r["open"]), 3),
-                    round(float(r["high"]), 3), round(float(r["low"]), 3),
-                    round(float(r["close"]), 3), float(r["volume"])])
+        out.append(
+            [
+                str(r["date"].date()),
+                round(float(r["open"]), 3),
+                round(float(r["high"]), 3),
+                round(float(r["low"]), 3),
+                round(float(r["close"]), 3),
+                float(r["volume"]),
+            ]
+        )
     return out
 
 
@@ -2742,7 +2920,9 @@ def _yahoo_us_search(q: str) -> list:
         r = requests.get(
             "https://query1.finance.yahoo.com/v1/finance/search",
             params={"q": q, "quotesCount": 30, "newsCount": 0, "enableFuzzyQuery": "false"},
-            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0.0.0 Safari/537.36"},
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0.0.0 Safari/537.36"
+            },
             timeout=10,
         )
         data = r.json() if r.ok else {}
@@ -2826,6 +3006,7 @@ def _cn_stock_universe() -> list:
         rows = []
         try:
             import akshare as ak
+
             df = None
             try:
                 df = ak.stock_info_a_code_name()
@@ -2896,8 +3077,15 @@ def _search_broad(kw: str, limit: int = 12) -> list:
             if it["code"] in seen:
                 continue
             seen.add(it["code"])
-            out.append({"code": it["code"], "name": it["name"], "kind": "index",
-                        "idxKind": "broad", "market": "idx"})
+            out.append(
+                {
+                    "code": it["code"],
+                    "name": it["name"],
+                    "kind": "index",
+                    "idxKind": "broad",
+                    "market": "idx",
+                }
+            )
             if len(out) >= limit:
                 return out
     return out
@@ -2945,7 +3133,12 @@ def _ths_index_list(group: str) -> list:
         out = []
         try:
             import akshare as ak
-            fn = ak.stock_board_industry_name_ths if group == "industry" else ak.stock_board_concept_name_ths
+
+            fn = (
+                ak.stock_board_industry_name_ths
+                if group == "industry"
+                else ak.stock_board_concept_name_ths
+            )
             df = fn()
             for _, r in df.iterrows():
                 name = str(r.get("name") or "").strip()
@@ -3040,26 +3233,45 @@ def _bars_index(kind: str, code: str):
     bars = []
     try:
         import akshare as ak
+
         end = datetime.now().strftime("%Y%m%d")
         if kind == "broad":
             df = ak.stock_zh_index_daily(symbol=code)
             for _, r in df.iterrows():
                 d = r["date"]
                 ds = d.strftime("%Y-%m-%d") if hasattr(d, "strftime") else str(d)[:10]
-                bars.append([ds, round(_fnum(r["open"]), 3), round(_fnum(r["high"]), 3),
-                             round(_fnum(r["low"]), 3), round(_fnum(r["close"]), 3),
-                             _fnum(r["volume"])])
+                bars.append(
+                    [
+                        ds,
+                        round(_fnum(r["open"]), 3),
+                        round(_fnum(r["high"]), 3),
+                        round(_fnum(r["low"]), 3),
+                        round(_fnum(r["close"]), 3),
+                        _fnum(r["volume"]),
+                    ]
+                )
         else:
             name = _index_name(kind, code)
             if name and name != code:
-                fn = ak.stock_board_industry_index_ths if kind == "ind" else ak.stock_board_concept_index_ths
+                fn = (
+                    ak.stock_board_industry_index_ths
+                    if kind == "ind"
+                    else ak.stock_board_concept_index_ths
+                )
                 df = fn(symbol=name, start_date="20200101", end_date=end)
                 for _, r in df.iterrows():
                     d = r["日期"]
                     ds = d.strftime("%Y-%m-%d") if hasattr(d, "strftime") else str(d)[:10]
-                    bars.append([ds, round(_fnum(r["开盘价"]), 3), round(_fnum(r["最高价"]), 3),
-                                 round(_fnum(r["最低价"]), 3), round(_fnum(r["收盘价"]), 3),
-                                 _fnum(r["成交量"])])
+                    bars.append(
+                        [
+                            ds,
+                            round(_fnum(r["开盘价"]), 3),
+                            round(_fnum(r["最高价"]), 3),
+                            round(_fnum(r["最低价"]), 3),
+                            round(_fnum(r["收盘价"]), 3),
+                            _fnum(r["成交量"]),
+                        ]
+                    )
     except Exception:
         bars = []
     _IDX_KLINE_CACHE[key] = bars
@@ -3128,11 +3340,20 @@ def _clean_line(ln: dict):
         if t == "h":
             return {"type": "h", "y": round(float(ln.get("y") or 0), 4)}
         if t == "trend":
-            return {"type": "trend", "x1": str(ln.get("x1"))[:32], "y1": round(float(ln.get("y1") or 0), 4),
-                    "x2": str(ln.get("x2"))[:32], "y2": round(float(ln.get("y2") or 0), 4)}
+            return {
+                "type": "trend",
+                "x1": str(ln.get("x1"))[:32],
+                "y1": round(float(ln.get("y1") or 0), 4),
+                "x2": str(ln.get("x2"))[:32],
+                "y2": round(float(ln.get("y2") or 0), 4),
+            }
         if t == "v":
-            return {"type": "v", "x": str(ln.get("x"))[:32],
-                    "y1": round(float(ln.get("y1") or 0), 4), "y2": round(float(ln.get("y2") or 0), 4)}
+            return {
+                "type": "v",
+                "x": str(ln.get("x"))[:32],
+                "y1": round(float(ln.get("y1") or 0), 4),
+                "y2": round(float(ln.get("y2") or 0), 4),
+            }
     except (TypeError, ValueError):
         return None
     return None
@@ -3140,9 +3361,9 @@ def _clean_line(ln: dict):
 
 # ===================== 估值（PE/PB/PS 日频 + 历史分位） =====================
 VAL_DIR = os.path.join(DATA_DIR, "valuation")
-VAL_TTL = 6 * 3600          # 6 小时；日频数据，盘中不必重复拉
-VAL_WINDOW = 1250           # 约 5 年交易日
-VAL_MIN_N = 250             # 少于此样本量不算分位
+VAL_TTL = 6 * 3600  # 6 小时；日频数据，盘中不必重复拉
+VAL_WINDOW = 1250  # 约 5 年交易日
+VAL_MIN_N = 250  # 少于此样本量不算分位
 VAL_COLS = "SECURITY_CODE,SECURITY_NAME_ABBR,TRADE_DATE,PE_TTM,PB_MRQ,PS_TTM"
 
 _VAL_MEM: dict = {}
@@ -3186,7 +3407,9 @@ def _fetch_val_rows(code: str):
             name = name or str(it.get("SECURITY_NAME_ABBR") or "")
             d = str(it.get("TRADE_DATE") or "")[:10]
             if d:
-                rows.append([d, _num(it.get("PE_TTM")), _num(it.get("PB_MRQ")), _num(it.get("PS_TTM"))])
+                rows.append(
+                    [d, _num(it.get("PE_TTM")), _num(it.get("PB_MRQ")), _num(it.get("PS_TTM"))]
+                )
         if page >= int(res.get("pages") or 1) or len(rows) >= total:
             break
         page += 1
@@ -3211,8 +3434,9 @@ def _pct_series(vals, window: int = VAL_WINDOW, min_n: int = VAL_MIN_N):
                 k = bisect_left(win, old)
                 if k < len(win) and win[k] == old:
                     win.pop(k)
-        out.append(round(bisect_right(win, v) / len(win) * 100, 1)
-                   if ok and len(win) >= min_n else None)
+        out.append(
+            round(bisect_right(win, v) / len(win) * 100, 1) if ok and len(win) >= min_n else None
+        )
     return out
 
 
@@ -3236,25 +3460,39 @@ def _valuation_payload(code: str) -> dict:
     if payload is None:
         name, rows = _fetch_val_rows(code)
         if not rows:
-            payload = {"code": code, "name": name, "rows": [],
-                       "reason": "该标的无 PE/PB/PS（ETF/指数或数据缺失）"}
+            payload = {
+                "code": code,
+                "name": name,
+                "rows": [],
+                "reason": "该标的无 PE/PB/PS（ETF/指数或数据缺失）",
+            }
         else:
             pe_p = _pct_series([r[1] for r in rows])
             pb_p = _pct_series([r[2] for r in rows])
             ps_p = _pct_series([r[3] for r in rows])
             out = []
             for i, r in enumerate(rows):
-                out.append([
-                    r[0],
-                    None if r[1] is None else round(r[1], 2),
-                    None if r[2] is None else round(r[2], 2),
-                    None if r[3] is None else round(r[3], 2),
-                    pe_p[i], pb_p[i], ps_p[i],
-                ])
-            payload = {"code": code, "name": name, "rows": out,
-                       "basis": VAL_WINDOW, "min_n": VAL_MIN_N,
-                       "start": rows[0][0], "end": rows[-1][0],
-                       "updated": datetime.now().strftime("%Y-%m-%d %H:%M")}
+                out.append(
+                    [
+                        r[0],
+                        None if r[1] is None else round(r[1], 2),
+                        None if r[2] is None else round(r[2], 2),
+                        None if r[3] is None else round(r[3], 2),
+                        pe_p[i],
+                        pb_p[i],
+                        ps_p[i],
+                    ]
+                )
+            payload = {
+                "code": code,
+                "name": name,
+                "rows": out,
+                "basis": VAL_WINDOW,
+                "min_n": VAL_MIN_N,
+                "start": rows[0][0],
+                "end": rows[-1][0],
+                "updated": datetime.now().strftime("%Y-%m-%d %H:%M"),
+            }
         try:
             tmp = path + ".tmp"
             with open(tmp, "w", encoding="utf-8") as f:
@@ -3275,8 +3513,10 @@ _CMD_LOCK = threading.Lock()
 
 
 def _cmd_list():
-    return [{"code": c["code"], "name": c["name"], "market": "cmd", "unit": c["unit"]}
-            for c in COMMODITIES]
+    return [
+        {"code": c["code"], "name": c["name"], "market": "cmd", "unit": c["unit"]}
+        for c in COMMODITIES
+    ]
 
 
 def _cmd_name(code):
@@ -3290,28 +3530,30 @@ def _search_cmd(kw):
         return _cmd_list()
     out = []
     for c in COMMODITIES:
-        hay = " ".join([c["code"].lower(), c["name"].lower()] +
-                       [a.lower() for a in c["alias"]])
+        hay = " ".join([c["code"].lower(), c["name"].lower()] + [a.lower() for a in c["alias"]])
         if q in hay:
-            out.append({"code": c["code"], "name": c["name"],
-                        "market": "cmd", "unit": c["unit"]})
+            out.append({"code": c["code"], "name": c["name"], "market": "cmd", "unit": c["unit"]})
     return out[:20]
 
 
 def _fetch_cmd_bars(symbol: str):
     """新浪全球期货日线。返回 [[ISO时间, o, h, l, c, v], ...] 升序。"""
-    url = ("https://stock2.finance.sina.com.cn/futures/api/jsonp.php/"
-           "var%20_=/GlobalFuturesService.getGlobalFuturesDailyKLine")
-    r = requests.get(url, params={"symbol": symbol},
-                     headers={"User-Agent": "Mozilla/5.0",
-                              "Referer": "https://finance.sina.com.cn/"},
-                     timeout=20)
+    url = (
+        "https://stock2.finance.sina.com.cn/futures/api/jsonp.php/"
+        "var%20_=/GlobalFuturesService.getGlobalFuturesDailyKLine"
+    )
+    r = requests.get(
+        url,
+        params={"symbol": symbol},
+        headers={"User-Agent": "Mozilla/5.0", "Referer": "https://finance.sina.com.cn/"},
+        timeout=20,
+    )
     r.raise_for_status()
     text = r.text
     a, b = text.find("("), text.rfind(")")
     if a < 0 or b <= a:
         return []
-    rows = json.loads(text[a + 1:b])
+    rows = json.loads(text[a + 1 : b])
     out = []
     for it in rows:
         try:
@@ -3357,7 +3599,7 @@ def _bars_cmd(code: str):
         bars = _fetch_cmd_bars(code)
     except Exception:
         bars = []
-    if not bars:                      # 拉取失败：退回旧缓存
+    if not bars:  # 拉取失败：退回旧缓存
         try:
             with open(path, encoding="utf-8") as f:
                 return json.load(f)
@@ -3410,11 +3652,14 @@ class Handler(BaseHTTPRequestHandler):
             code = q.get("board", [""])[0]
             if code.startswith("fb_"):
                 fb = next((b for b in FALLBACK_BOARDS if b["code"] == code), None)
-                return self._send(200, [{"code": c, "name": n}
-                                        for c, n in (fb["stocks"] if fb else [])])
+                return self._send(
+                    200, [{"code": c, "name": n} for c, n in (fb["stocks"] if fb else [])]
+                )
             cons = []
             try:
-                cons = [{"code": c["code"], "name": c["name"]} for c in get_board_constituents(code)]
+                cons = [
+                    {"code": c["code"], "name": c["name"]} for c in get_board_constituents(code)
+                ]
             except Exception:
                 cons = []
             if not cons:
@@ -3432,18 +3677,22 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 if market == "cmd":
                     bars = _bars_cmd(code)
-                    return self._send(200, {"code": code.upper(),
-                                            "name": _cmd_name(code) or code,
-                                            "bars": bars})
+                    return self._send(
+                        200, {"code": code.upper(), "name": _cmd_name(code) or code, "bars": bars}
+                    )
                 if market == "idx" or kind in ("broad", "ind", "con"):
                     kind = kind or "broad"
                     if kind not in ("broad", "ind", "con"):
                         return self._send(400, {"error": "bad kind"})
                     bars = _bars_index(kind, code)
-                    return self._send(200, {"code": code, "name": _index_name(kind, code), "bars": bars})
+                    return self._send(
+                        200, {"code": code, "name": _index_name(kind, code), "bars": bars}
+                    )
                 if code.isdigit():
                     bars = _bars_cn(code)
-                    return self._send(200, {"code": code, "name": _cn_name(code) or code, "bars": bars})
+                    return self._send(
+                        200, {"code": code, "name": _cn_name(code) or code, "bars": bars}
+                    )
                 bars = _bars_us(code)
                 return self._send(200, {"code": code, "name": _us_name(code) or code, "bars": bars})
             except Exception as e:
@@ -3497,13 +3746,13 @@ class Handler(BaseHTTPRequestHandler):
             q = parse_qs(u.query)
             code = q.get("code", [""])[0].strip()
             if not code.isdigit():
-                return self._send(200, {"code": code, "rows": [],
-                                        "reason": "估值仅支持 A 股代码"})
+                return self._send(200, {"code": code, "rows": [], "reason": "估值仅支持 A 股代码"})
             try:
                 return self._send(200, _valuation_payload(code))
             except Exception as e:
-                return self._send(200, {"code": code, "rows": [],
-                                        "reason": "估值获取失败：" + str(e)[:80]})
+                return self._send(
+                    200, {"code": code, "rows": [], "reason": "估值获取失败：" + str(e)[:80]}
+                )
         if u.path == "/api/lines":
             return self._send(200, {"lines": _load_lines()})
         if u.path == "/api/trades":
@@ -3548,9 +3797,14 @@ class Handler(BaseHTTPRequestHandler):
                     return self._send(400, {"error": "id/ts required"})
                 with _LINES_LOCK:
                     records = _load_trades()
-                    kept = [r for r in records
-                            if not ((tid and str(r.get("id") or "") == tid)
-                                    or (ts and int(r.get("ts") or 0) == ts))]
+                    kept = [
+                        r
+                        for r in records
+                        if not (
+                            (tid and str(r.get("id") or "") == tid)
+                            or (ts and int(r.get("ts") or 0) == ts)
+                        )
+                    ]
                     if len(kept) == len(records):
                         return self._send(404, {"error": "记录不存在"})
                     with open(TRADES_FILE, "w", encoding="utf-8") as f:
@@ -3579,7 +3833,9 @@ class Handler(BaseHTTPRequestHandler):
                     "end": str(d.get("end") or ""),
                     "endTime": str(d.get("endTime") or ""),
                     "trades": d.get("trades") if isinstance(d.get("trades"), list) else [],
-                    "roundTrips": d.get("roundTrips") if isinstance(d.get("roundTrips"), list) else [],
+                    "roundTrips": d.get("roundTrips")
+                    if isinstance(d.get("roundTrips"), list)
+                    else [],
                     "finalEquity": d.get("finalEquity"),
                     "finalCash": d.get("finalCash"),
                     "finalShares": d.get("finalShares"),

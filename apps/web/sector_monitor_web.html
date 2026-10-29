@@ -162,6 +162,9 @@ background:#0e141b;flex-wrap:wrap}
 .drawer .dh .wback{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700;
 padding:6px 12px;border-radius:8px;font-size:17px;cursor:pointer}
 .drawer .dh .wback:hover{filter:brightness(1.08)}
+.wtabs{display:flex;gap:4px;margin-left:8px}
+.wtabs button{padding:2px 8px;font-size:13px;border-radius:6px;background:var(--panel);border:1px solid var(--line);color:var(--dim);cursor:pointer}
+.wtabs button.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
 .wlist{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;padding:14px;
  display:grid;grid-template-columns:repeat(5,minmax(0,1fr));
  grid-auto-rows:max(160px,calc((100vh - 130px)/4));gap:12px;align-content:start;
@@ -303,12 +306,18 @@ body.focus main{grid-template-columns:304px 1fr}
 <button id="watchBtn" class="fab" title="我的自选">自选<b id="watchCount">0</b></button>
 <aside id="watch" class="drawer">
   <div class="dh"><button id="wback" class="wback" title="回到看盘（Esc）">← 返回看盘</button>
-    <b>我的自选</b><span class="muted" id="wcount2">0 个板块</span>
-    <span class="hint">单击选中 · 双击放大 · 悬停临时放大 1.5× · 3×4 网格，滚动查看更多 · Esc 返回</span>
+    <b>我的自选</b><span class="muted" id="wcount2">0 个</span>
+    <div class="wtabs" id="wtabs">
+      <button data-wt="all" class="on">全部</button>
+      <button data-wt="sector">板块</button>
+      <button data-wt="stock">个股</button>
+      <button data-wt="etf">ETF</button>
+    </div>
     <span class="sp"></span><button id="wclose">关闭</button></div>
   <div class="wlist" id="wlist"></div>
 </aside>
 
+<div id="movers" class="movers"></div>
 <script>
 "use strict";
 /* ===================== 状态 ===================== */
@@ -320,7 +329,7 @@ const S = {
   view: {l: -1, r: 1}, ylim: null, vmax: 1, userView: false,
   auto: true, hover: null, drag: null, pan: null,
   undo: [], redo: [], live: null, loading: false, lastBarFetch: 0,
-  ma: [], log: true,
+  ma: [], log: true, watchFilter: "all",
 };
 const $ = s => document.querySelector(s);
 
@@ -2063,19 +2072,28 @@ function levelsFor(lines, price, tLast) {
   return {sup: below[0], res: above[0]};
 }
 
+function watchType(it) {
+  const c = String(it.code || "").toUpperCase();
+  if (it.kind === "index") return "index";
+  if (it.kind === "industry" || it.kind === "concept") {
+    return it.market === "us" ? "etf" : "sector";
+  }
+  if (/^(15|16|50|51|52|56|58)/.test(c)) return "etf";
+  return "stock";
+}
 async function renderWatch() {
   const box = $("#wlist");
   const keepL = box.scrollLeft, keepT = box.scrollTop;
   box.innerHTML = "";
+  const items = WATCH.filter(it => S.watchFilter === "all" || watchType(it) === S.watchFilter);
   const c2 = $("#wcount2");
-  if (c2) c2.textContent = WATCH.length + " 个板块";
-  if (!WATCH.length) {
-    box.innerHTML = '<div class="wempty">还没有自选。<br>在左侧列表点 ☆ 收藏，回来就能看到<br>' +
-      '折线图、画线，以及最近的支撑 / 压力。</div>';
+  if (c2) c2.textContent = items.length + " 个";
+  if (!items.length) {
+    box.innerHTML = '<div class="wempty">该分类下还没有自选。</div>';
     return;
   }
   const nodes = new Map();
-  for (const it of WATCH) {
+  for (const it of items) {
     const el = document.createElement("div");
     el.className = "wcard";
     el.dataset.key = it.market + ":" + it.code;
@@ -2119,7 +2137,7 @@ async function renderWatch() {
     nodes.set(it.market + ":" + it.code, el);
   }
   requestAnimationFrame(() => { box.scrollLeft = keepL; box.scrollTop = keepT; });
-  const queue = WATCH.slice();
+  const queue = items.slice();
   const worker = async () => {
     while (queue.length) {
       const it = queue.shift();
@@ -2577,6 +2595,13 @@ setInterval(() => { if (watchOpen()) refreshWatchValues(); }, 10000);
   $("#watchBtn").onclick = () => (watchOpen() ? closeWatch() : openWatch());
   $("#wclose").onclick = closeWatch;
   $("#wback").onclick = () => { closeWatch(); setFocus(false); };
+  $("#wtabs").addEventListener("click", e => {
+    const b = e.target.closest("button[data-wt]");
+    if (!b) return;
+    S.watchFilter = b.dataset.wt;
+    [...$("#wtabs").children].forEach(x => x.classList.toggle("on", x === b));
+    renderWatch();
+  });
   syncFab();   // 初始化时按状态校正「自选」按钮显隐
   $("#bFocus").onclick = () => setFocus(!document.body.classList.contains("focus"));
 
@@ -2645,6 +2670,5 @@ setInterval(() => { if (watchOpen()) refreshWatchValues(); }, 10000);
   updateButtons();
 })();
 </script>
-<div id="movers" class="movers"></div>
 </body>
 </html>
