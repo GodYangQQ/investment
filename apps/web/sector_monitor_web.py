@@ -53,6 +53,7 @@ DB_FILE = os.path.join(DATA_DIR, "sector_monitor.db")
 LINES_FILE = os.path.join(DATA_DIR, "sector_lines.json")
 UI_FILE = os.path.join(RUN_DIR, "sector_monitor_web.html")
 GAME_PORT = 8123
+OFFLINE = os.environ.get("SECTOR_OFFLINE", "").strip().lower() in ("1", "true", "yes")
 GAME_HTML = """<!DOCTYPE html>
 <html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>回测游戏</title>
@@ -2455,10 +2456,27 @@ def bars_payload(
             bars = db_bars_get(market, bare, tf)
             if bars:
                 read_code = bare
-    bars = _append_today_bar(bars, market, read_code, kind, tf, name, retry)
+    if not OFFLINE:
+        bars = _append_today_bar(bars, market, read_code, kind, tf, name, retry)
     meta = db_meta_get(bkey)
     age = time.time() - meta["ts"] if meta else 0.0
     fresh = bool(bars) and age < _bar_ttl(tf)
+    if OFFLINE:
+        return {
+            "market": market,
+            "code": code,
+            "name": name,
+            "tf": tf,
+            "bars": bars,
+            "src": (meta or {}).get("src", ""),
+            "count": len(bars),
+            "time": datetime.now().strftime("%H:%M:%S"),
+            "stale": not fresh,
+            "pending": False,
+            "offline": True,
+            "age": round(max(age, 0), 1),
+            "fetched_at": (meta or {}).get("ts", 0),
+        }
     if bars and not fresh:  # 有过期数据：先返回，后台只补最近 N 根
         _spawn_once(
             bkey,
@@ -3040,7 +3058,11 @@ def main():
     ap.add_argument("--host", default="127.0.0.1")
     ap.add_argument("--port", type=int, default=8771)
     ap.add_argument("--no-warm", action="store_true", help="关闭启动预热 / 后台刷新")
+    ap.add_argument("--offline", action="store_true", help="只读本地库，不访问外部数据源")
     args = ap.parse_args()
+    global OFFLINE
+    if args.offline:
+        OFFLINE = True
     os.makedirs(DATA_DIR, exist_ok=True)
     db()
     db_prune()
