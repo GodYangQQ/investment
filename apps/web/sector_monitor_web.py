@@ -52,6 +52,37 @@ DATA_DIR = os.path.join(ROOT_DIR, "data")
 DB_FILE = os.path.join(DATA_DIR, "sector_monitor.db")
 LINES_FILE = os.path.join(DATA_DIR, "sector_lines.json")
 UI_FILE = os.path.join(RUN_DIR, "sector_monitor_web.html")
+GAME_PORT = 8123
+GAME_HTML = """<!DOCTYPE html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>回测游戏</title>
+<style>html,body{margin:0;height:100%;background:#0e1116;overflow:hidden}iframe{width:100%;height:100%;border:0}</style>
+</head><body><iframe src="http://__HOST__:8123/"></iframe></body></html>"""
+
+
+def _ensure_game_server(port: int = GAME_PORT) -> None:
+    """确保回测游戏服务在运行（独立进程，供 /game iframe 使用）。"""
+    import socket
+    import subprocess
+
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.settimeout(0.3)
+            if s.connect_ex(("127.0.0.1", port)) == 0:
+                return
+    except Exception:
+        pass
+    try:
+        subprocess.Popen(
+            [sys.executable, os.path.join(RUN_DIR, "backtest_game.py"), "--port", str(port)],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True,
+        )
+    except Exception:
+        pass
+
+
 sys.path.insert(0, ROOT_DIR)
 
 try:
@@ -2603,6 +2634,12 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         u = urlparse(self.path)
         q = parse_qs(u.query)
+        if u.path == "/game":
+            _ensure_game_server()
+            host = (self.headers.get("Host") or "127.0.0.1").split(":")[0]
+            html = GAME_HTML.replace("__HOST__", host).encode("utf-8")
+            self._send(html, "text/html; charset=utf-8", 200)
+            return
         if u.path in ("/", "/index.html"):
             try:
                 with open(UI_FILE, "rb") as f:
@@ -2964,6 +3001,7 @@ def main():
     os.makedirs(DATA_DIR, exist_ok=True)
     db()
     db_prune()
+    _ensure_game_server()
     if not args.no_warm:
         threading.Thread(target=_warmup, daemon=True, name="warmup").start()
         threading.Thread(target=_background_ticker, daemon=True, name="ticker").start()

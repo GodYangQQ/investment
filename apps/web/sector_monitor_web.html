@@ -233,6 +233,7 @@ body.focus main{grid-template-columns:304px 1fr}
   <span class="sp"></span>
   <span id="ts" class="muted"></span>
   <button id="helpBtn">画线说明 ?</button>
+  <button id="gameBtn">回测游戏</button>
 </header>
 
 <div class="help" id="help" hidden>
@@ -2547,6 +2548,7 @@ $("#maAll").onclick = () => {
   renderList(); setStatus("显示全部板块");
 };
 $("#helpBtn").onclick = () => { $("#help").hidden = !$("#help").hidden; };
+$("#gameBtn").onclick = () => window.open("/game", "_blank");
 
 window.addEventListener("resize", resize);
 if (window.ResizeObserver) new ResizeObserver(() => resize()).observe($("#cw"));
