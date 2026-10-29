@@ -2715,6 +2715,11 @@ class Handler(BaseHTTPRequestHandler):
             code = (q.get("code", [""])[0] or "").strip()
             name = (q.get("name", [""])[0] or "").strip()
             market = (q.get("market", ["cn"])[0] or "cn").strip()
+            try:
+                top = int(q.get("top", ["20"])[0] or 20)
+            except Exception:
+                top = 20
+            top = max(1, min(top, 50))
             if market != "cn":
                 self._json({"items": [], "note": "美股暂不支持"})
                 return
@@ -2725,7 +2730,7 @@ class Handler(BaseHTTPRequestHandler):
                     self._json({"items": [], "pending": True, "note": "评分计算中"})
                     return
                 codes = []
-                items = board_scores(name=name, codes=codes, top=10)
+                items = board_scores(name=name, codes=codes, top=top)
                 if not items and code:
                     try:
                         from core.datasets.cn_data import get_board_constituents
@@ -2733,7 +2738,7 @@ class Handler(BaseHTTPRequestHandler):
                         cons = get_board_constituents(code, 500)
                         codes = [str(c.get("code")) for c in cons if c.get("code")]
                         if codes:
-                            items = board_scores(name=name, codes=codes, top=10)
+                            items = board_scores(name=name, codes=codes, top=top)
                     except Exception:
                         pass
                 self._json(

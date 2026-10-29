@@ -177,16 +177,48 @@ padding:6px 12px;border-radius:8px;font-size:17px;cursor:pointer}
 .wcard:hover{border-color:#3c4a59;background:#141c26;transform:scale(1.5);z-index:5;
  box-shadow:0 14px 34px rgba(0,0,0,.6)}
 .wcard.sel{border-color:var(--accent);box-shadow:0 0 0 1px rgba(74,144,217,.45) inset}
-.movers{position:fixed;display:none;z-index:60;width:280px;max-height:70vh;overflow:auto;
-  background:#121922;border:1px solid var(--line);border-radius:10px;padding:8px 10px;
-  box-shadow:0 16px 40px rgba(0,0,0,.6);font-size:14px}
-.movers.show{display:block}
-.movers h4{margin:6px 0 4px;font-size:13px;color:#94a0ad}
-.movers .mi{display:flex;justify-content:space-between;gap:8px;padding:3px 4px;border-radius:5px;cursor:pointer}
-.movers .mi:hover{background:#1c2632}
-.movers .mi .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.movers .mi .p{font-variant-numeric:tabular-nums;font-weight:700}
-.movers .mtip{padding:6px 4px;color:#94a0ad}
+.wcard .wscore{border:1px solid #3c5680;background:#18212c;color:#9cc4ef;font-size:14px;
+ padding:1px 7px;border-radius:6px;line-height:1.5;opacity:0;visibility:hidden;transition:opacity .12s}
+.wcard:hover .wscore{opacity:1;visibility:visible}
+.wcard .wscore:hover{background:#20304a;color:#fff}
+.score-modal{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;
+ background:rgba(4,7,10,.62);padding:20px}
+.score-modal.open{display:flex}
+.score-modal .sbox{width:min(980px,96vw);max-height:84vh;display:flex;flex-direction:column;
+ background:#101720;border:1px solid var(--line);border-radius:12px;box-shadow:0 24px 70px rgba(0,0,0,.7);overflow:hidden}
+.score-modal .shead{display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid var(--line);
+ background:#0e141b;flex-wrap:wrap}
+.score-modal .shead b{font-size:18px}
+.score-modal .shead .muted{font-size:14px}
+.score-modal .shead .sp{flex:1;min-width:12px}
+.score-modal .sfilter{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+.score-modal .sbody{overflow:auto;padding:8px 12px 14px}
+.score-modal .srow{display:grid;grid-template-columns:30px minmax(168px,1.7fr) 132px 54px repeat(4,54px) 66px;
+ gap:8px;align-items:center;padding:4px 8px;min-height:42px;border-radius:6px;cursor:pointer;font-size:14.5px;
+ font-variant-numeric:tabular-nums}
+.score-modal .srow:hover{background:#17212c}
+.score-modal .srow.h{color:#8290a0;font-size:13px;cursor:default;border-bottom:1px solid var(--line);
+ border-radius:0;padding-bottom:7px}
+.score-modal .srow.h:hover{background:transparent}
+.score-modal .srow .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.score-modal .mspark{display:block;width:132px;height:34px}
+.score-modal .srow .c{color:#687584;font-size:12.5px}
+.score-modal .tag{display:inline-block;margin-left:5px;padding:0 5px;border-radius:4px;font-size:11.5px;
+ line-height:1.65;border:1px solid;vertical-align:1px;font-weight:600;font-family:inherit;cursor:pointer}
+.score-modal .tag:hover,.score-modal .ftag:hover{filter:brightness(1.25)}
+.score-modal .tag.on{box-shadow:0 0 0 1px currentColor inset}
+.score-modal .ftag{padding:1px 7px;border-radius:5px;font-size:12.5px;font-family:inherit;cursor:pointer;
+ color:#94a0ad;border:1px solid #303b47;background:#151d26;line-height:1.6}
+.score-modal .ftag.on{color:#fff;border-color:var(--accent);background:#20304a}
+.score-modal .tag.star{color:#f0a742;border-color:#6b4b1f;background:#2a2116}
+.score-modal .tag.cyb{color:#58a6ff;border-color:#24466b;background:#122132}
+.score-modal .tag.sh{color:#ef6b6b;border-color:#6b2929;background:#2a1717}
+.score-modal .tag.sz{color:#4bc7b8;border-color:#1f5a52;background:#122524}
+.score-modal .tag.bj{color:#b48cff;border-color:#45336b;background:#1d1730}
+.score-modal .tag.shb,.score-modal .tag.szb{color:#94a0ad;border-color:#39424d;background:#182029}
+.score-modal .srow .sc{color:var(--accent);font-weight:700}
+.score-modal .srow .dim{color:#7c8896}
+.score-modal .stip{padding:22px 8px;text-align:center;color:#94a0ad;font-size:15px;line-height:1.8}
 .wcard .wh{display:flex;align-items:baseline;gap:8px;flex-wrap:nowrap;overflow:hidden}
 .wcard .wh b{font-size:17.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .wcard .wh .muted{font-size:15px;white-space:nowrap}
@@ -251,7 +283,9 @@ body.focus main{grid-template-columns:304px 1fr}
     数据结构与 Qt 版相同（<code>h: y</code> / <code>trend: x1,y1,x2,y2</code>）。<br>
   · 图表操作：左键拖拽平移（X+Y）、滚轮缩放（自动适配 Y 轴）、中键平移、双击/「重置视图」恢复。<br>
   · <b>自选</b>：左侧点 ☆ 收藏，右侧「自选」抽屉看迷你图 + 已画线；卡片显示最近的下支撑 / 上压力，
-    点卡片切换板块，「放大」看单图专注模式（<code>Esc</code> 退出）。<br><br>
+    点卡片切换板块，「放大」看单图专注模式（<code>Esc</code> 退出）。<br>
+  · <b>自选板块</b>：鼠标悬停卡片会出现「个股评分」，点击查看该板块<b>评分前50</b>的个股，可按板块标签筛选；
+    双击卡片空白处仍是原来的放大/画线逻辑。<br><br>
   <b>板块口径：</b>A股用东财行业/概念板块，按<b>成交额</b>排序，可切量比、主力净额与涨幅；
   美股用 SPDR 11 大行业 + 半导体/科技 + 主题 ETF。列表每 10 秒刷新，分时/日线按周期自动更新。
 </div>
@@ -317,7 +351,14 @@ body.focus main{grid-template-columns:304px 1fr}
   <div class="wlist" id="wlist"></div>
 </aside>
 
-<div id="movers" class="movers"></div>
+<div id="scoreModal" class="score-modal">
+  <div class="sbox">
+    <div class="shead"><b id="smTitle">个股评分前50</b><span class="muted" id="smSub"></span>
+      <div class="sfilter" id="smFilter"></div>
+      <span class="sp"></span><button id="smClose">关闭</button></div>
+    <div class="sbody" id="smBody"></div>
+  </div>
+</div>
 <script>
 "use strict";
 /* ===================== 状态 ===================== */
@@ -1317,6 +1358,10 @@ document.addEventListener("keydown", e => {
     if (e.key === "Escape") e.target.blur();
     return;
   }
+  if ($("#scoreModal").classList.contains("open")) {
+    if (e.key === "Escape") closeScoreRanking();
+    return;
+  }
   if (e.key === "Escape") {
     if (S.p1) { S.p1 = null; setStatus("已取消起点"); draw(); return; }
     if (S.mode) { setMode(null); return; }
@@ -1447,90 +1492,10 @@ function _afterPointerUp() {
 window.addEventListener("pointerup", _afterPointerUp, true);
 window.addEventListener("pointercancel", _afterPointerUp, true);
 
-let _moversTimer = 0;
-let _moversHoverTimer = 0;
-const MOVERS_CACHE = new Map();
-function hideMovers() {
-  const p = $("#movers");
-  if (p) p.classList.remove("show");
-}
-async function showMovers(el, code) {
-  if (S.market !== "cn") return;
-  const panel = $("#movers"), list = $("#list");
-  if (!panel || !list) return;
-  const lr = list.getBoundingClientRect(), r = el.getBoundingClientRect();
-  panel.style.left = Math.round(lr.right + 8) + "px";
-  panel.style.top = Math.round(Math.max(8, Math.min(r.top, window.innerHeight - 430))) + "px";
-  panel.classList.add("show");
-  const nm = el.querySelector(".nmx")?.textContent || "";
-  const hit = MOVERS_CACHE.get(code);
-  if (hit && Date.now() - hit.at < 60000) {
-    renderMovers(panel, hit.d, hit.sc);
-    return;
-  }
-  panel.innerHTML = '<div class="mtip">评分加载中…</div>';
-  const qs = `&market=cn&name=${encodeURIComponent(nm)}`;
-  try {
-    const sc = await api(`/api/board_scores?code=${encodeURIComponent(code)}${qs}`).catch(() => ({}));
-    if (!panel.classList.contains("show")) return;
-    renderMovers(panel, { up: [], down: [] }, sc);
-    const d = await Promise.race([
-      api(`/api/board_movers?code=${encodeURIComponent(code)}${qs}`).catch(() => ({})),
-      new Promise(resolve => setTimeout(() => resolve({}), 2000)),
-    ]);
-    if (!panel.classList.contains("show")) return;
-    MOVERS_CACHE.set(code, { d, sc, at: Date.now() });
-    if ((d.up && d.up.length) || (d.down && d.down.length)) renderMovers(panel, d, sc);
-  } catch (e) {
-    panel.innerHTML = '<div class="mtip">加载失败</div>';
-  }
-}
-function renderMovers(panel, d, sc) {
-  const up = d.up || [], down = d.down || [];
-  const row = x => {
-    const p = Number(x.pct) || 0;
-    return `<div class="mi" data-code="${esc(x.code)}" data-name="${esc(x.name)}">` +
-      `<span class="n">${esc(x.name)}</span>` +
-      `<span class="p" style="color:${p >= 0 ? UP : DOWN}">${p >= 0 ? "+" : ""}${p.toFixed(2)}%</span></div>`;
-  };
-  const scoreRow = (x, i) => `<div class="mi" data-code="${esc(x.code)}" data-name="${esc(x.name)}">` +
-    `<span class="n">${i + 1}. ${esc(x.name)}</span>` +
-    `<span class="p" style="color:${ACCENT}">${Number(x.score).toFixed(1)}</span></div>`;
-  let html = "";
-  if (up.length) html += `<h4>领涨</h4>${up.map(row).join("")}`;
-  if (down.length) html += `<h4>领跌</h4>${down.map(row).join("")}`;
-  if (sc && sc.items && sc.items.length) {
-    html += `<h4>评分前10</h4>${sc.items.map(scoreRow).join("")}`;
-  } else if (sc && sc.pending) {
-    html += `<div class="mtip">评分计算中…（约20秒，稍后再悬停）</div>`;
-  }
-  if (!html) html = `<div class="mtip">${esc((d && (d.note || d.error)) || "暂无数据")}</div>`;
-  panel.innerHTML = html;
-  panel.querySelectorAll(".mi").forEach(e => {
-    e.onclick = () => {
-      const c = e.dataset.code, n = e.dataset.name;
-      const pre = /^[69]/.test(c) ? "SH" : (/^[03]/.test(c) ? "SZ" : "BJ");
-      hideMovers();
-      openSector({ market: "cn", kind: "stock", code: pre + c, name: n }, false);
-    };
-  });
-}
-$("#movers").addEventListener("mouseenter", () => clearTimeout(_moversTimer));
-$("#movers").addEventListener("mouseleave", () => { _moversTimer = setTimeout(hideMovers, 150); });
-
 function makeRowEl(code) {
   const el = document.createElement("div");
   el.className = "row";
   el.dataset.code = code;
-  el.addEventListener("mouseenter", () => {
-    if (S.market !== "cn") return;
-    clearTimeout(_moversTimer);
-    _moversHoverTimer = setTimeout(() => showMovers(el, code), 120);
-  });
-  el.addEventListener("mouseleave", () => {
-    clearTimeout(_moversHoverTimer);
-    _moversTimer = setTimeout(hideMovers, 200);
-  });
   el.innerHTML =
     `<div class="nm"><span class="nmx"></span>` +
     `<button class="star" data-star=""></button>` +
@@ -1750,33 +1715,6 @@ $("#list").addEventListener("click", e => {
     return;
   }
   selectSector(rec);
-});
-
-/* 悬停预取：停在某一行 160ms 就先拉一次，点下去不用等接口 */
-let _hoverTimer = 0, _hoverRow = null;
-$("#list").addEventListener("pointerover", e => {
-  const row = e.target.closest(".row");
-  if (!row || row === _hoverRow) return;
-  _hoverRow = row;
-  clearTimeout(_hoverTimer);
-  const code = row.dataset.code;
-  const rec = _rowMap.get(code);
-  if (!rec || code === S.code) return;
-  _hoverTimer = setTimeout(() => {
-    const key = cacheKey(S.market, code, S.tf);
-    if (BCACHE.has(key)) return;
-    api(barsUrl(S.market, S.akind, code, rec.name, S.tf))
-      .then(d => {
-        if (d.bars && d.bars.length) {
-          cachePut(key, {bars: mapBars(d.bars), src: d.src || "", time: d.time || "", at: Date.now()});
-        }
-      })
-      .catch(() => {});
-  }, 160);
-});
-$("#list").addEventListener("pointerleave", () => {
-  clearTimeout(_hoverTimer);
-  _hoverRow = null;
 });
 
 /* ===================== 选择 / 加载 ===================== */
@@ -2134,6 +2072,7 @@ async function renderWatch() {
   }
   const nodes = new Map();
   for (const it of items) {
+    const canScore = it.market === "cn" && watchType(it) === "sector";
     const el = document.createElement("div");
     el.className = "wcard";
     el.dataset.key = it.market + ":" + it.code;
@@ -2158,10 +2097,12 @@ async function renderWatch() {
       `<div class="wl"><span>支撑 <b data-sup>—</b></span>` +
       `<span>压力 <b data-res>—</b></span>` +
       `<span class="wtag" data-tag>加载中…</span>` +
+      (canScore ? `<button class="wscore" title="查看该板块个股评分前50">个股评分</button>` : "") +
       `<button class="wzoom" title="放大这个板块">放大</button>` +
       `<button class="wdel" title="移出自选（删除）">✕</button></div>`;
     el.addEventListener("click", e => {
       if (Date.now() - (box._suppress || 0) < 320) return;   // 刚拖拽滚动过，别误触
+      if (e.target.closest(".wscore")) { openScoreRanking(it); return; }
       if (e.target.closest(".wdel")) { toggleWatch(it); return; }
       if (e.target.closest(".wzoom")) { openSector(it, true); return; }
       if (e.target.closest(".wres")) return;
@@ -2170,7 +2111,7 @@ async function renderWatch() {
       setStatus(`已选中 ${it.name} · 双击放大 · 右下角拖动改大小`);
     });
     el.addEventListener("dblclick", e => {
-      if (e.target.closest(".wdel,.wzoom,.wres")) return;
+      if (e.target.closest(".wdel,.wzoom,.wscore,.wres")) return;
       openSector(it, true);
     });
     box.appendChild(el);
@@ -2186,6 +2127,181 @@ async function renderWatch() {
   };
   await Promise.all([worker(), worker(), worker()]);
 }
+
+/* ---------- 板块个股评分前50 ---------- */
+const SM = {items: [], tag: "", it: null};
+const MINILINE = new Map();
+let miniObs = null;
+const TAG_ORDER = ["star", "cyb", "sh", "sz", "bj", "shb", "szb"];
+function scoreStockCode(c) {
+  const code = String(c || "");
+  if (/^[69]/.test(code)) return "SH" + code;
+  if (/^[03]/.test(code)) return "SZ" + code;
+  return "BJ" + code;
+}
+function boardTag(c) {
+  const code = String(c || "").replace(/^(SH|SZ|BJ)/, "");
+  if (/^(688|689)/.test(code)) return ["科创板", "star"];
+  if (/^(300|301|302)/.test(code)) return ["创业板", "cyb"];
+  if (/^(43|83|87|88|920)/.test(code)) return ["北交所", "bj"];
+  if (/^900/.test(code)) return ["沪B", "shb"];
+  if (/^200/.test(code)) return ["深B", "szb"];
+  if (/^(600|601|603|605)/.test(code)) return ["上证", "sh"];
+  if (/^(000|001|002|003)/.test(code)) return ["深证", "sz"];
+  return ["", ""];
+}
+function boardTagHtml(code) {
+  const [label, cls] = boardTag(code);
+  if (!label) return "";
+  const on = SM.tag === cls ? " on" : "";
+  return `<button type="button" class="tag tagbtn ${cls}${on}" data-board="${cls}">${label}</button>`;
+}
+function resetMiniObs() {
+  if (miniObs) { miniObs.disconnect(); miniObs = null; }
+}
+function closeScoreRanking() {
+  $("#scoreModal").classList.remove("open");
+  resetMiniObs();
+}
+function drawMiniLine(canvas, bars) {
+  if (!bars || !bars.length) return;
+  drawSpark(canvas, bars, [], bars[bars.length - 1].c);
+}
+async function loadMiniSpark(row) {
+  const code = row.dataset.code, name = row.dataset.name;
+  const canvas = row.querySelector(".mspark");
+  if (!canvas) return;
+  const sym = scoreStockCode(code);
+  const hit = MINILINE.get(sym);
+  if (hit && Date.now() - hit.at < 300000) {
+    drawMiniLine(canvas, hit.bars);
+    return;
+  }
+  queueSpark(async () => {
+    if (!canvas.isConnected) return;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (!canvas.isConnected) return;
+      try {
+        const d = await api(`/api/bars?market=cn&kind=stock&code=${encodeURIComponent(sym)}` +
+          `&name=${encodeURIComponent(name || "")}&tf=1d&retry=${attempt ? 1 : 0}`);
+        const bars = mapBars(d.bars);
+        if (bars.length) {
+          MINILINE.set(sym, {bars, at: Date.now()});
+          if (canvas.isConnected) drawMiniLine(canvas, bars);
+          return;
+        }
+      } catch (e) {}
+      await new Promise(r => setTimeout(r, attempt === 0 ? 900 : 1600));
+    }
+  });
+}
+function observeMiniSpark(row) {
+  const canvas = row.querySelector(".mspark");
+  if (!canvas) return;
+  if (!("IntersectionObserver" in window)) { loadMiniSpark(row); return; }
+  if (!miniObs) {
+    miniObs = new IntersectionObserver(entries => {
+      for (const e of entries) {
+        if (!e.isIntersecting) continue;
+        miniObs.unobserve(e.target);
+        const r = e.target.closest(".srow");
+        if (r) loadMiniSpark(r);
+      }
+    }, {root: $("#smBody"), rootMargin: "120px"});
+  }
+  miniObs.observe(canvas);
+}
+function setScoreFilter(tag) {
+  SM.tag = SM.tag === tag ? "" : (tag || "");
+  $("#smBody").scrollTop = 0;
+  renderScoreRows();
+}
+function renderScoreRows() {
+  const body = $("#smBody"), filter = $("#smFilter");
+  const all = SM.items || [];
+  const show = SM.tag ? all.filter(x => boardTag(x.code)[1] === SM.tag) : all;
+  const counts = {};
+  for (const x of all) {
+    const [label, cls] = boardTag(x.code);
+    if (!label) continue;
+    if (!counts[cls]) counts[cls] = {label, n: 0};
+    counts[cls].n++;
+  }
+  const fbtns = [`<button type="button" class="ftag${SM.tag ? "" : " on"}" data-board="">全部 ${all.length}</button>`];
+  for (const cls of TAG_ORDER) {
+    if (!counts[cls]) continue;
+    fbtns.push(`<button type="button" class="ftag${SM.tag === cls ? " on" : ""}" data-board="${cls}">` +
+      `${counts[cls].label} ${counts[cls].n}</button>`);
+  }
+  if (filter) {
+    filter.innerHTML = fbtns.join("");
+    filter.querySelectorAll(".ftag").forEach(b => { b.onclick = () => setScoreFilter(b.dataset.board || ""); });
+  }
+  const tagName = SM.tag ? (all.find(x => boardTag(x.code)[1] === SM.tag) ? boardTag(all.find(x => boardTag(x.code)[1] === SM.tag).code)[0] : "") : "";
+  $("#smSub").textContent = SM.tag
+    ? `筛选：${tagName} · ${show.length} 只`
+    : `业绩 + 回购 · ${all.length} 只`;
+  const fmtScore = v => (v === null || v === undefined || isNaN(v)) ? "—" : Number(v).toFixed(1);
+  const head = `<div class="srow h"><span>#</span><span>个股</span><span>走势</span><span>评分</span>` +
+    `<span>成长</span><span>盈利</span><span>质量</span><span>回购</span><span>ROE</span></div>`;
+  body.innerHTML = head + show.map(x => {
+    const rank = all.indexOf(x) + 1;
+    return `<div class="srow" data-code="${esc(x.code)}" data-name="${esc(x.name)}">` +
+      `<span class="dim">${rank}</span>` +
+      `<span class="n">${esc(x.name)} <span class="c">${esc(x.code)}</span>${boardTagHtml(x.code)}</span>` +
+      `<canvas class="mspark"></canvas>` +
+      `<span class="sc">${fmtScore(x.score)}</span>` +
+      `<span>${fmtScore(x.growth)}</span>` +
+      `<span>${fmtScore(x.profit)}</span>` +
+      `<span>${fmtScore(x.quality)}</span>` +
+      `<span>${fmtScore(x.buyback)}</span>` +
+      `<span>${x.roe === null || x.roe === undefined ? "—" : Number(x.roe).toFixed(1) + "%"}</span></div>`;
+  }).join("");
+  resetMiniObs();
+  body.querySelectorAll(".srow[data-code]").forEach(row => {
+    row.onclick = () => {
+      const code = scoreStockCode(row.dataset.code), name = row.dataset.name;
+      closeScoreRanking();
+      openSector({market: "cn", kind: "stock", code, name}, false);
+    };
+    row.querySelectorAll(".tagbtn").forEach(b => {
+      b.addEventListener("click", e => { e.stopPropagation(); setScoreFilter(b.dataset.board); });
+    });
+    observeMiniSpark(row);
+  });
+}
+async function openScoreRanking(it) {
+  const modal = $("#scoreModal"), body = $("#smBody");
+  if (!modal || !body) return;
+  SM.items = []; SM.tag = ""; SM.it = it;
+  $("#smTitle").textContent = (it.name || it.code) + " · 个股评分前50";
+  $("#smSub").textContent = "业绩 + 回购综合评分";
+  const filter = $("#smFilter");
+  if (filter) filter.innerHTML = "";
+  body.innerHTML = '<div class="stip">评分加载中…</div>';
+  modal.classList.add("open");
+  body.scrollTop = 0;
+  try {
+    const d = await api(`/api/board_scores?market=cn&code=${encodeURIComponent(it.code)}` +
+      `&name=${encodeURIComponent(it.name || "")}&top=50`);
+    if (!modal.classList.contains("open")) return;
+    const items = d.items || [];
+    if (!items.length) {
+      const tip = d.pending ? "评分计算中，请稍后再打开…"
+        : (d.error ? "加载失败：" + d.error : (d.note || "暂无该板块的评分数据"));
+      body.innerHTML = `<div class="stip">${esc(tip)}</div>`;
+      return;
+    }
+    SM.items = items;
+    renderScoreRows();
+  } catch (e) {
+    body.innerHTML = `<div class="stip">加载失败：${esc(e.message || e)}</div>`;
+  }
+}
+$("#smClose").addEventListener("click", closeScoreRanking);
+$("#scoreModal").addEventListener("click", e => {
+  if (e.target === $("#scoreModal")) closeScoreRanking();
+});
 
 /* 卡片右下角改宽高（存进自选，下次打开保持） */
 /* 自选网格：使用原生纵向滚动（不再横向拖动/手动改大小） */
