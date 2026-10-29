@@ -28,6 +28,7 @@ A股 / 美股 板块划线看盘（Web 版）
     python apps/web/sector_monitor_web.py --port 8888
     python apps/web/sector_monitor_web.py --host 0.0.0.0
 """
+
 from __future__ import annotations
 
 import argparse
@@ -62,12 +63,14 @@ except ImportError:  # pragma: no cover
 import pandas as pd
 
 # ---------------- 常量 ----------------
-UP = "#e03c3c"      # 涨 / 压力（与 Qt 版一致）
-DOWN = "#1f9e8f"    # 跌 / 支撑
+UP = "#e03c3c"  # 涨 / 压力（与 Qt 版一致）
+DOWN = "#1f9e8f"  # 跌 / 支撑
 
-EM_H = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                      "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-        "Referer": "https://quote.eastmoney.com/"}
+EM_H = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+    "Referer": "https://quote.eastmoney.com/",
+}
 EM_HOSTS = [
     "https://push2delay.eastmoney.com",
     "https://push2his.eastmoney.com",
@@ -76,51 +79,104 @@ EM_HOSTS = [
     "https://83.push2.eastmoney.com",
 ]
 
-SINA_H = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                        "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-          "Referer": "https://finance.sina.com.cn/"}
+SINA_H = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+    "Referer": "https://finance.sina.com.cn/",
+}
 
-QQ_H = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                      "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-        "Referer": "https://gu.qq.com/"}
+QQ_H = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+    "Referer": "https://gu.qq.com/",
+}
 
 # 常用宽基指数（搜索时总是列出来，不依赖外部接口）
 CN_INDEX_LIST = [
-    ("SH000001", "上证指数"), ("SZ399001", "深证成指"), ("SZ399006", "创业板指"),
-    ("SH000300", "沪深300"), ("SH000905", "中证500"), ("SH000852", "中证1000"),
-    ("SH000016", "上证50"), ("SH000688", "科创50"), ("SZ399005", "中小100"),
+    ("SH000001", "上证指数"),
+    ("SZ399001", "深证成指"),
+    ("SZ399006", "创业板指"),
+    ("SH000300", "沪深300"),
+    ("SH000905", "中证500"),
+    ("SH000852", "中证1000"),
+    ("SH000016", "上证50"),
+    ("SH000688", "科创50"),
+    ("SZ399005", "中小100"),
     ("SZ399101", "中小综指"),
 ]
 
 SECTOR_FS = {"industry": "m:90+t:2", "concept": "m:90+t:3"}
 SECTOR_FIELDS = "f2,f3,f6,f8,f10,f12,f14,f62,f104,f105,f128"
 MAX_SECTORS = 400
+MAX_BARS = 3600  # 日线最多保留约 15 年
 
 # 美股板块宇宙（ETF）。分组只影响前端展示，可自行增删。
 # (代码, 中文备注)  —— 实时名称以新浪返回为准
 US_GROUPS = [
-    ("broad", "宽基行业", [
-        ("XLK", "科技"), ("XLF", "金融"), ("XLV", "医疗"), ("XLY", "可选消费"),
-        ("XLP", "必需消费"), ("XLE", "能源"), ("XLI", "工业"), ("XLB", "材料"),
-        ("XLU", "公用事业"), ("XLRE", "房地产"), ("XLC", "通信服务"),
-    ]),
-    ("semi", "半导体·科技", [
-        ("SOXX", "半导体"), ("SMH", "半导体"), ("XSD", "半导体等权"), ("PSI", "半导体"),
-        ("IGV", "软件"), ("VGT", "科技"), ("QQQ", "纳指100"), ("MAGS", "七巨头"),
-    ]),
-    ("theme", "主题·其他", [
-        ("XBI", "生物科技"), ("ITB", "住宅建筑"), ("KRE", "区域银行"), ("XOP", "油气开采"),
-        ("TAN", "太阳能"), ("ICLN", "清洁能源"), ("GDX", "黄金矿业"), ("GLD", "黄金"),
-        ("TLT", "长债"), ("SPY", "标普500"), ("IWM", "罗素2000"),
-    ]),
+    (
+        "broad",
+        "宽基行业",
+        [
+            ("XLK", "科技"),
+            ("XLF", "金融"),
+            ("XLV", "医疗"),
+            ("XLY", "可选消费"),
+            ("XLP", "必需消费"),
+            ("XLE", "能源"),
+            ("XLI", "工业"),
+            ("XLB", "材料"),
+            ("XLU", "公用事业"),
+            ("XLRE", "房地产"),
+            ("XLC", "通信服务"),
+        ],
+    ),
+    (
+        "semi",
+        "半导体·科技",
+        [
+            ("SOXX", "半导体"),
+            ("SMH", "半导体"),
+            ("XSD", "半导体等权"),
+            ("PSI", "半导体"),
+            ("IGV", "软件"),
+            ("VGT", "科技"),
+            ("QQQ", "纳指100"),
+            ("MAGS", "七巨头"),
+        ],
+    ),
+    (
+        "theme",
+        "主题·其他",
+        [
+            ("XBI", "生物科技"),
+            ("ITB", "住宅建筑"),
+            ("KRE", "区域银行"),
+            ("XOP", "油气开采"),
+            ("TAN", "太阳能"),
+            ("ICLN", "清洁能源"),
+            ("GDX", "黄金矿业"),
+            ("GLD", "黄金"),
+            ("TLT", "长债"),
+            ("SPY", "标普500"),
+            ("IWM", "罗素2000"),
+        ],
+    ),
 ]
 US_ALL = [(code, name) for _, _, items in US_GROUPS for code, name in items]
 
 US_INDEX_CODES = ["SPY", "QQQ", "SOXX"]
 CN_INDEX_SECIDS = "1.000001,0.399001,0.399006"
 
-TF_RULES = {"1m": "1min", "5m": "5min", "15m": "15min", "30m": "30min",
-            "60m": "60min", "1d": None, "1w": "W-FRI", "1M": "ME"}
+TF_RULES = {
+    "1m": "1min",
+    "5m": "5min",
+    "15m": "15min",
+    "30m": "30min",
+    "60m": "60min",
+    "1d": None,
+    "1w": "W-FRI",
+    "1M": "ME",
+}
 AGG = {"open": "first", "high": "max", "low": "min", "close": "last", "volume": "sum"}
 
 _MEM: dict[str, dict] = {}
@@ -184,15 +240,19 @@ def db() -> sqlite3.Connection:
     return _DB
 
 
-def db_bars_get(market: str, code: str, tf: str, limit: int = 1000) -> list[dict]:
+def db_bars_get(market: str, code: str, tf: str, limit: int = 5000) -> list[dict]:
     try:
         with _DB_LOCK:
             cur = db().execute(
                 "SELECT ts,o,h,l,c,v FROM bars WHERE market=? AND code=? AND tf=? "
-                "ORDER BY ts DESC LIMIT ?", (market, code, tf, limit))
+                "ORDER BY ts DESC LIMIT ?",
+                (market, code, tf, limit),
+            )
             rows = cur.fetchall()
-        return [{"t": r[0], "o": r[1], "h": r[2], "l": r[3], "c": r[4], "v": r[5]}
-                for r in reversed(rows)]
+        return [
+            {"t": r[0], "o": r[1], "h": r[2], "l": r[3], "c": r[4], "v": r[5]}
+            for r in reversed(rows)
+        ]
     except Exception:
         return []
 
@@ -206,10 +266,34 @@ def db_bars_put(market: str, code: str, tf: str, bars: list[dict], src: str) -> 
             conn.executemany(
                 "INSERT OR REPLACE INTO bars(market,code,tf,ts,o,h,l,c,v) "
                 "VALUES(?,?,?,?,?,?,?,?,?)",
-                [(market, code, tf, b["t"], b["o"], b["h"], b["l"], b["c"], b["v"])
-                 for b in bars])
-            conn.execute("INSERT OR REPLACE INTO meta(key,ts,src) VALUES(?,?,?)",
-                         (f"bars:{market}:{code}:{tf}", time.time(), src or ""))
+                [(market, code, tf, b["t"], b["o"], b["h"], b["l"], b["c"], b["v"]) for b in bars],
+            )
+            conn.execute(
+                "INSERT OR REPLACE INTO meta(key,ts,src) VALUES(?,?,?)",
+                (f"bars:{market}:{code}:{tf}", time.time(), src or ""),
+            )
+            conn.commit()
+    except Exception:
+        pass
+
+
+def db_bars_replace(market: str, code: str, tf: str, bars: list[dict], src: str) -> None:
+    """全量刷新：先清掉该代码旧数据，避免旧数据源残留造成跳变。"""
+    if not bars:
+        return
+    try:
+        with _DB_LOCK:
+            conn = db()
+            conn.execute("DELETE FROM bars WHERE market=? AND code=? AND tf=?", (market, code, tf))
+            conn.executemany(
+                "INSERT OR REPLACE INTO bars(market,code,tf,ts,o,h,l,c,v) "
+                "VALUES(?,?,?,?,?,?,?,?,?)",
+                [(market, code, tf, b["t"], b["o"], b["h"], b["l"], b["c"], b["v"]) for b in bars],
+            )
+            conn.execute(
+                "INSERT OR REPLACE INTO meta(key,ts,src) VALUES(?,?,?)",
+                (f"bars:{market}:{code}:{tf}", time.time(), src or ""),
+            )
             conn.commit()
     except Exception:
         pass
@@ -239,8 +323,10 @@ def db_snapshot_put(key: str, payload: dict) -> None:
     try:
         with _DB_LOCK:
             conn = db()
-            conn.execute("INSERT OR REPLACE INTO snapshots(key,ts,payload) VALUES(?,?,?)",
-                         (key, time.time(), json.dumps(payload, ensure_ascii=False)))
+            conn.execute(
+                "INSERT OR REPLACE INTO snapshots(key,ts,payload) VALUES(?,?,?)",
+                (key, time.time(), json.dumps(payload, ensure_ascii=False)),
+            )
             conn.commit()
     except Exception:
         pass
@@ -300,12 +386,23 @@ def _bar_ttl(tf: str) -> float:
     return 15.0 if tf.endswith("m") else 300.0
 
 
+def _refresh_tail(tf: str) -> int:
+    """过期刷新只补最近 N 根；历史已在库里，不用全量重拉。"""
+    return 5 if tf == "1d" else 30
+
+
 def _bars_to_df(bars: list[dict]) -> pd.DataFrame:
     idx = pd.to_datetime([b["t"] for b in bars])
     return pd.DataFrame(
-        {"open": [b["o"] for b in bars], "high": [b["h"] for b in bars],
-         "low": [b["l"] for b in bars], "close": [b["c"] for b in bars],
-         "volume": [b["v"] for b in bars]}, index=idx)
+        {
+            "open": [b["o"] for b in bars],
+            "high": [b["h"] for b in bars],
+            "low": [b["l"] for b in bars],
+            "close": [b["c"] for b in bars],
+            "volume": [b["v"] for b in bars],
+        },
+        index=idx,
+    )
 
 
 def _resample_rows(bars: list[dict], tf: str) -> list[dict]:
@@ -351,7 +448,7 @@ def _mem_set(key: str, v):
 
 
 # ---------------- 东财请求（多主机 + 重试） ----------------
-_EM_HIST_DOWN_UNTIL = 0.0      # 东财历史接口(push2his)被限流/不可达时熔断 60s
+_EM_HIST_DOWN_UNTIL = 0.0  # 东财历史接口(push2his)被限流/不可达时熔断 60s
 
 
 def em_hist_get(path: str, retries: int = 1, timeout: float = 2.5):
@@ -362,6 +459,8 @@ def em_hist_get(path: str, retries: int = 1, timeout: float = 2.5):
     js = em_get(path, retries=retries, timeout=timeout)
     _EM_HIST_DOWN_UNTIL = 0.0 if js is not None else time.time() + 60
     return js
+
+
 def em_get(path: str, retries: int = 3, timeout: float = 5):
     for i in range(retries):
         host = EM_HOSTS[i % len(EM_HOSTS)]
@@ -378,9 +477,11 @@ def em_get(path: str, retries: int = 3, timeout: float = 5):
 
 
 # ---------------- A股板块列表 ----------------
-THS_H = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                      "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-         "Referer": "https://q.10jqka.com.cn/"}
+THS_H = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+    "Referer": "https://q.10jqka.com.cn/",
+}
 # 同花顺板块指数分时：period 31=5分 41=15分 51=30分 61=1分
 THS_YEAR_URL = "https://d.10jqka.com.cn/v4/line/bk_{code}/{period}/{year}.js"
 THS_LAST_URL = "https://d.10jqka.com.cn/v4/line/bk_{code}/{period}/last.js"
@@ -396,6 +497,7 @@ def _ths_headers() -> dict:
         try:
             import py_mini_racer
             from akshare.datasets import get_ths_js
+
             js = py_mini_racer.MiniRacer()
             with open(get_ths_js("ths.js"), encoding="utf-8") as f:
                 js.eval(f.read())
@@ -433,15 +535,23 @@ def _parse_ths_industry(html: str) -> list[dict]:
         pct = _num(_strip_tags(tds[2]), 0.0)
         amount = (_num(_strip_tags(tds[4]), 0.0) or 0.0) * 1e8
         main = (_num(_strip_tags(tds[5]), 0.0) or 0.0) * 1e8
-        rows.append({
-            "market": "cn", "code": "T" + code, "name": name,
-            "price": 0.0, "pct": pct, "amount": amount, "turnover": None,
-            "vr": None, "main": main,
-            "up": int(_num(_strip_tags(tds[6]), 0) or 0),
-            "down": int(_num(_strip_tags(tds[7]), 0) or 0),
-            "leader": _strip_tags(tds[9]) if len(tds) > 9 else "",
-            "group": "industry",
-        })
+        rows.append(
+            {
+                "market": "cn",
+                "code": "T" + code,
+                "name": name,
+                "price": 0.0,
+                "pct": pct,
+                "amount": amount,
+                "turnover": None,
+                "vr": None,
+                "main": main,
+                "up": int(_num(_strip_tags(tds[6]), 0) or 0),
+                "down": int(_num(_strip_tags(tds[7]), 0) or 0),
+                "leader": _strip_tags(tds[9]) if len(tds) > 9 else "",
+                "group": "industry",
+            }
+        )
     return rows
 
 
@@ -471,23 +581,32 @@ def fetch_cn_sectors(kind: str = "industry") -> tuple[list[dict], str]:
     if hit is not None:
         return hit
     fs = SECTOR_FS.get(kind, SECTOR_FS["industry"])
-    url = (f"/api/qt/clist/get?pn=1&pz={MAX_SECTORS}&po=1&np=1&fltt=2&invt=2&fid=f6"
-           f"&fs={fs}&fields={SECTOR_FIELDS}")
+    url = (
+        f"/api/qt/clist/get?pn=1&pz={MAX_SECTORS}&po=1&np=1&fltt=2&invt=2&fid=f6"
+        f"&fs={fs}&fields={SECTOR_FIELDS}"
+    )
     rows = []
     for it in _items(em_get(url)):
         code = str(it.get("f12") or "")
         if not code:
             continue
-        rows.append({
-            "market": "cn", "code": code, "name": it.get("f14") or code,
-            "price": _num(it.get("f2")), "pct": _num(it.get("f3")),
-            "amount": _num(it.get("f6")), "turnover": _num(it.get("f8")),
-            "vr": _num(it.get("f10"), None), "main": _num(it.get("f62"), None),
-            "up": int(_num(it.get("f104"), 0) or 0),
-            "down": int(_num(it.get("f105"), 0) or 0),
-            "leader": it.get("f128") or "",
-            "group": kind,
-        })
+        rows.append(
+            {
+                "market": "cn",
+                "code": code,
+                "name": it.get("f14") or code,
+                "price": _num(it.get("f2")),
+                "pct": _num(it.get("f3")),
+                "amount": _num(it.get("f6")),
+                "turnover": _num(it.get("f8")),
+                "vr": _num(it.get("f10"), None),
+                "main": _num(it.get("f62"), None),
+                "up": int(_num(it.get("f104"), 0) or 0),
+                "down": int(_num(it.get("f105"), 0) or 0),
+                "leader": it.get("f128") or "",
+                "group": kind,
+            }
+        )
     src = "东方财富"
     if not rows and kind == "industry":
         rows = fetch_cn_sectors_ths()
@@ -501,8 +620,7 @@ def fetch_cn_indices() -> list[dict]:
     hit = _mem_get("cn_indices", 10)
     if hit is not None:
         return hit
-    url = (f"/api/qt/ulist.np/get?fltt=2&invt=2&secids={CN_INDEX_SECIDS}"
-           "&fields=f2,f3,f6,f12,f14")
+    url = f"/api/qt/ulist.np/get?fltt=2&invt=2&secids={CN_INDEX_SECIDS}&fields=f2,f3,f6,f12,f14"
     out = []
     for it in _items(em_get(url)):
         raw = str(it.get("f12") or "").strip()
@@ -510,9 +628,15 @@ def fetch_cn_indices() -> list[dict]:
         if raw:
             raw = raw.zfill(6)
             code = ("SH" if raw.startswith("000") else "SZ") + raw
-        out.append({"code": code, "name": it.get("f14") or "",
-                    "price": _num(it.get("f2")),
-                    "pct": _num(it.get("f3")), "amount": _num(it.get("f6"))})
+        out.append(
+            {
+                "code": code,
+                "name": it.get("f14") or "",
+                "price": _num(it.get("f2")),
+                "pct": _num(it.get("f3")),
+                "amount": _num(it.get("f6")),
+            }
+        )
     if not out:
         out = _sina_cn_indices()
     if out:
@@ -523,8 +647,9 @@ def fetch_cn_indices() -> list[dict]:
 def _sina_cn_indices() -> list[dict]:
     """东财不通时的指数兜底（新浪）。amount 单位：万元 → 元。"""
     try:
-        r = requests.get("https://hq.sinajs.cn/list=s_sh000001,s_sz399001,s_sz399006",
-                         headers=SINA_H, timeout=8)
+        r = requests.get(
+            "https://hq.sinajs.cn/list=s_sh000001,s_sz399001,s_sz399006", headers=SINA_H, timeout=8
+        )
         r.encoding = "gbk"
         out = []
         for line in r.text.splitlines():
@@ -535,9 +660,15 @@ def _sina_cn_indices() -> list[dict]:
             if len(f) < 6:
                 continue
             sym = m.group(1)
-            out.append({"code": _idx_code_norm(sym), "name": f[0],
-                        "price": _num(f[1]), "pct": _num(f[3]),
-                        "amount": (_num(f[5]) or 0) * 1e4})
+            out.append(
+                {
+                    "code": _idx_code_norm(sym),
+                    "name": f[0],
+                    "price": _num(f[1]),
+                    "pct": _num(f[3]),
+                    "amount": (_num(f[5]) or 0) * 1e4,
+                }
+            )
         return out
     except Exception:
         return []
@@ -551,7 +682,7 @@ def fetch_us_quotes(codes: list[str]) -> dict[str, dict]:
         return hit
     out: dict[str, dict] = {}
     for i in range(0, len(codes), 20):
-        chunk = codes[i:i + 20]
+        chunk = codes[i : i + 20]
         q = ",".join("gb_" + c.lower() for c in chunk)
         try:
             r = requests.get("https://hq.sinajs.cn/list=" + q, headers=SINA_H, timeout=10)
@@ -568,12 +699,26 @@ def fetch_us_quotes(codes: list[str]) -> dict[str, dict]:
                 pct = _num(f[2], 0.0) or 0.0
                 vol = _num(f[10], 0.0) or 0.0
                 avg_vol = _num(f[11], 0.0) or 0.0
-                vr = round(vol / avg_vol, 2) if avg_vol > 0 and vol > 0 and 0.05 < vol / avg_vol < 40 else None
+                vr = (
+                    round(vol / avg_vol, 2)
+                    if avg_vol > 0 and vol > 0 and 0.05 < vol / avg_vol < 40
+                    else None
+                )
                 out[code] = {
-                    "market": "us", "code": code, "name": f[0],
-                    "price": price, "pct": pct, "amount": price * vol,
-                    "volume": vol, "vr": vr, "turnover": None, "main": None,
-                    "up": 0, "down": 0, "leader": "", "group": "",
+                    "market": "us",
+                    "code": code,
+                    "name": f[0],
+                    "price": price,
+                    "pct": pct,
+                    "amount": price * vol,
+                    "volume": vol,
+                    "vr": vr,
+                    "turnover": None,
+                    "main": None,
+                    "up": 0,
+                    "down": 0,
+                    "leader": "",
+                    "group": "",
                     "ts": f[3] if len(f) > 3 else "",
                 }
         except Exception:
@@ -618,13 +763,27 @@ def _sector_fetch(market: str, kind: str) -> dict:
         prev = db_snapshot_get(key)
         if prev and prev["payload"].get("rows"):
             return prev["payload"]
-        return {"time": datetime.now().strftime("%H:%M:%S"), "market": market, "kind": kind,
-                "rows": [], "indices": indices, "groups": groups, "source": src,
-                "stale": True, "age": 0}
+        return {
+            "time": datetime.now().strftime("%H:%M:%S"),
+            "market": market,
+            "kind": kind,
+            "rows": [],
+            "indices": indices,
+            "groups": groups,
+            "source": src,
+            "stale": True,
+            "age": 0,
+        }
     rows = sorted(rows, key=lambda r: -(r.get("amount") or 0))
-    payload = {"time": datetime.now().strftime("%H:%M:%S"), "market": market,
-               "kind": kind, "rows": rows, "indices": indices, "groups": groups,
-               "source": src}
+    payload = {
+        "time": datetime.now().strftime("%H:%M:%S"),
+        "market": market,
+        "kind": kind,
+        "rows": rows,
+        "indices": indices,
+        "groups": groups,
+        "source": src,
+    }
     db_snapshot_put(key, payload)
     return payload
 
@@ -656,7 +815,7 @@ def sector_payload(market: str, kind: str) -> dict:
 def _ma21_from_closes(closes: list[float]):
     if not closes or len(closes) < 27:
         return None
-    ma = [sum(closes[i - 20:i + 1]) / 21.0 for i in range(20, len(closes))]
+    ma = [sum(closes[i - 20 : i + 1]) / 21.0 for i in range(20, len(closes))]
     if len(ma) < 6:
         return None
     slope = (ma[-1] - ma[-6]) / 5.0 / (ma[-1] or 1.0) * 100.0
@@ -677,9 +836,17 @@ def _ma21_slope_cn(name: str, kind: str, code: str = ""):
             df = None
         if df is not None and not df.empty:
             try:
-                bars = [{"t": str(idx)[:10], "o": float(r["open"]), "h": float(r["high"]),
-                         "l": float(r["low"]), "c": float(r["close"]),
-                         "v": float(r["volume"])} for idx, r in df.iterrows()]
+                bars = [
+                    {
+                        "t": str(idx)[:10],
+                        "o": float(r["open"]),
+                        "h": float(r["high"]),
+                        "l": float(r["low"]),
+                        "c": float(r["close"]),
+                        "v": float(r["volume"]),
+                    }
+                    for idx, r in df.iterrows()
+                ]
             except Exception:
                 bars = []
             if code and bars:
@@ -726,7 +893,7 @@ def _ma_worker():
             with _MA_LOCK:
                 _MA_QUEUED.discard((market, code))
             _MA_QUEUE.task_done()
-            time.sleep(1.0)   # 限速，避免同花顺历史接口被封
+            time.sleep(1.0)  # 限速，避免同花顺历史接口被封
 
 
 for _i in range(1):
@@ -742,15 +909,16 @@ def _ma_enqueue(market: str, kind: str, code: str, name: str) -> bool:
     return True
 
 
-def sector_ma_payload(market: str = "cn", kind: str = "industry", limit: int = 30,
-                      top: int = 80) -> dict:
+def sector_ma_payload(
+    market: str = "cn", kind: str = "industry", limit: int = 30, top: int = 80
+) -> dict:
     """按 MA21 斜率筛选：先返回已算好的，缺的后台排队，前端轮询补齐。"""
     key = f"ma21:{market}:{kind}:{limit}"
     hit = _mem_get(key, 3)
     if hit is not None:
         return hit
     base = sector_payload(market, kind)
-    rows = sorted(base.get("rows") or [], key=lambda r: -(r.get("amount") or 0))[:max(top, limit)]
+    rows = sorted(base.get("rows") or [], key=lambda r: -(r.get("amount") or 0))[: max(top, limit)]
     now = time.time()
     results = []
     pending = 0
@@ -762,7 +930,9 @@ def sector_ma_payload(market: str = "cn", kind: str = "industry", limit: int = 3
             if node:
                 _MA_RESULTS[(market, code)] = node
         if node and now - node.get("ts", 0) < 1800:
-            results.append({**r, "slope": node["slope"], "ma21": node["ma21"], "last": node["last"]})
+            results.append(
+                {**r, "slope": node["slope"], "ma21": node["ma21"], "last": node["last"]}
+            )
             continue
         # 先用 DB 已有日线秒算
         if market == "cn":
@@ -784,9 +954,17 @@ def sector_ma_payload(market: str = "cn", kind: str = "industry", limit: int = 3
         _ma_enqueue(market, kind, code, r.get("name", ""))
     up = sorted([r for r in results if r.get("slope", 0) > 0], key=lambda x: -x["slope"])[:limit]
     down = sorted([r for r in results if r.get("slope", 0) < 0], key=lambda x: x["slope"])[:limit]
-    payload = {"market": market, "kind": kind, "up": up, "down": down,
-               "scanned": len(results), "pending": pending, "need": len(rows),
-               "time": datetime.now().strftime("%H:%M:%S"), "source": base.get("source")}
+    payload = {
+        "market": market,
+        "kind": kind,
+        "up": up,
+        "down": down,
+        "scanned": len(results),
+        "pending": pending,
+        "need": len(rows),
+        "time": datetime.now().strftime("%H:%M:%S"),
+        "source": base.get("source"),
+    }
     _mem_set(key, payload)
     return payload
 
@@ -797,12 +975,16 @@ def _rows(df: pd.DataFrame, intraday: bool) -> list[dict]:
     fmt = "%Y-%m-%d %H:%M:%S" if intraday else "%Y-%m-%d"
     for idx, r in df.iterrows():
         try:
-            out.append({
-                "t": pd.Timestamp(idx).strftime(fmt),
-                "o": round(float(r["open"]), 4), "h": round(float(r["high"]), 4),
-                "l": round(float(r["low"]), 4), "c": round(float(r["close"]), 4),
-                "v": round(float(r["volume"]), 2),
-            })
+            out.append(
+                {
+                    "t": pd.Timestamp(idx).strftime(fmt),
+                    "o": round(float(r["open"]), 4),
+                    "h": round(float(r["high"]), 4),
+                    "l": round(float(r["low"]), 4),
+                    "c": round(float(r["close"]), 4),
+                    "v": round(float(r["volume"]), 2),
+                }
+            )
         except (TypeError, ValueError):
             continue
     return out
@@ -832,8 +1014,10 @@ def _resample_intraday(df: pd.DataFrame, minutes: int) -> pd.DataFrame:
 
 
 def _em_kline(secid: str, klt: int, lmt: int = 800):
-    url = (f"/api/qt/stock/kline/get?secid={secid}&klt={klt}&fqt=1&lmt={lmt}&end=20500101"
-           "&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56,f57")
+    url = (
+        f"/api/qt/stock/kline/get?secid={secid}&klt={klt}&fqt=1&lmt={lmt}&end=20500101"
+        "&fields1=f1,f2,f3,f4,f5,f6&fields2=f51,f52,f53,f54,f55,f56,f57"
+    )
     js = em_hist_get(url)
     kl = ((js or {}).get("data") or {}).get("klines") or []
     rows = []
@@ -842,18 +1026,32 @@ def _em_kline(secid: str, klt: int, lmt: int = 800):
         if len(p) < 6:
             continue
         try:
-            rows.append({"date": pd.to_datetime(p[0]), "open": float(p[1]), "close": float(p[2]),
-                         "high": float(p[3]), "low": float(p[4]), "volume": float(p[5])})
+            rows.append(
+                {
+                    "date": pd.to_datetime(p[0]),
+                    "open": float(p[1]),
+                    "close": float(p[2]),
+                    "high": float(p[3]),
+                    "low": float(p[4]),
+                    "volume": float(p[5]),
+                }
+            )
         except (ValueError, TypeError):
             continue
     if not rows:
         return None
-    return pd.DataFrame(rows).set_index("date").sort_index()[["open", "high", "low", "close", "volume"]]
+    return (
+        pd.DataFrame(rows)
+        .set_index("date")
+        .sort_index()[["open", "high", "low", "close", "volume"]]
+    )
 
 
 def _em_trends(secid: str, ndays: int = 5):
-    url = (f"/api/qt/stock/trends2/get?secid={secid}&ndays={ndays}&iscr=0"
-           "&fields1=f1,f2,f3,f7&fields2=f51,f52,f53,f54,f55,f56,f57,f58")
+    url = (
+        f"/api/qt/stock/trends2/get?secid={secid}&ndays={ndays}&iscr=0"
+        "&fields1=f1,f2,f3,f7&fields2=f51,f52,f53,f54,f55,f56,f57,f58"
+    )
     js = em_hist_get(url)
     tr = ((js or {}).get("data") or {}).get("trends") or []
     rows = []
@@ -862,20 +1060,34 @@ def _em_trends(secid: str, ndays: int = 5):
         if len(p) < 6:
             continue
         try:
-            rows.append({"date": pd.to_datetime(p[0]), "open": float(p[1]), "close": float(p[2]),
-                         "high": float(p[3]), "low": float(p[4]), "volume": float(p[5])})
+            rows.append(
+                {
+                    "date": pd.to_datetime(p[0]),
+                    "open": float(p[1]),
+                    "close": float(p[2]),
+                    "high": float(p[3]),
+                    "low": float(p[4]),
+                    "volume": float(p[5]),
+                }
+            )
         except (ValueError, TypeError):
             continue
     if not rows:
         return None
-    return pd.DataFrame(rows).set_index("date").sort_index()[["open", "high", "low", "close", "volume"]]
+    return (
+        pd.DataFrame(rows)
+        .set_index("date")
+        .sort_index()[["open", "high", "low", "close", "volume"]]
+    )
 
 
 def _em_flow_daily(secid: str, lmt: int = 900):
     """资金流日线：可拿到日期 + 板块指数收盘（无成交量，兜底用）。"""
-    url = ("/api/qt/stock/fflow/daykline/get?lmt=%d&klt=101&secid=%s"
-           "&fields1=f1,f2,f3,f7&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61,f62,f63"
-           % (lmt, secid))
+    url = (
+        "/api/qt/stock/fflow/daykline/get?lmt=%d&klt=101&secid=%s"
+        "&fields1=f1,f2,f3,f7&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61,f62,f63"
+        % (lmt, secid)
+    )
     js = em_hist_get(url)
     kl = ((js or {}).get("data") or {}).get("klines") or []
     rows = []
@@ -889,11 +1101,23 @@ def _em_flow_daily(secid: str, lmt: int = 900):
             continue
         if c <= 0:
             continue
-        rows.append({"date": pd.to_datetime(p[0]), "open": c, "high": c,
-                     "low": c, "close": c, "volume": 0.0})
+        rows.append(
+            {
+                "date": pd.to_datetime(p[0]),
+                "open": c,
+                "high": c,
+                "low": c,
+                "close": c,
+                "volume": 0.0,
+            }
+        )
     if not rows:
         return None
-    return pd.DataFrame(rows).set_index("date").sort_index()[["open", "high", "low", "close", "volume"]]
+    return (
+        pd.DataFrame(rows)
+        .set_index("date")
+        .sort_index()[["open", "high", "low", "close", "volume"]]
+    )
 
 
 _THS_MEM: dict[tuple, tuple] = {}
@@ -924,11 +1148,17 @@ def _ths_board_names(kind: str) -> list[str]:
         import contextlib
         import io
         import akshare as ak
+
         with contextlib.redirect_stderr(io.StringIO()):
-            df = (ak.stock_board_concept_name_ths() if kind == "concept"
-                  else ak.stock_board_industry_name_ths())
+            df = (
+                ak.stock_board_concept_name_ths()
+                if kind == "concept"
+                else ak.stock_board_industry_name_ths()
+            )
         if df is not None and len(df):
-            col = next((c for c in ("name", "板块名称", "概念名称") if c in df.columns), df.columns[1])
+            col = next(
+                (c for c in ("name", "板块名称", "概念名称") if c in df.columns), df.columns[1]
+            )
             names = [str(x).strip() for x in df[col].tolist() if str(x).strip()]
     except Exception:
         names = []
@@ -965,13 +1195,18 @@ def _ths_try(nm: str, kind: str):
     import contextlib
     import io
     import akshare as ak
+
     end = datetime.now().strftime("%Y%m%d")
     try:
         with _THS_SEM, contextlib.redirect_stderr(io.StringIO()):
             if kind == "concept":
-                df = ak.stock_board_concept_index_ths(symbol=nm, start_date="20180101", end_date=end)
+                df = ak.stock_board_concept_index_ths(
+                    symbol=nm, start_date="20180101", end_date=end
+                )
             else:
-                df = ak.stock_board_industry_index_ths(symbol=nm, start_date="20180101", end_date=end)
+                df = ak.stock_board_industry_index_ths(
+                    symbol=nm, start_date="20180101", end_date=end
+                )
     except Exception:
         return None
     if df is None or len(df) == 0:
@@ -995,16 +1230,25 @@ def _ths_try(nm: str, kind: str):
     rows = []
     for _, r in df.iterrows():
         try:
-            rows.append({"date": pd.to_datetime(r[cd]),
-                         "open": float(r[co]), "high": float(r[ch]),
-                         "low": float(r[cl]), "close": float(r[cc]),
-                         "volume": float(r[cv]) if cv else 0.0})
+            rows.append(
+                {
+                    "date": pd.to_datetime(r[cd]),
+                    "open": float(r[co]),
+                    "high": float(r[ch]),
+                    "low": float(r[cl]),
+                    "close": float(r[cc]),
+                    "volume": float(r[cv]) if cv else 0.0,
+                }
+            )
         except (TypeError, ValueError):
             continue
     if not rows:
         return None
-    return pd.DataFrame(rows).set_index("date").sort_index()[
-        ["open", "high", "low", "close", "volume"]]
+    return (
+        pd.DataFrame(rows)
+        .set_index("date")
+        .sort_index()[["open", "high", "low", "close", "volume"]]
+    )
 
 
 def _ths_daily(name: str, kind: str):
@@ -1017,7 +1261,7 @@ def _ths_daily(name: str, kind: str):
         df = _ths_try(nm, kind)
         if df is not None:
             return df, nm
-    for nm in _ths_candidates(name, kind):      # 同花顺里没有同名板块时的近似
+    for nm in _ths_candidates(name, kind):  # 同花顺里没有同名板块时的近似
         if nm in cands:
             continue
         df = _ths_try(nm, kind)
@@ -1047,6 +1291,7 @@ def _ths_daily_cached(name: str, kind: str, retry: bool = False):
 
 def _ths_daily_guarded(name: str, kind: str, timeout: float = 9.0):
     from concurrent.futures import ThreadPoolExecutor
+
     if not name:
         return None, name
     ex = ThreadPoolExecutor(max_workers=1)
@@ -1062,9 +1307,9 @@ def _ths_daily_guarded(name: str, kind: str, timeout: float = 9.0):
 # ---------------- 同花顺板块分时（日线以下） ----------------
 _THS_INTRADAY_MEM: dict[tuple, tuple] = {}
 _THS_INTRADAY_FAIL: dict[tuple, float] = {}
-_THS_INTRADAY_TTL = 1800.0       # 年内整段历史缓存 30 分钟（尾部每次用 last.js + 当日分时增量）
+_THS_INTRADAY_TTL = 1800.0  # 年内整段历史缓存 30 分钟（尾部每次用 last.js + 当日分时增量）
 _THS_DEEP_FAIL: dict[tuple, float] = {}
-_THS_INTRADAY_MAX = 24            # 限制内存里的 DataFrame 数量（约 20~30MB 上限）
+_THS_INTRADAY_MAX = 24  # 限制内存里的 DataFrame 数量（约 20~30MB 上限）
 _THS_PERIOD = {"5m": "31", "15m": "41", "30m": "51", "60m": "51"}
 _THS_FALLBACK = {"15m": ("5m", 3), "30m": ("15m", 2), "60m": ("30m", 2)}
 
@@ -1073,7 +1318,7 @@ def _ths_jsonp(url: str, tries: int = 3):
     """同花顺接口经常随机 502/504，重试几次基本都能拿到。"""
     for i in range(tries):
         try:
-            with _THS_SEM:      # 同花顺对并发很敏感，最多 2 个同时打
+            with _THS_SEM:  # 同花顺对并发很敏感，最多 2 个同时打
                 r = requests.get(url, headers=_ths_headers(), timeout=12)
             if r.status_code == 200:
                 m = re.search(r"\((\{.*\})\)\s*;?\s*$", r.text, re.S)
@@ -1095,15 +1340,25 @@ def _ths_line_df(data: str):
         t = p[0].strip()
         try:
             ts = pd.to_datetime(t, format="%Y%m%d%H%M" if len(t) > 8 else "%Y%m%d")
-            rows.append({"date": ts, "open": float(p[1]), "high": float(p[2]),
-                         "low": float(p[3]), "close": float(p[4]),
-                         "volume": float(p[5] or 0)})
+            rows.append(
+                {
+                    "date": ts,
+                    "open": float(p[1]),
+                    "high": float(p[2]),
+                    "low": float(p[3]),
+                    "close": float(p[4]),
+                    "volume": float(p[5] or 0),
+                }
+            )
         except (TypeError, ValueError):
             continue
     if not rows:
         return None
-    return pd.DataFrame(rows).set_index("date").sort_index()[
-        ["open", "high", "low", "close", "volume"]]
+    return (
+        pd.DataFrame(rows)
+        .set_index("date")
+        .sort_index()[["open", "high", "low", "close", "volume"]]
+    )
 
 
 def _ths_mem_put(key: tuple, df: pd.DataFrame) -> None:
@@ -1121,15 +1376,20 @@ def _agg_bars(df: pd.DataFrame, n: int):
     for _, g in df.groupby(df.index.date):
         g = g.sort_index()
         for i in range(0, len(g), n):
-            c = g.iloc[i:i + n]
-            parts.append({"date": c.index[-1], "open": float(c["open"].iloc[0]),
-                          "high": float(c["high"].max()), "low": float(c["low"].min()),
-                          "close": float(c["close"].iloc[-1]),
-                          "volume": float(c["volume"].sum())})
+            c = g.iloc[i : i + n]
+            parts.append(
+                {
+                    "date": c.index[-1],
+                    "open": float(c["open"].iloc[0]),
+                    "high": float(c["high"].max()),
+                    "low": float(c["low"].min()),
+                    "close": float(c["close"].iloc[-1]),
+                    "volume": float(c["volume"].sum()),
+                }
+            )
     if not parts:
         return df.iloc[0:0]
-    return pd.DataFrame(parts).set_index("date")[
-        ["open", "high", "low", "close", "volume"]]
+    return pd.DataFrame(parts).set_index("date")[["open", "high", "low", "close", "volume"]]
 
 
 def _ths_time_df(code6: str):
@@ -1149,11 +1409,13 @@ def _ths_time_df(code6: str):
                 vol = float(p[4]) if len(p) > 4 and p[4] not in ("", "-") else 0.0
             except (TypeError, ValueError):
                 continue
-            rows.append({"date": ts, "open": px, "high": px, "low": px,
-                         "close": px, "volume": vol})
+            rows.append({"date": ts, "open": px, "high": px, "low": px, "close": px, "volume": vol})
         if rows:
-            return pd.DataFrame(rows).set_index("date").sort_index()[
-                ["open", "high", "low", "close", "volume"]]
+            return (
+                pd.DataFrame(rows)
+                .set_index("date")
+                .sort_index()[["open", "high", "low", "close", "volume"]]
+            )
     d2 = _ths_jsonp(THS_LAST_URL.format(code=code6, period="61"))
     return _ths_line_df(((d2 or {}).get("data") or ""))
 
@@ -1176,15 +1438,20 @@ def _agg_live(df1: pd.DataFrame, minutes: int):
         groups[end] = (o, max(h, r["high"]), min(l, r["low"]), r["close"], v + r["volume"])
     if not groups:
         return None
-    rows = [{"date": k, "open": a, "high": b, "low": c, "close": d, "volume": e}
-            for k, (a, b, c, d, e) in groups.items()]
-    return pd.DataFrame(rows).set_index("date").sort_index()[
-        ["open", "high", "low", "close", "volume"]]
+    rows = [
+        {"date": k, "open": a, "high": b, "low": c, "close": d, "volume": e}
+        for k, (a, b, c, d, e) in groups.items()
+    ]
+    return (
+        pd.DataFrame(rows)
+        .set_index("date")
+        .sort_index()[["open", "high", "low", "close", "volume"]]
+    )
 
 
 def _ths_intraday_df(code6: str, tf: str, retry: bool = False):
     """同花顺板块：5/15/30 分拿年内整段，60 分由 30 分合并；1 分拿当日分时。"""
-    live1 = _ths_time_df(code6)      # 当日 1 分钟（实时）
+    live1 = _ths_time_df(code6)  # 当日 1 分钟（实时）
     if tf == "1m":
         return live1
     period = _THS_PERIOD.get(tf)
@@ -1202,11 +1469,11 @@ def _ths_intraday_df(code6: str, tf: str, retry: bool = False):
     if deep is None and (retry or _THS_DEEP_FAIL.get(key, 0) <= now):
         d = _ths_jsonp(THS_YEAR_URL.format(code=code6, period=period, year=year), tries=4)
         got = _ths_line_df(((d or {}).get("data") or ""))
-        if got is None or len(got) < 200:      # 年初 / 当年接口失败，用上一年补
+        if got is None or len(got) < 200:  # 年初 / 当年接口失败，用上一年补
             d2 = _ths_jsonp(THS_YEAR_URL.format(code=code6, period=period, year=year - 1))
             prev = _ths_line_df(((d2 or {}).get("data") or ""))
             if prev is not None and not prev.empty:
-                got = (pd.concat([prev, got]) if got is not None and not got.empty else prev)
+                got = pd.concat([prev, got]) if got is not None and not got.empty else prev
                 got = got[~got.index.duplicated(keep="last")].sort_index()
         if got is not None and len(got) >= 200:
             deep = got
@@ -1250,20 +1517,33 @@ def _ths_intraday_df(code6: str, tf: str, retry: bool = False):
     return base
 
 
-def cn_bars(code: str, tf: str, name: str = "", kind: str = "industry",
-            retry: bool = False) -> tuple[list[dict], str]:
+def cn_bars(
+    code: str,
+    tf: str,
+    name: str = "",
+    kind: str = "industry",
+    retry: bool = False,
+    tail: int | None = None,
+) -> tuple[list[dict], str]:
     secid = "90." + code
     is_ths_code = str(code).startswith("T")
     if tf.endswith("m"):
         if is_ths_code:
             df = _ths_intraday_df(str(code)[1:], tf, retry)
             if df is not None and not df.empty:
-                label = {"1m": "同花顺分时", "5m": "同花顺5分", "15m": "同花顺15分",
-                         "30m": "同花顺30分", "60m": "同花顺60分"}.get(tf, "同花顺分时")
+                label = {
+                    "1m": "同花顺分时",
+                    "5m": "同花顺5分",
+                    "15m": "同花顺15分",
+                    "30m": "同花顺30分",
+                    "60m": "同花顺60分",
+                }.get(tf, "同花顺分时")
+                if tail:
+                    df = df.tail(tail)
                 return _rows(df.tail(700), True), label
             return [], ""
         klt = int(tf[:-1])
-        df = _em_kline(secid, klt, 800)
+        df = _em_kline(secid, klt, tail or 800)
         if df is not None and not df.empty:
             return _rows(df.tail(700), True), "东财K线"
         df = _em_trends(secid, 5)
@@ -1273,24 +1553,32 @@ def cn_bars(code: str, tf: str, name: str = "", kind: str = "industry",
                 df = df[df.index.date == last_day]
             else:
                 df = _resample_intraday(df, klt)
+            if tail:
+                df = df.tail(tail)
             return _rows(df.tail(700), True), "东财分时"
         return [], ""
 
     klt = {"1d": 101, "1w": 102, "1M": 103}.get(tf, 101)
     if not is_ths_code:
-        df = _em_kline(secid, klt, 900)
+        df = _em_kline(secid, klt, tail or MAX_BARS)
         if df is not None and not df.empty:
-            return _rows(df.tail(700), False), "东财K线"
+            return _rows(df.tail(MAX_BARS), False), "东财K线"
     df, used = _ths_daily_cached(name, kind, retry)
     src = "同花顺日线" + ("" if (not used or used == name) else f"（{used}）")
     if df is None or df.empty:
         if is_ths_code:
             return [], ""
-        df = _em_flow_daily(secid, 900)
+        df = _em_flow_daily(secid, tail or MAX_BARS)
         src = "东财资金流(收盘)"
+    if tf == "1d":
+        ak_rows = _ak_board_bars(name, kind)
+        if ak_rows and (df is None or df.empty or len(ak_rows) > len(df)):
+            return ak_rows, "akshare板块日线"
     if df is not None and not df.empty:
         df = _resample_tf(df, tf)
-        return _rows(df.tail(500), False), src
+        if tail:
+            df = df.tail(tail)
+        return _rows(df.tail(MAX_BARS), False), src
     return [], ""
 
 
@@ -1310,8 +1598,10 @@ def _sina_jsonp(url: str):
 
 
 def _sina_us_daily(symbol: str):
-    url = ("https://stock.finance.sina.com.cn/usstock/api/jsonp.php/var%20x=/"
-           f"US_MinKService.getDailyK?symbol={symbol}&___qn=3")
+    url = (
+        "https://stock.finance.sina.com.cn/usstock/api/jsonp.php/var%20x=/"
+        f"US_MinKService.getDailyK?symbol={symbol}&___qn=3"
+    )
     raw = _sina_jsonp(url)
     rows = []
     for r in raw:
@@ -1326,12 +1616,18 @@ def _sina_us_daily(symbol: str):
         rows.append({"date": d, "open": o, "high": h, "low": l, "close": c, "volume": v})
     if not rows:
         return None
-    return pd.DataFrame(rows).set_index("date").sort_index()[["open", "high", "low", "close", "volume"]]
+    return (
+        pd.DataFrame(rows)
+        .set_index("date")
+        .sort_index()[["open", "high", "low", "close", "volume"]]
+    )
 
 
 def _sina_us_min(symbol: str, k: int):
-    url = ("https://stock.finance.sina.com.cn/usstock/api/jsonp_v2.php/x/"
-           f"US_MinKService.getMinK?symbol={symbol}&type={k}")
+    url = (
+        "https://stock.finance.sina.com.cn/usstock/api/jsonp_v2.php/x/"
+        f"US_MinKService.getMinK?symbol={symbol}&type={k}"
+    )
     raw = _sina_jsonp(url)
     rows = []
     for r in raw:
@@ -1344,21 +1640,112 @@ def _sina_us_min(symbol: str, k: int):
         rows.append({"date": d, "open": o, "high": h, "low": l, "close": c, "volume": v})
     if not rows:
         return None
-    return pd.DataFrame(rows).set_index("date").sort_index()[["open", "high", "low", "close", "volume"]]
+    return (
+        pd.DataFrame(rows)
+        .set_index("date")
+        .sort_index()[["open", "high", "low", "close", "volume"]]
+    )
 
 
 def _nasdaq_daily(symbol: str):
     try:
         from core.datasets.us_data import fetch_daily_kline
+
         d = fetch_daily_kline(symbol, 900)
         d["date"] = pd.to_datetime(d["date"])
-        return (d.set_index("date")[["open", "high", "low", "close", "volume"]]
-                .sort_index().astype(float))
+        return (
+            d.set_index("date")[["open", "high", "low", "close", "volume"]]
+            .sort_index()
+            .astype(float)
+        )
     except Exception:
         return None
 
 
-def us_bars(code: str, tf: str) -> tuple[list[dict], str]:
+_SPLIT_RATIOS = (
+    0.1,
+    1 / 9,
+    1 / 8,
+    1 / 7,
+    1 / 6,
+    0.2,
+    0.25,
+    1 / 3,
+    0.5,
+    2 / 3,
+    0.75,
+    1.5,
+    4 / 3,
+    2.0,
+    3.0,
+    4.0,
+    5.0,
+    6.0,
+    7.0,
+    8.0,
+    9.0,
+    10.0,
+)
+
+
+def _match_split(r: float) -> float | None:
+    if not r or r <= 0:
+        return None
+    for cand in _SPLIT_RATIOS:
+        if abs(r - cand) / cand <= 0.03:
+            return cand
+    return None
+
+
+def _adjust_splits(df):
+    """把未复权价里的拆股/合股跳变拉平（新浪/Nasdaq 美股常见）。"""
+    if df is None or len(df) < 2:
+        return df
+    df = df.copy()
+    o = df["open"].tolist()
+    h = df["high"].tolist()
+    lo = df["low"].tolist()
+    c = df["close"].tolist()
+    v = df["volume"].tolist() if "volume" in df else None
+    n = len(df)
+    factors = [1.0] * n
+    cum = 1.0
+    for i in range(n - 1, 0, -1):
+        factors[i] = cum
+        cand = _match_split(c[i] / c[i - 1]) if c[i - 1] else None
+        if cand and cand != 1.0:
+            ok = True
+            for arr in (o, h, lo):
+                if arr[i - 1]:
+                    rr = arr[i] / arr[i - 1]
+                    if abs(rr - cand) / cand > 0.05:
+                        ok = False
+                        break
+            if ok:
+                cum *= cand
+    factors[0] = cum
+    df["open"] = [x * f for x, f in zip(o, factors)]
+    df["high"] = [x * f for x, f in zip(h, factors)]
+    df["low"] = [x * f for x, f in zip(lo, factors)]
+    df["close"] = [x * f for x, f in zip(c, factors)]
+    if v is not None:
+        df["volume"] = [x / f for x, f in zip(v, factors)]
+    return df
+
+
+def _has_bad_jumps(df) -> bool:
+    if df is None or len(df) < 2:
+        return False
+    c = df["close"].tolist()
+    for i in range(1, len(c)):
+        if c[i - 1] and c[i]:
+            r = c[i] / c[i - 1]
+            if r < 0.55 or r > 1.8:
+                return True
+    return False
+
+
+def us_bars(code: str, tf: str, tail: int | None = None) -> tuple[list[dict], str]:
     if tf.endswith("m"):
         k = int(tf[:-1])
         base_k = 1 if k <= 1 else (5 if k <= 5 else 15)
@@ -1369,16 +1756,28 @@ def us_bars(code: str, tf: str) -> tuple[list[dict], str]:
                 df = df[df.index.date == last_day]
             elif k > base_k:
                 df = _resample_intraday(df, k)
+            if tail:
+                df = df.tail(tail)
             return _rows(df.tail(700), True), "新浪分时"
 
+    # 新浪历史更长（约10年+），优先；拆股修正后若仍有异常跳变，再回退 Nasdaq
     df = _sina_us_daily(code)
     src = "新浪日线"
     if df is None or df.empty:
         df = _nasdaq_daily(code)
         src = "Nasdaq日线"
     if df is not None and not df.empty:
+        df = _adjust_splits(df)
+        if _has_bad_jumps(df):
+            nd = _nasdaq_daily(code)
+            if nd is not None and not nd.empty:
+                nd = _adjust_splits(nd)
+                if not _has_bad_jumps(nd):
+                    df, src = nd, "Nasdaq日线"
         df = _resample_tf(df, tf)
-        return _rows(df.tail(700), False), src
+        if tail:
+            df = df.tail(tail)
+        return _rows(df.tail(MAX_BARS), False), src
     return [], ""
 
 
@@ -1416,8 +1815,7 @@ def _idx_code_norm(code: str) -> str:
 
 def _qq_kline(symbol: str, count: int = 800) -> pd.DataFrame | None:
     """腾讯前复权日线（个股）/ 日线（指数）。"""
-    url = ("https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?"
-           f"param={symbol},day,,,{count},qfq")
+    url = f"https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param={symbol},day,,,{count},qfq"
     try:
         js = requests.get(url, headers=QQ_H, timeout=12).json()
         d = (js.get("data") or {}).get(symbol) or {}
@@ -1429,7 +1827,7 @@ def _qq_kline(symbol: str, count: int = 800) -> pd.DataFrame | None:
         try:
             dt = pd.to_datetime(str(a[0])[:10])
             o, c, h, low = float(a[1]), float(a[2]), float(a[3]), float(a[4])
-            v = float(a[5] or 0) * 100          # 腾讯是「手」，统一成「股」
+            v = float(a[5] or 0) * 100  # 腾讯是「手」，统一成「股」
         except (TypeError, ValueError, IndexError):
             continue
         if c <= 0:
@@ -1437,14 +1835,22 @@ def _qq_kline(symbol: str, count: int = 800) -> pd.DataFrame | None:
         rows.append({"date": dt, "open": o, "high": h, "low": low, "close": c, "volume": v})
     if not rows:
         return None
-    return pd.DataFrame(rows).set_index("date").sort_index()[["open", "high", "low", "close", "volume"]]
+    return (
+        pd.DataFrame(rows)
+        .set_index("date")
+        .sort_index()[["open", "high", "low", "close", "volume"]]
+    )
 
 
 def _qq_minute(symbol: str) -> pd.DataFrame | None:
     """腾讯当日 1 分钟分时（指数/个股都支持）。"""
     try:
-        js = requests.get("https://web.ifzq.gtimg.cn/appstock/app/minute/query",
-                          params={"code": symbol}, headers=QQ_H, timeout=12).json()
+        js = requests.get(
+            "https://web.ifzq.gtimg.cn/appstock/app/minute/query",
+            params={"code": symbol},
+            headers=QQ_H,
+            timeout=12,
+        ).json()
         d = ((js.get("data") or {}).get(symbol) or {}).get("data") or {}
         arr = d.get("data") or []
         day = str(d.get("date") or "").strip()
@@ -1468,19 +1874,33 @@ def _qq_minute(symbol: str) -> pd.DataFrame | None:
             dt = pd.to_datetime(day + hhmm.zfill(4), format="%Y%m%d%H%M")
         except (TypeError, ValueError):
             continue
-        dv = max(cum - prev_vol, 0.0)          # 腾讯给的是累计成交量
+        dv = max(cum - prev_vol, 0.0)  # 腾讯给的是累计成交量
         prev_vol = cum
-        rows.append({"date": dt, "open": price, "high": price, "low": price,
-                     "close": price, "volume": dv * 100})
+        rows.append(
+            {
+                "date": dt,
+                "open": price,
+                "high": price,
+                "low": price,
+                "close": price,
+                "volume": dv * 100,
+            }
+        )
     if not rows:
         return None
-    return pd.DataFrame(rows).set_index("date").sort_index()[["open", "high", "low", "close", "volume"]]
+    return (
+        pd.DataFrame(rows)
+        .set_index("date")
+        .sort_index()[["open", "high", "low", "close", "volume"]]
+    )
 
 
 def _sina_cn_kline(symbol: str, scale: int, datalen: int = 1023) -> pd.DataFrame | None:
     """新浪分钟/日线（个股、指数通用）；scale: 1/5/15/30/60/240。"""
-    url = ("https://quotes.sina.cn/cn/api/json_v2.php/CN_MarketDataService.getKLineData"
-           f"?symbol={symbol}&scale={scale}&ma=no&datalen={datalen}")
+    url = (
+        "https://quotes.sina.cn/cn/api/json_v2.php/CN_MarketDataService.getKLineData"
+        f"?symbol={symbol}&scale={scale}&ma=no&datalen={datalen}"
+    )
     try:
         r = requests.get(url, headers=SINA_H, timeout=15)
         raw = r.json()
@@ -1499,53 +1919,166 @@ def _sina_cn_kline(symbol: str, scale: int, datalen: int = 1023) -> pd.DataFrame
         rows.append({"date": dt, "open": o, "high": h, "low": low, "close": c, "volume": v})
     if not rows:
         return None
-    return pd.DataFrame(rows).set_index("date").sort_index()[["open", "high", "low", "close", "volume"]]
+    return (
+        pd.DataFrame(rows)
+        .set_index("date")
+        .sort_index()[["open", "high", "low", "close", "volume"]]
+    )
 
 
-def cn_stock_bars(code: str, tf: str) -> tuple[list[dict], str]:
+def _ak_stock_bars(code: str) -> list[dict]:
+    """akshare 新浪 A股日线（15年+），用于腾讯/新浪失败时兜底。"""
+    try:
+        import akshare as ak
+
+        code = re.sub(r"^(SH|SZ|BJ)", "", str(code).strip().upper())
+        prefix = "sh" if code.startswith(("60", "68", "90")) else "sz"
+        df = ak.stock_zh_a_daily(
+            symbol=prefix + code,
+            start_date="20100101",
+            end_date=datetime.now().strftime("%Y%m%d"),
+            adjust="qfq",
+        )
+        if df is None or df.empty:
+            return []
+        if "date" in df.columns:
+            df["date"] = pd.to_datetime(df["date"])
+            df = df.set_index("date")
+        df = df.sort_index()
+        cols = ["open", "high", "low", "close", "volume"]
+        if not all(c in df.columns for c in cols):
+            return []
+        return _rows(df[cols].tail(MAX_BARS), False)
+    except Exception:
+        return []
+
+
+def _ak_board_bars(name: str, kind: str) -> list[dict]:
+    """akshare 东财行业/概念板块日线（15年+）。"""
+    try:
+        import akshare as ak
+
+        nm = re.sub(r"[（(].*?[）)]", "", str(name or "")).strip()
+        if not nm:
+            return []
+        fn = (
+            ak.stock_board_industry_hist_em
+            if kind == "industry"
+            else ak.stock_board_concept_hist_em
+        )
+        df = fn(
+            symbol=nm,
+            start_date="20100101",
+            end_date=datetime.now().strftime("%Y%m%d"),
+            period="日k",
+            adjust="",
+        )
+        if df is None or df.empty:
+            return []
+        df = df.rename(
+            columns={
+                "日期": "date",
+                "开盘": "open",
+                "收盘": "close",
+                "最高": "high",
+                "最低": "low",
+                "成交量": "volume",
+            }
+        )
+        if "date" not in df.columns:
+            return []
+        df["date"] = pd.to_datetime(df["date"])
+        df = df.set_index("date").sort_index()
+        cols = ["open", "high", "low", "close", "volume"]
+        if not all(c in df.columns for c in cols):
+            return []
+        return _rows(df[cols].tail(MAX_BARS), False)
+    except Exception:
+        return []
+
+
+def _ak_index_bars(code: str) -> list[dict]:
+    """akshare 新浪指数日线（15年+）。"""
+    try:
+        import akshare as ak
+
+        code = re.sub(r"^(SH|SZ|BJ)", "", str(code).strip().upper())
+        prefix = "sh" if code.startswith(("000", "88", "99")) else "sz"
+        df = ak.stock_zh_index_daily(symbol=prefix + code)
+        if df is None or df.empty:
+            return []
+        if "date" in df.columns:
+            df["date"] = pd.to_datetime(df["date"])
+            df = df.set_index("date")
+        df = df.sort_index()
+        cols = ["open", "high", "low", "close", "volume"]
+        if not all(c in df.columns for c in cols):
+            return []
+        return _rows(df[cols].tail(MAX_BARS), False)
+    except Exception:
+        return []
+
+
+def cn_stock_bars(code: str, tf: str, tail: int | None = None) -> tuple[list[dict], str]:
     """A股个股 / ETF 的K线：日线走腾讯前复权，分钟走新浪（1/5/15/30/60）。"""
     sym = _cn_symbol(code)
     if tf.endswith("m"):
         m = max(1, int(tf[:-1]))
-        df = _sina_cn_kline(sym, m, 1023)
+        df = _sina_cn_kline(sym, m, tail or 1023)
         src = f"新浪{m}分"
         if df is None or df.empty:
             df = _qq_minute(sym)
             src = "腾讯分时"
         if df is None or df.empty:
             return [], ""
+        if tail:
+            df = df.tail(tail)
         return _rows(df.tail(700), True), src
-    df = _qq_kline(sym, 800)
+    df = _qq_kline(sym, tail or MAX_BARS)
     src = "腾讯日线(前复权)"
     if df is None or df.empty:
-        df = _sina_cn_kline(sym, 240, 1023)
+        df = _sina_cn_kline(sym, 240, tail or MAX_BARS)
         src = "新浪日线"
+    if df is None or df.empty or len(df) < 1000:
+        ak_rows = _ak_stock_bars(code)
+        if ak_rows:
+            return ak_rows, "akshare日线"
     if df is None or df.empty:
         return [], ""
-    return _rows(df.tail(700), False), src
+    if tail:
+        df = df.tail(tail)
+    return _rows(df.tail(MAX_BARS), False), src
 
 
-def cn_index_bars(code: str, tf: str) -> tuple[list[dict], str]:
+def cn_index_bars(code: str, tf: str, tail: int | None = None) -> tuple[list[dict], str]:
     """指数K线：日线腾讯，分钟新浪（1 分钟兜底腾讯当日分时）。"""
     sym = _cn_symbol(_idx_code_norm(code).lower())
     if tf.endswith("m"):
         m = max(1, int(tf[:-1]))
-        df = _sina_cn_kline(sym, m, 1023)
+        df = _sina_cn_kline(sym, m, tail or 1023)
         src = f"新浪指数{m}分"
         if df is None or df.empty:
             df = _qq_minute(sym)
             src = "腾讯指数分时"
         if df is None or df.empty:
             return [], ""
+        if tail:
+            df = df.tail(tail)
         return _rows(df.tail(700), True), src
-    df = _qq_kline(sym, 800)
+    df = _qq_kline(sym, tail or MAX_BARS)
     src = "腾讯指数日线"
     if df is None or df.empty:
-        df = _sina_cn_kline(sym, 240, 1023)
+        df = _sina_cn_kline(sym, 240, tail or MAX_BARS)
         src = "新浪指数日线"
+    if df is None or df.empty or len(df) < 1000:
+        ak_rows = _ak_index_bars(_idx_code_norm(code))
+        if ak_rows:
+            return ak_rows, "akshare指数日线"
     if df is None or df.empty:
         return [], ""
-    return _rows(df.tail(700), False), src
+    if tail:
+        df = df.tail(tail)
+    return _rows(df.tail(MAX_BARS), False), src
 
 
 def _sb_type(typ: str) -> tuple[str, str] | None:
@@ -1567,12 +2100,86 @@ def _unescape_u(s: str) -> str:
     return re.sub(r"\\u([0-9a-fA-F]{4})", lambda m: chr(int(m.group(1), 16)), s)
 
 
+_US_COMMON = [
+    ("NVDA", "英伟达"),
+    ("AMD", "AMD"),
+    ("AAPL", "苹果"),
+    ("MSFT", "微软"),
+    ("GOOGL", "谷歌"),
+    ("AMZN", "亚马逊"),
+    ("META", "Meta"),
+    ("TSLA", "特斯拉"),
+    ("AVGO", "博通"),
+    ("TSM", "台积电"),
+    ("MU", "美光"),
+    ("INTC", "英特尔"),
+    ("QCOM", "高通"),
+    ("NFLX", "奈飞"),
+    ("BABA", "阿里巴巴"),
+    ("PDD", "拼多多"),
+    ("SOXL", "半导体3倍做多"),
+    ("SOXX", "半导体ETF"),
+    ("SMH", "半导体ETF"),
+]
+
+
+def _search_us(q: str) -> list[dict]:
+    """美股代码/名称搜索：内置常用 + my_pool + Yahoo 兜底。"""
+    q = (q or "").strip()
+    if not q:
+        return []
+    ql = q.lower()
+    out: list[dict] = []
+    seen: set[str] = set()
+
+    def add(code: str, name: str) -> None:
+        c = str(code or "").strip().upper()
+        if not c or c in seen:
+            return
+        seen.add(c)
+        out.append({"market": "us", "kind": "stock", "code": c, "name": name or c, "tag": "美股"})
+
+    try:
+        import csv
+
+        with open(os.path.join(DATA_DIR, "my_pool.csv"), encoding="utf-8-sig") as f:
+            for r in csv.DictReader(f):
+                c = str(r.get("代码") or "").strip()
+                n = str(r.get("名称") or c)
+                if c and (ql in c.lower() or ql in n.lower()):
+                    add(c, n)
+    except Exception:
+        pass
+    for c, n in _US_COMMON:
+        if ql in c.lower() or ql in n.lower():
+            add(c, n)
+    if q.isascii():
+        try:
+            r = requests.get(
+                "https://query1.finance.yahoo.com/v1/finance/search",
+                params={"q": q, "quotesCount": 10, "newsCount": 0, "enableFuzzyQuery": "false"},
+                headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"},
+                timeout=8,
+            )
+            data = r.json() if r.ok else {}
+            for x in data.get("quotes", []):
+                if x.get("quoteType") not in ("EQUITY", "ETF"):
+                    continue
+                sym = str(x.get("symbol") or "").strip()
+                add(sym, x.get("shortname") or x.get("longname") or sym)
+                if len(out) >= 12:
+                    break
+        except Exception:
+            pass
+    return out[:12]
+
+
 def search_symbols(q: str) -> list[dict]:
     """按名称/代码搜个股、指数（腾讯 smartbox + 内置常用指数）。"""
     q = (q or "").strip()
     if not q:
         return []
-    key = "search:" + q.lower()
+    key = "search:v2:" + q.lower()
     hit = _mem_get(key, 300)
     if hit is None:
         hit = cache_get(key, 6 * 3600)
@@ -1595,8 +2202,12 @@ def search_symbols(q: str) -> list[dict]:
         if ql in name.lower() or ql in code.lower() or (q.isdigit() and q in code):
             add(code, name, "index", "指数")
     try:
-        r = requests.get("https://smartbox.gtimg.cn/s3/",
-                         params={"v": "2", "q": q, "t": "all"}, headers=QQ_H, timeout=8)
+        r = requests.get(
+            "https://smartbox.gtimg.cn/s3/",
+            params={"v": "2", "q": q, "t": "all"},
+            headers=QQ_H,
+            timeout=8,
+        )
         r.encoding = "gbk"
         m = re.search(r'v_hint="(.*?)"', r.text)
         parts = m.group(1).split("^") if m else []
@@ -1614,6 +2225,14 @@ def search_symbols(q: str) -> list[dict]:
                 break
     except Exception:
         pass
+    have = {x["code"].upper() for x in out}
+    for it in _search_us(q):
+        if len(out) >= 14:
+            break
+        if it["code"].upper() in have:
+            continue
+        out.append(it)
+        have.add(it["code"].upper())
     out = out[:14]
     if out:
         _mem_set(key, out)
@@ -1622,26 +2241,37 @@ def search_symbols(q: str) -> list[dict]:
 
 
 # ---------------- 汇总接口 ----------------
-def _bars_fetch(market: str, code: str, tf: str, name: str, kind: str,
-                retry: bool = False) -> tuple[list, str]:
+def _bars_fetch(
+    market: str,
+    code: str,
+    tf: str,
+    name: str,
+    kind: str,
+    retry: bool = False,
+    tail: int | None = None,
+) -> tuple[list, str]:
     try:
         if market == "us":
-            bars, src = us_bars(code, tf)
+            bars, src = us_bars(code, tf, tail=tail)
         elif kind == "stock":
-            bars, src = cn_stock_bars(code, tf)
+            bars, src = cn_stock_bars(code, tf, tail=tail)
         elif kind == "index":
-            bars, src = cn_index_bars(code, tf)
+            bars, src = cn_index_bars(code, tf, tail=tail)
         else:
-            bars, src = cn_bars(code, tf, name, kind, retry)
+            bars, src = cn_bars(code, tf, name, kind, retry, tail=tail)
     except Exception:
         bars, src = [], ""
     if bars:
-        db_bars_put(market, code, tf, bars, src)
+        if tail is None and market == "us":
+            db_bars_replace(market, code, tf, bars, src)
+        else:
+            db_bars_put(market, code, tf, bars, src)
     return bars, src
 
 
-def bars_payload(market: str, code: str, tf: str, name: str = "", kind: str = "industry",
-                 retry: bool = False) -> dict:
+def bars_payload(
+    market: str, code: str, tf: str, name: str = "", kind: str = "industry", retry: bool = False
+) -> dict:
     tf = tf if tf in TF_RULES else "1d"
     market = "us" if market == "us" else "cn"
     kind = kind if kind in ("concept", "stock", "index") else "industry"
@@ -1654,11 +2284,19 @@ def bars_payload(market: str, code: str, tf: str, name: str = "", kind: str = "i
     if tf in ("1w", "1M"):
         base = bars_payload(market, code, "1d", name, kind, retry)
         bars = _resample_rows(base.get("bars") or [], tf)
-        return {"market": market, "code": code, "name": name, "tf": tf,
-                "bars": bars, "count": len(bars), "derived": True,
-                "src": (base.get("src") or "") + ("·周线" if tf == "1w" else "·月线"),
-                "time": datetime.now().strftime("%H:%M:%S"),
-                "stale": base.get("stale", False), "age": base.get("age", 0)}
+        return {
+            "market": market,
+            "code": code,
+            "name": name,
+            "tf": tf,
+            "bars": bars,
+            "count": len(bars),
+            "derived": True,
+            "src": (base.get("src") or "") + ("·周线" if tf == "1w" else "·月线"),
+            "time": datetime.now().strftime("%H:%M:%S"),
+            "stale": base.get("stale", False),
+            "age": base.get("age", 0),
+        }
 
     bkey = f"bars:{market}:{code}:{tf}"
     _ACTIVE_BARS[bkey] = time.time()
@@ -1667,10 +2305,13 @@ def bars_payload(market: str, code: str, tf: str, name: str = "", kind: str = "i
     meta = db_meta_get(bkey)
     age = time.time() - meta["ts"] if meta else 0.0
     fresh = bool(bars) and age < _bar_ttl(tf)
-    if bars and not fresh:            # 有过期数据：先返回，后台刷新
-        _spawn_once(bkey, lambda: _bars_fetch(market, code, tf, name, kind, retry))
+    if bars and not fresh:  # 有过期数据：先返回，后台只补最近 N 根
+        _spawn_once(
+            bkey,
+            lambda: _bars_fetch(market, code, tf, name, kind, retry, tail=_refresh_tail(tf)),
+        )
     pending = False
-    if not bars:                      # 首次访问：最多等 2.5s，超时就后台继续抓
+    if not bars:  # 首次访问：最多等 2.5s，超时就后台继续抓
         fut = _submit_once(bkey, lambda: _bars_fetch(market, code, tf, name, kind, retry))
         if fut is not None:
             try:
@@ -1686,11 +2327,20 @@ def bars_payload(market: str, code: str, tf: str, name: str = "", kind: str = "i
         age = time.time() - meta["ts"] if meta else 0.0
         fresh = bool(bars)
         pending = not bars
-    return {"market": market, "code": code, "name": name, "tf": tf,
-            "bars": bars, "src": (meta or {}).get("src", ""), "count": len(bars),
-            "time": datetime.now().strftime("%H:%M:%S"), "stale": not fresh,
-            "pending": pending,
-            "age": round(max(age, 0), 1), "fetched_at": (meta or {}).get("ts", 0)}
+    return {
+        "market": market,
+        "code": code,
+        "name": name,
+        "tf": tf,
+        "bars": bars,
+        "src": (meta or {}).get("src", ""),
+        "count": len(bars),
+        "time": datetime.now().strftime("%H:%M:%S"),
+        "stale": not fresh,
+        "pending": pending,
+        "age": round(max(age, 0), 1),
+        "fetched_at": (meta or {}).get("ts", 0),
+    }
 
 
 # ---------------- 画线 / 自选 / 通用缓存（全部落 SQLite） ----------------
@@ -1714,8 +2364,10 @@ def _migrate_lines_once() -> None:
         with _DB_LOCK:
             conn = db()
             for k, v in d.items():
-                conn.execute("INSERT OR REPLACE INTO lines(key,ts,payload) VALUES(?,?,?)",
-                             (str(k), time.time(), json.dumps(v, ensure_ascii=False)))
+                conn.execute(
+                    "INSERT OR REPLACE INTO lines(key,ts,payload) VALUES(?,?,?)",
+                    (str(k), time.time(), json.dumps(v, ensure_ascii=False)),
+                )
             conn.commit()
     except Exception:
         pass
@@ -1735,8 +2387,10 @@ def save_key_lines(key: str, lines: list) -> None:
     try:
         with _DB_LOCK:
             conn = db()
-            conn.execute("INSERT OR REPLACE INTO lines(key,ts,payload) VALUES(?,?,?)",
-                         (str(key), time.time(), json.dumps(lines, ensure_ascii=False)))
+            conn.execute(
+                "INSERT OR REPLACE INTO lines(key,ts,payload) VALUES(?,?,?)",
+                (str(key), time.time(), json.dumps(lines, ensure_ascii=False)),
+            )
             conn.commit()
     except Exception:
         pass
@@ -1755,8 +2409,10 @@ def save_watch_db(items: list) -> None:
     try:
         with _DB_LOCK:
             conn = db()
-            conn.execute("INSERT OR REPLACE INTO watch(id,ts,payload) VALUES('default',?,?)",
-                         (time.time(), json.dumps(items, ensure_ascii=False)))
+            conn.execute(
+                "INSERT OR REPLACE INTO watch(id,ts,payload) VALUES('default',?,?)",
+                (time.time(), json.dumps(items, ensure_ascii=False)),
+            )
             conn.commit()
     except Exception:
         pass
@@ -1777,8 +2433,10 @@ def cache_put(key: str, obj) -> None:
     try:
         with _DB_LOCK:
             conn = db()
-            conn.execute("INSERT OR REPLACE INTO cache(key,ts,payload) VALUES(?,?,?)",
-                         (str(key), time.time(), json.dumps(obj, ensure_ascii=False)))
+            conn.execute(
+                "INSERT OR REPLACE INTO cache(key,ts,payload) VALUES(?,?,?)",
+                (str(key), time.time(), json.dumps(obj, ensure_ascii=False)),
+            )
             conn.commit()
     except Exception:
         pass
@@ -1786,7 +2444,7 @@ def cache_put(key: str, obj) -> None:
 
 # ---------------- HTTP ----------------
 class Handler(BaseHTTPRequestHandler):
-    protocol_version = "HTTP/1.1"      # 复用连接，省掉每次重连
+    protocol_version = "HTTP/1.1"  # 复用连接，省掉每次重连
 
     def log_message(self, *args):
         pass
@@ -1849,7 +2507,7 @@ class Handler(BaseHTTPRequestHandler):
                 self._json({"error": str(e)[:120]}, 500)
             return
         if u.path == "/api/sectors_ma":
-            market = ("us" if (q.get("market", ["cn"])[0] == "us") else "cn")
+            market = "us" if (q.get("market", ["cn"])[0] == "us") else "cn"
             kind = (q.get("kind", ["industry"])[0] or "industry").strip()
             if kind not in SECTOR_FS:
                 kind = "industry"
@@ -1899,9 +2557,17 @@ class Handler(BaseHTTPRequestHandler):
                     nl = conn.execute("SELECT COUNT(*) FROM lines").fetchone()[0]
                     nc = conn.execute("SELECT COUNT(*) FROM cache").fetchone()[0]
                 size = os.path.getsize(DB_FILE) if os.path.exists(DB_FILE) else 0
-                self._json({"bars": nb, "snapshots": ns, "lines": nl, "cache": nc,
-                            "db_kb": round(size / 1024, 1),
-                            "inflight": len(_INFLIGHT), "active_bars": len(_ACTIVE_BARS)})
+                self._json(
+                    {
+                        "bars": nb,
+                        "snapshots": ns,
+                        "lines": nl,
+                        "cache": nc,
+                        "db_kb": round(size / 1024, 1),
+                        "inflight": len(_INFLIGHT),
+                        "active_bars": len(_ACTIVE_BARS),
+                    }
+                )
             except Exception as e:
                 self._json({"error": str(e)[:120]}, 500)
             return
@@ -1920,7 +2586,10 @@ class Handler(BaseHTTPRequestHandler):
             def _probe(u):
                 try:
                     r = requests.get(u, headers=hdr, timeout=4)
-                    return {"status": r.status_code, "ok": r.status_code == 200 and len(r.text) > 20}
+                    return {
+                        "status": r.status_code,
+                        "ok": r.status_code == 200 and len(r.text) > 20,
+                    }
                 except Exception as e:
                     return {"status": None, "ok": False, "error": str(e)[:80]}
 
@@ -1939,8 +2608,7 @@ class Handler(BaseHTTPRequestHandler):
                         counts[tb] = conn.execute(f"SELECT COUNT(*) FROM {tb}").fetchone()[0]
             except Exception:
                 pass
-            self._json({"db": counts, "sources": srcs,
-                        "time": datetime.now().strftime("%H:%M:%S")})
+            self._json({"db": counts, "sources": srcs, "time": datetime.now().strftime("%H:%M:%S")})
             return
         if u.path == "/api/ping":
             self._json({"ok": True, "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
@@ -1962,16 +2630,18 @@ class Handler(BaseHTTPRequestHandler):
                 for it in items[:200]:
                     if not isinstance(it, dict) or not it.get("code"):
                         continue
-                    clean.append({
-                        "market": "us" if it.get("market") == "us" else "cn",
-                        "code": str(it.get("code"))[:16],
-                        "name": str(it.get("name") or "")[:40],
-                        "kind": str(it.get("kind") or "industry")[:16],
-                        "tf": str(it.get("tf") or "1d")[:8],
-                        "group": str(it.get("group") or "")[:16],
-                        "w": int(it.get("w") or 0) or None,
-                        "h": int(it.get("h") or 0) or None,
-                    })
+                    clean.append(
+                        {
+                            "market": "us" if it.get("market") == "us" else "cn",
+                            "code": str(it.get("code"))[:16],
+                            "name": str(it.get("name") or "")[:40],
+                            "kind": str(it.get("kind") or "industry")[:16],
+                            "tf": str(it.get("tf") or "1d")[:8],
+                            "group": str(it.get("group") or "")[:16],
+                            "w": int(it.get("w") or 0) or None,
+                            "h": int(it.get("h") or 0) or None,
+                        }
+                    )
                 save_watch_db(clean)
                 self._json({"ok": True, "n": len(clean)})
             except Exception as e:
@@ -1996,13 +2666,24 @@ class Handler(BaseHTTPRequestHandler):
                 if ln.get("type") == "h":
                     clean.append({"type": "h", "y": round(float(ln.get("y") or 0), 4)})
                 elif ln.get("type") == "trend":
-                    clean.append({"type": "trend",
-                                  "x1": str(ln.get("x1"))[:32], "y1": round(float(ln.get("y1") or 0), 4),
-                                  "x2": str(ln.get("x2"))[:32], "y2": round(float(ln.get("y2") or 0), 4)})
+                    clean.append(
+                        {
+                            "type": "trend",
+                            "x1": str(ln.get("x1"))[:32],
+                            "y1": round(float(ln.get("y1") or 0), 4),
+                            "x2": str(ln.get("x2"))[:32],
+                            "y2": round(float(ln.get("y2") or 0), 4),
+                        }
+                    )
                 elif ln.get("type") == "v":
-                    clean.append({"type": "v", "x": str(ln.get("x"))[:32],
-                                  "y1": round(float(ln.get("y1") or 0), 4),
-                                  "y2": round(float(ln.get("y2") or 0), 4)})
+                    clean.append(
+                        {
+                            "type": "v",
+                            "x": str(ln.get("x"))[:32],
+                            "y1": round(float(ln.get("y1") or 0), 4),
+                            "y2": round(float(ln.get("y2") or 0), 4),
+                        }
+                    )
             save_key_lines(key, clean)
             self._json({"ok": True, "n": len(clean)})
         except Exception as e:
@@ -2053,8 +2734,9 @@ def _background_ticker() -> None:
                 if meta and now - meta["ts"] < ttl:
                     continue
                 name, kind = _BARS_ARGS.get(bkey, ("", "industry"))
-                if _spawn_once(bkey, lambda m=market, c=code, t=tf, n=name, k=kind:
-                               _bars_fetch(m, c, t, n, k)):
+                if _spawn_once(
+                    bkey, lambda m=market, c=code, t=tf, n=name, k=kind: _bars_fetch(m, c, t, n, k)
+                ):
                     budget -= 1
             # 自选图表也保持后台新鲜（即使当前没在看）
             wbudget = 4
@@ -2073,8 +2755,9 @@ def _background_ticker() -> None:
                     ttl = 900 if tf == "1d" else _bar_ttl(tf)
                     if meta and now - meta["ts"] < ttl:
                         continue
-                    if _spawn_once(bkey, lambda m=mkt, c=code, t=tf, n=name, k=kind:
-                                   _bars_fetch(m, c, t, n, k)):
+                    if _spawn_once(
+                        bkey, lambda m=mkt, c=code, t=tf, n=name, k=kind: _bars_fetch(m, c, t, n, k)
+                    ):
                         wbudget -= 1
                     if wbudget <= 0:
                         break
@@ -2108,8 +2791,12 @@ def _warmup() -> None:
             if meta and time.time() - meta["ts"] < 1800:
                 continue
             _BARS_ARGS[bkey] = (r.get("name", ""), r.get("group", "industry"))
-            _spawn_once(bkey, lambda c=code, n=r.get("name", ""), g=r.get("group", "industry"):
-                        _bars_fetch("cn", c, "1d", n, g))
+            _spawn_once(
+                bkey,
+                lambda c=code, n=r.get("name", ""), g=r.get("group", "industry"): _bars_fetch(
+                    "cn", c, "1d", n, g
+                ),
+            )
             time.sleep(0.2)
         snap = db_snapshot_get("list:us:industry")
         rows = ((snap or {}).get("payload") or {}).get("rows") or []

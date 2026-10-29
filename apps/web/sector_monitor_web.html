@@ -17,7 +17,7 @@ body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.5 -apple-system,
 "PingFang SC","Microsoft YaHei",sans-serif;overflow:hidden}
 button,select,input{font:inherit}
 button{background:var(--card);color:var(--txt);border:1px solid var(--line);border-radius:7px;
-padding:5px 11px;cursor:pointer;font-size:13px;white-space:nowrap}
+padding:5px 11px;cursor:pointer;font-size:17px;white-space:nowrap}
 button:hover{border-color:#3c4a59}
 button.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
 button:disabled{opacity:.4;cursor:default}
@@ -27,13 +27,13 @@ button:disabled{opacity:.4;cursor:default}
 
 header{height:52px;display:flex;align-items:center;gap:10px;padding:0 14px;
 border-bottom:1px solid var(--line);background:var(--card2);flex-wrap:nowrap;overflow:hidden}
-h1{font-size:15px;margin:0;font-weight:700;white-space:nowrap}
+h1{font-size:19px;margin:0;font-weight:700;white-space:nowrap}
 .mtabs,.ktabs{display:flex;gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden}
 .mtabs button,.ktabs button{border:0;border-radius:0;background:transparent;padding:5px 12px}
 .mtabs button+button,.ktabs button+button{border-left:1px solid var(--line)}
 .mtabs button.on,.ktabs button.on{background:var(--accent);color:#fff}
 #q{width:170px;background:var(--card);border:1px solid var(--line);color:var(--txt);
-border-radius:7px;padding:5px 10px;font-size:13px}
+border-radius:7px;padding:5px 10px;font-size:17px}
 #q:focus{outline:none;border-color:var(--accent)}
 .qbox{position:relative}
 /* 搜索建议：个股 / 指数 / 板块（fixed，避免被 header 的 overflow 裁掉） */
@@ -41,148 +41,155 @@ border-radius:7px;padding:5px 10px;font-size:13px}
 overflow:auto;background:#0f151c;border:1px solid #33404f;border-radius:10px;padding:5px;
 box-shadow:0 18px 40px rgba(0,0,0,.65)}
 .qsug.show{display:block}
-.qsug .qh{font-size:11px;color:#6d7885;padding:6px 9px 3px}
+.qsug .qh{font-size:15px;color:#6d7885;padding:6px 9px 3px}
 .qsug .qi{display:flex;align-items:center;gap:8px;padding:6px 9px;border-radius:7px;cursor:pointer}
 .qsug .qi:hover,.qsug .qi.act{background:#182231}
-.qsug .qi .qk{flex:0 0 auto;font-size:11px;color:#8fb8e8;background:#16222f;border-radius:5px;padding:1px 6px}
+.qsug .qi .qk{flex:0 0 auto;font-size:15px;color:#8fb8e8;background:#16222f;border-radius:5px;padding:1px 6px}
 .qsug .qi .qn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.qsug .qi .qc{flex:0 0 auto;font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.qsug .qi .qc{flex:0 0 auto;font-size:15.5px;color:var(--muted);font-variant-numeric:tabular-nums}
 .chip{cursor:default}
 .chip.click{cursor:pointer}
 .chip.click:hover{border-color:#3c5680;background:#141d28}
-.chip .istar{float:right;color:#93a0af;padding:0 2px;border-radius:4px;font-size:13px;line-height:1.1}
+.chip .istar{float:right;color:#93a0af;padding:0 2px;border-radius:4px;font-size:17px;line-height:1.1}
 .chip .istar:hover{background:#22303f;color:#ffd54f}
 .chip .istar.on{color:#ffc857}
 #sort{background:var(--card);color:var(--txt);border:1px solid var(--line);border-radius:7px;
-padding:5px 8px;font-size:13px}
-label.chk{display:flex;align-items:center;gap:5px;font-size:13px;color:var(--muted);white-space:nowrap}
-#ts{font-size:12px;white-space:nowrap}
+padding:5px 8px;font-size:17px}
+label.chk{display:flex;align-items:center;gap:5px;font-size:17px;color:var(--muted);white-space:nowrap}
+#ts{font-size:16px;white-space:nowrap}
 
 .help{position:fixed;top:56px;left:14px;right:14px;z-index:30;background:#0b0f14;
-border:1px solid var(--line);border-radius:10px;padding:14px 18px;font-size:13px;line-height:1.9;
+border:1px solid var(--line);border-radius:10px;padding:14px 18px;font-size:17px;line-height:1.9;
 box-shadow:0 18px 40px rgba(0,0,0,.6);max-height:70vh;overflow:auto}
 .help code{background:#1a2129;padding:1px 6px;border-radius:4px;color:#ffd27a}
 .help b{color:#fff}
 
-main{display:grid;grid-template-columns:304px 1fr;height:calc(100% - 52px);min-height:0}
+main{display:grid;grid-template-columns:570px 1fr;height:calc(100% - 52px);min-height:0}
 aside{border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0;background:#0c1015}
 .idx{display:flex;gap:6px;padding:8px 10px;border-bottom:1px solid var(--line);flex-wrap:wrap}
 .chip{flex:1;min-width:88px;background:var(--card);border:1px solid var(--line);border-radius:8px;
-padding:5px 8px;font-size:12px;line-height:1.45}
+padding:5px 8px;font-size:16px;line-height:1.45}
 .chip .cn{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chip .cv{font-weight:700;font-variant-numeric:tabular-nums}
 .sidehead{display:flex;align-items:center;justify-content:space-between;padding:8px 12px 6px;
-font-size:12px;color:var(--muted)}
+font-size:16px;color:var(--muted)}
 .list{overflow:auto;flex:1;min-height:0;padding:0 6px 12px}
-.row{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:7px 8px;border-radius:8px;
-cursor:pointer;border:1px solid transparent;position:relative}
+.row{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:8px 8px 6px;border-radius:8px;
+cursor:pointer;border:1px solid transparent;position:relative;
+transition:border-color .12s,background .12s,transform .18s linear;
+transform-origin:center center;will-change:transform}
 .row:hover{background:#131922}
 .row.sel{background:#152234;border-color:#2f4f7a}
-.row .nm{font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:7px;
+.row .nm{font-size:17.5px;font-weight:600;display:flex;align-items:center;gap:7px;
 white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .row .nm .nmx{min-width:0;overflow:hidden;text-overflow:ellipsis}
-.row .nm .p{font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums}
-.row .star{flex:0 0 auto;border:0;background:transparent;padding:1px 4px;line-height:1;font-size:15px;
+.row .nm .p{font-size:16.5px;font-weight:700;font-variant-numeric:tabular-nums}
+.row .star{flex:0 0 auto;border:0;background:transparent;padding:1px 4px;line-height:1;font-size:19px;
 color:#93a0af;border-radius:6px;opacity:1}
 .row .star:hover{background:#22303f;color:#ffd54f}
 .row .star.on{color:#ffc857;background:transparent}
-.wbtn{border:1px solid #3a4553;background:#182231;color:#cfd8e3;padding:2px 9px;font-size:12px;
+.wbtn{border:1px solid #3a4553;background:#182231;color:#cfd8e3;padding:2px 9px;font-size:16px;
 border-radius:999px;margin-left:4px;white-space:nowrap}
 .wbtn:hover{border-color:#ffd54f;color:#ffd54f}
 .wbtn.on{color:#ffc857;border-color:#6b5420;background:#241d0f}
 .wbtn.on:hover{color:#ffd54f;border-color:#8a6a25}
 .sidehead{gap:6px}
 .sidehead #cnt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.sidehead .shint{margin-left:0;font-size:11px;color:#66717e;white-space:nowrap;flex:0 0 auto;cursor:pointer;user-select:none}
+.sidehead .shint{margin-left:0;font-size:15px;color:#66717e;white-space:nowrap;flex:0 0 auto;cursor:pointer;user-select:none}
 .sidehead #maUp{margin-left:auto}
 .sidehead .shint.on{color:var(--accent);font-weight:700}
-.row .amt{font-size:12.5px;color:var(--txt);font-variant-numeric:tabular-nums;text-align:right}
-.row .meta{grid-column:1/3;display:flex;gap:10px;font-size:11.5px;color:var(--muted);
+.row .amt{font-size:16.5px;color:var(--txt);font-variant-numeric:tabular-nums;text-align:right}
+.row .meta{grid-column:1/3;display:flex;gap:10px;font-size:15.5px;color:var(--muted);
 font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden}
 .row .meta .v{color:#c8d2dd}
 .vbar{grid-column:1/3;height:3px;border-radius:2px;background:#1e252e;overflow:hidden;margin-top:1px}
 .vbar i{display:block;height:100%;border-radius:2px}
-.list .empty{color:var(--muted);font-size:12.5px;padding:16px 10px;text-align:center}
+.row .sparkwrap{grid-column:1/3;height:160px;margin-top:3px}
+.row .spark{display:block;width:100%;height:100%}
+.list .empty{color:var(--muted);font-size:16.5px;padding:16px 10px;text-align:center}
 
 section.chart{display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--bg)}
 .bar{display:flex;align-items:center;gap:14px;padding:7px 12px;border-bottom:1px solid var(--line);
 flex-wrap:wrap;row-gap:6px;background:var(--card2)}
 .sym{display:flex;align-items:baseline;gap:8px;min-width:150px}
-.sym b{font-size:16px}
-.sym span{font-size:12px}
+.sym b{font-size:20px}
+.sym span{font-size:16px}
 .px{display:flex;align-items:baseline;gap:8px;min-width:120px}
-.px b{font-size:19px;font-variant-numeric:tabular-nums}
-.px span{font-size:13px;font-weight:700}
-.stat{display:flex;gap:12px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.px b{font-size:23px;font-variant-numeric:tabular-nums}
+.px span{font-size:17px;font-weight:700}
+.stat{display:flex;gap:12px;font-size:16px;color:var(--muted);font-variant-numeric:tabular-nums}
 .stat b{color:#dbe4ee;font-weight:600}
 .tfs{display:flex;gap:4px}
-.tfs button{padding:3px 9px;font-size:12px}
+.tfs button{padding:3px 9px;font-size:16px}
 .tools{display:flex;gap:5px}
-.tools button{padding:4px 9px;font-size:12px}
-.tools .matogs{display:flex;align-items:center;gap:3px;font-size:12px;color:var(--muted);
+.tools button{padding:4px 9px;font-size:16px}
+.tools .matogs{display:flex;align-items:center;gap:3px;font-size:16px;color:var(--muted);
 border:1px solid var(--line);border-radius:7px;padding:2px 6px 2px 8px;white-space:nowrap;user-select:none}
 .tools .matogs .mlab{margin-right:2px}
-.tools .matogs button{--mc:#8a97a5;--mcbg:transparent;padding:2px 6px;font-size:11px;line-height:1.5;
+.tools .matogs button{--mc:#8a97a5;--mcbg:transparent;padding:2px 6px;font-size:15px;line-height:1.5;
 border:1px solid transparent;border-radius:5px;background:transparent;color:var(--mc);opacity:.5}
 .tools .matogs button:hover{opacity:.85}
 .tools .matogs button.on{opacity:1;font-weight:700;border-color:var(--mc);background:var(--mcbg)}
 #bH.on,#bT.on,#bV.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
 .cw{position:relative;flex:1;min-height:0}
 #cv{display:block;width:100%;height:100%;cursor:crosshair;user-select:none;touch-action:none}
-.sb{height:26px;line-height:26px;padding:0 12px;font-size:12px;color:var(--muted);
+.sb{height:26px;line-height:26px;padding:0 12px;font-size:16px;color:var(--muted);
 border-top:1px solid var(--line);background:var(--card2);white-space:nowrap;overflow:hidden;
 text-overflow:ellipsis}
 .tip{position:absolute;pointer-events:none;z-index:8;background:rgba(11,15,20,.96);
-border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:12px;line-height:1.7;
+border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:16px;line-height:1.7;
 display:none;white-space:nowrap;font-variant-numeric:tabular-nums;box-shadow:0 8px 24px rgba(0,0,0,.55)}
 .tip b{color:#fff}
 .msg{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
 background:rgba(14,17,22,.94);
-flex-direction:column;gap:10px;color:var(--muted);font-size:14px;text-align:center;padding:20px}
+flex-direction:column;gap:10px;color:var(--muted);font-size:18px;text-align:center;padding:20px}
 .msg.show{display:flex}
 
 /* 自选抽屉 + 放大模式 */
 .fab{position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:22;border-radius:9px 0 0 9px;
-border-right:0;padding:12px 7px;writing-mode:vertical-rl;letter-spacing:3px;font-size:13px;
+border-right:0;padding:12px 7px;writing-mode:vertical-rl;letter-spacing:3px;font-size:17px;
 background:#18212c;box-shadow:-4px 0 14px rgba(0,0,0,.35)}
-.fab b{writing-mode:horizontal-tb;display:block;margin-top:6px;font-size:11px;color:#ffd54f}
+.fab b{writing-mode:horizontal-tb;display:block;margin-top:6px;font-size:15px;color:#ffd54f}
 .fab.on{background:#20304a;border-color:#3c5680}
 /* 自选：全屏面板（一行卡片 · 横向拖动 · 独立改宽高 · 双击放大） */
 .drawer{position:fixed;inset:0;z-index:40;background:#0b0f14;display:none;flex-direction:column}
 .drawer.open{display:flex}
 .drawer .dh{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--line);
 background:#0e141b;flex-wrap:wrap}
-.drawer .dh b{font-size:15px}
-.drawer .dh .muted{font-size:11.5px}
-.drawer .dh .hint{font-size:11.5px;color:#6d7885}
+.drawer .dh b{font-size:19px}
+.drawer .dh .muted{font-size:15.5px}
+.drawer .dh .hint{font-size:15.5px;color:#6d7885}
 .drawer .dh .wback{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700;
-padding:6px 12px;border-radius:8px;font-size:13px;cursor:pointer}
+padding:6px 12px;border-radius:8px;font-size:17px;cursor:pointer}
 .drawer .dh .wback:hover{filter:brightness(1.08)}
-.wlist{flex:1;min-height:0;overflow:auto;cursor:grab;overscroll-behavior:contain;
-background:radial-gradient(1200px 520px at 18% -10%,#111a25,#0b0f14)}
-.wlist.panning{cursor:grabbing;user-select:none}
-.wrow{display:flex;gap:12px;padding:14px;width:max-content;min-width:100%;box-sizing:border-box;align-items:flex-start}
-.wcard{position:relative;flex:0 0 auto;width:360px;height:280px;box-sizing:border-box;
-border:1px solid var(--line);border-radius:10px;padding:8px 10px 7px;background:#111821;
-cursor:pointer;display:flex;flex-direction:column;transition:border-color .12s,box-shadow .12s}
-.wcard:hover{border-color:#3c4a59;background:#141c26}
+.wlist{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;padding:14px;
+ display:grid;grid-template-columns:repeat(5,minmax(0,1fr));
+ grid-auto-rows:max(160px,calc((100vh - 130px)/4));gap:12px;align-content:start;
+ background:radial-gradient(1200px 520px at 18% -10%,#111a25,#0b0f14)}
+.wcard{position:relative;box-sizing:border-box;height:100%;
+ border:1px solid var(--line);border-radius:10px;padding:8px 10px 7px;background:#111821;
+ cursor:pointer;display:flex;flex-direction:column;
+ transition:border-color .12s,box-shadow .12s,transform .2s linear;
+ transform-origin:center center;will-change:transform}
+.wcard:hover{border-color:#3c4a59;background:#141c26;transform:scale(1.5);z-index:5;
+ box-shadow:0 14px 34px rgba(0,0,0,.6)}
 .wcard.sel{border-color:var(--accent);box-shadow:0 0 0 1px rgba(74,144,217,.45) inset}
 .wcard .wh{display:flex;align-items:baseline;gap:8px;flex-wrap:nowrap;overflow:hidden}
-.wcard .wh b{font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.wcard .wh .muted{font-size:11px;white-space:nowrap}
-.wcard .wpx{margin-left:auto;font-weight:700;font-variant-numeric:tabular-nums;font-size:13px;white-space:nowrap}
-.wcard .wzoom,.wcard .wdel{border:0;background:transparent;color:var(--muted);font-size:11.5px;
+.wcard .wh b{font-size:17.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wcard .wh .muted{font-size:15px;white-space:nowrap}
+.wcard .wpx{margin-left:auto;font-weight:700;font-variant-numeric:tabular-nums;font-size:17px;white-space:nowrap}
+.wcard .wzoom,.wcard .wdel{border:0;background:transparent;color:var(--muted);font-size:15.5px;
 padding:1px 5px;line-height:1.4;opacity:.6}
 .wcard .wzoom:hover,.wcard .wdel:hover{opacity:1;color:var(--txt)}
 .wcard .wspark{display:block;width:100%;flex:1 1 0;height:auto;min-height:50px;margin:6px 0 4px}
-.wcard .wl{display:flex;gap:14px;font-size:11.5px;color:var(--muted);align-items:center;flex-wrap:wrap}
+.wcard .wl{display:flex;gap:14px;font-size:15.5px;color:var(--muted);align-items:center;flex-wrap:wrap}
 .wcard .wl b{font-variant-numeric:tabular-nums;font-weight:700}
-.wcard .wtag{margin-left:auto;font-size:11px;color:#66717e;white-space:nowrap}
+.wcard .wtag{margin-left:auto;font-size:15px;color:#66717e;white-space:nowrap}
 .wres{position:absolute;right:0;bottom:0;width:18px;height:18px;cursor:nwse-resize;z-index:3}
 .wres::after{content:"";position:absolute;right:5px;bottom:5px;width:8px;height:8px;
 border-right:2px solid #4a5a6c;border-bottom:2px solid #4a5a6c;border-radius:0 0 2px 0}
 .wcard:hover .wres::after{border-color:#8b9aab}
-.wempty{padding:40px 16px;text-align:center;color:var(--muted);font-size:13px;line-height:1.9}
+.wempty{padding:40px 16px;text-align:center;color:var(--muted);font-size:17px;line-height:1.9}
 
 /* 放大模式：保留左侧看盘面板与「自选」悬浮按钮；抽屉由自身的 open 类控制显隐 */
 body.focus main{grid-template-columns:304px 1fr}
@@ -263,7 +270,6 @@ body.focus main{grid-template-columns:304px 1fr}
       <div class="tools">
         <div class="matogs" id="maTogs" title="点击单独开关每条均线"><span class="mlab">均线</span></div>
         <button id="bLog" class="on" title="对数坐标：同样涨幅的波段看起来一样高；点击可切回普通价格坐标">对数</button>
-        <button id="bH" title="水平线（画完自动退出）">水平线</button>
         <button id="bT" title="趋势线（画完自动退出）">趋势线</button>
         <button id="bV" title="纵向线段：点起点 → 点终点，显示这段涨幅（画完自动退出）">纵向线</button>
         <button id="bUndo" title="Ctrl+Z">撤销</button>
@@ -287,7 +293,7 @@ body.focus main{grid-template-columns:304px 1fr}
 <aside id="watch" class="drawer">
   <div class="dh"><button id="wback" class="wback" title="回到看盘（Esc）">← 返回看盘</button>
     <b>我的自选</b><span class="muted" id="wcount2">0 个板块</span>
-    <span class="hint">单击选中 · 双击放大 · 右下角拖动改大小 · 空白处按住拖动横向滚动 · Esc 返回</span>
+    <span class="hint">单击选中 · 双击放大 · 悬停临时放大 1.5× · 3×4 网格，滚动查看更多 · Esc 返回</span>
     <span class="sp"></span><button id="wclose">关闭</button></div>
   <div class="wlist" id="wlist"></div>
 </aside>
@@ -561,6 +567,40 @@ function livePrice() {
 }
 function classify(y) { return livePrice() >= y ? DOWN : UP; }
 
+/* 当日最新涨幅：优先用实时报价 pct，否则用「现价 / 昨收」现算 */
+function livePct() {
+  if (S.live && Number.isFinite(S.live.pct)) return S.live.pct;
+  const n = nBars();
+  if (n >= 2) return (livePrice() / S.bars[n - 2].c - 1) * 100;
+  return 0;
+}
+function marketTz(market) { return market === "us" ? "America/New_York" : "Asia/Shanghai"; }
+function todayDateStr(market) {
+  try {
+    return new Intl.DateTimeFormat("en-CA", {
+      timeZone: marketTz(market), year: "numeric", month: "2-digit", day: "2-digit",
+    }).format(new Date());
+  } catch (e) {
+    return new Date().toISOString().slice(0, 10);
+  }
+}
+function isWeekday(dateStr) {
+  const wd = new Date(dateStr + "T00:00:00Z").getUTCDay();
+  return wd >= 1 && wd <= 5;
+}
+function inOrAfterSession(market) {
+  try {
+    const parts = new Intl.DateTimeFormat("en-GB", {
+      timeZone: marketTz(market), hour: "2-digit", minute: "2-digit", hour12: false,
+    }).formatToParts(new Date());
+    const hh = Number(parts.find(p => p.type === "hour")?.value || 0);
+    const mm = Number(parts.find(p => p.type === "minute")?.value || 0);
+    return hh * 60 + mm >= 9 * 60 + 30;
+  } catch (e) {
+    return true;
+  }
+}
+
 function visibleRange() {
   const i0 = Math.max(0, Math.floor(S.view.l) - 1);
   const i1 = Math.min(nBars() - 1, Math.ceil(S.view.r) + 1);
@@ -584,7 +624,7 @@ function drawGrid() {
   ctx.strokeStyle = "#222a33";
   ctx.fillStyle = "#94a0ad";
   ctx.lineWidth = 1;
-  ctx.font = "11px -apple-system,Segoe UI,Roboto,sans-serif";
+  ctx.font = "15px -apple-system,Segoe UI,Roboto,sans-serif";
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
   const rows = 5;
@@ -696,10 +736,10 @@ function drawSeries() {
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(G.pad.l, py); ctx.lineTo(G.w - G.pad.r, py); ctx.stroke();
     ctx.setLineDash([]);
-    const pct = S.live ? S.live.pct : 0;
+    const pct = livePct();
     const col = pctColor(pct);
     const label = fmtNum(lp, 2);
-    ctx.font = "700 11px -apple-system,Segoe UI,Roboto,sans-serif";
+    ctx.font = "700 15px -apple-system,Segoe UI,Roboto,sans-serif";
     const tw = ctx.measureText(label).width + 10;
     ctx.fillStyle = col;
     ctx.fillRect(G.w - G.pad.r + 1, py - 8, Math.max(tw, 58), 16);
@@ -708,7 +748,7 @@ function drawSeries() {
     ctx.fillText(label, G.w - G.pad.r + 6, py);
   }
   // 图例
-  ctx.font = "11px -apple-system,Segoe UI,Roboto,sans-serif";
+  ctx.font = "15px -apple-system,Segoe UI,Roboto,sans-serif";
   ctx.textAlign = "left"; ctx.textBaseline = "middle";
   let lx = G.pad.l + 2;
   for (const [win, color] of MA_DEF) {
@@ -747,6 +787,7 @@ function drawLines() {
   const arr = curLines();
   if (S.selected !== null && S.selected >= arr.length) S.selected = null;
   arr.forEach((ln, idx) => {
+    if (ln.type === "h") return;  // 已取消水平线
     const sel = idx === S.selected;
     const col = classify(yAtNow(ln));
     const lw = sel ? 2.4 : 1.3;
@@ -755,16 +796,7 @@ function drawLines() {
     ctx.lineWidth = lw;
     ctx.setLineDash([6, 4]);
     ctx.beginPath();
-    if (ln.type === "h") {
-      const py = p2y(ln.y);
-      ctx.moveTo(G.pad.l, py); ctx.lineTo(G.w - G.pad.r, py);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.fillStyle = col;
-      ctx.font = "11px -apple-system,Segoe UI,Roboto,sans-serif";
-      ctx.textAlign = "right"; ctx.textBaseline = "middle";
-      ctx.fillText(fmtNum(ln.y, 2), G.w - G.pad.r - 5, py - 8);
-    } else if (ln.type === "v") {
+    if (ln.type === "v") {
       const px = x2px(dt2x(Date.parse(ln.x)));
       if (px < G.pad.l - 1 || px > G.w - G.pad.r + 1) { ctx.restore(); return; }
       const py1 = p2y(ln.y1), py2 = p2y(ln.y2);
@@ -777,7 +809,7 @@ function drawLines() {
       ctx.moveTo(px - 5, py2); ctx.lineTo(px + 5, py2);
       ctx.stroke();
       const lab = fmtPct(pct);
-      ctx.font = "700 11px -apple-system,Segoe UI,Roboto,sans-serif";
+      ctx.font = "700 15px -apple-system,Segoe UI,Roboto,sans-serif";
       const tw = ctx.measureText(lab).width;
       const cy = (py1 + py2) / 2;
       ctx.fillStyle = "#0e1116";
@@ -786,7 +818,7 @@ function drawLines() {
       ctx.textAlign = "left"; ctx.textBaseline = "middle";
       ctx.fillText(lab, px + 11, cy);
       if (Math.abs(py1 - py2) > 46) {
-        ctx.font = "10.5px -apple-system,Segoe UI,Roboto,sans-serif";
+        ctx.font = "14.5px -apple-system,Segoe UI,Roboto,sans-serif";
         ctx.fillStyle = "#94a0ad";
         ctx.textAlign = "left";
         ctx.fillText(fmtNum(ln.y1, 2), px + 8, py1);
@@ -822,9 +854,7 @@ function drawPreview(mx, my) {
   ctx.strokeStyle = "rgba(255,255,255,.85)";
   ctx.lineWidth = 1;
   ctx.setLineDash([5, 4]);
-  if (S.mode === "h" && my >= G.pad.t && my <= G.pad.t + G.mainH) {
-    ctx.beginPath(); ctx.moveTo(G.pad.l, my); ctx.lineTo(G.w - G.pad.r, my); ctx.stroke();
-  } else if (S.mode === "trend" && S.p1) {
+  if (S.mode === "trend" && S.p1) {
     const px1 = x2px(dt2x(S.p1.t)), py1 = p2y(S.p1.y);
     ctx.beginPath(); ctx.moveTo(px1, py1); ctx.lineTo(mx, my); ctx.stroke();
     ctx.setLineDash([]);
@@ -837,7 +867,7 @@ function drawPreview(mx, my) {
     ctx.beginPath(); ctx.arc(px1, py1, 4, 0, Math.PI * 2);
     ctx.fillStyle = "#fff"; ctx.fill();
     const pct = S.p1.y ? (y2p(my) / S.p1.y - 1) * 100 : 0;
-    ctx.font = "700 11px -apple-system,Segoe UI,Roboto,sans-serif";
+    ctx.font = "700 15px -apple-system,Segoe UI,Roboto,sans-serif";
     ctx.fillStyle = pctColor(pct);
     ctx.textAlign = "left"; ctx.textBaseline = "middle";
     ctx.fillText(fmtPct(pct), px1 + 9, (py1 + my) / 2);
@@ -865,7 +895,7 @@ function drawCrosshair() {
     ctx.setLineDash([]);
     const p = y2p(h.my);
     const txt = fmtNum(p, 2);
-    ctx.font = "11px -apple-system,Segoe UI,Roboto,sans-serif";
+    ctx.font = "15px -apple-system,Segoe UI,Roboto,sans-serif";
     const tw = ctx.measureText(txt).width + 10;
     ctx.fillStyle = "#39434f";
     ctx.fillRect(G.w - G.pad.r + 1, h.my - 8, Math.max(tw, 58), 16);
@@ -889,7 +919,7 @@ function draw() {
   ctx.fillRect(0, 0, G.w, G.h);
   if (!nBars()) {
     ctx.fillStyle = "#94a0ad";
-    ctx.font = "14px -apple-system,Segoe UI,Roboto,sans-serif";
+    ctx.font = "18px -apple-system,Segoe UI,Roboto,sans-serif";
     ctx.textAlign = "center"; ctx.textBaseline = "middle";
     ctx.fillText(S.loading ? "加载中…" : "选择左侧板块开始", G.w / 2, G.h / 2);
     return;
@@ -935,11 +965,10 @@ function nearestLine(mx, my, onlyType) {
   const arr = curLines();
   let best = null, bd = 1e18;
   arr.forEach((ln, i) => {
+    if (ln.type === "h") return;  // 已取消水平线
     if (onlyType && ln.type !== onlyType) return;   // 画线模式下只认同类型的线
     let d;
-    if (ln.type === "h") {
-      d = Math.abs(my - p2y(ln.y));
-    } else if (ln.type === "v") {
+    if (ln.type === "v") {
       const px = x2px(dt2x(Date.parse(ln.x))), py1 = p2y(ln.y1), py2 = p2y(ln.y2);
       const lo = Math.min(py1, py2), hi = Math.max(py1, py2);
       d = (my >= lo && my <= hi) ? Math.abs(mx - px)
@@ -1039,14 +1068,12 @@ function setMode(mode) {
   S.mode = (S.mode === mode) ? null : mode;
   S.p1 = null;
   syncModeButtons();
-  if (S.mode === "h") setStatus("水平线：点击图上放置（再点按钮 / Esc / 右键退出）");
-  else if (S.mode === "trend") setStatus("趋势线：点第一个点 → 移动预览 → 点第二个点（Esc / 右键取消）");
+  if (S.mode === "trend") setStatus("趋势线：点第一个点 → 移动预览 → 点第二个点（Esc / 右键取消）");
   else if (S.mode === "v") setStatus("纵向线：点起点 → 点终点（同一时刻上下两价），显示这段涨幅（Esc / 右键取消）");
   else setStatus("已退出画线模式（左键拖拽平移 / 滚轮缩放）");
   draw();
 }
 function syncModeButtons() {
-  $("#bH").classList.toggle("on", S.mode === "h");
   $("#bT").classList.toggle("on", S.mode === "trend");
   $("#bV").classList.toggle("on", S.mode === "v");
 }
@@ -1079,18 +1106,15 @@ cv.addEventListener("pointerdown", e => {
   // 1) 端点（画线模式开着时不处理，避免顺手选中别的线）
   const hd = S.mode ? null : nearestHandle(mx, my);
   if (hd) {
-    if (S.mode) { S.mode = null; S.p1 = null; syncModeButtons(); }
     pushUndo();
     S.drag = {kind: "handle", idx: S.selected, i: hd.i, moved: false};
     cv.setPointerCapture(e.pointerId);
     setStatus("拖动端点调整位置（松开保存）");
     return;
   }
-  // 2) 线体：普通模式点任意线都选中；画线模式只认「同类型」的线
-  const nl = nearestLine(mx, my, S.mode || null);
+  // 2) 线体：画线模式下不选中任何已有线
+  const nl = S.mode ? null : nearestLine(mx, my, null);
   if (nl) {
-    // 画线模式还开着时点到同类型的已有线：选中它并退出画线模式，避免串线
-    if (S.mode) { S.mode = null; S.p1 = null; syncModeButtons(); }
     S.selected = nl.idx;
     const arr = curLines(), ln = arr[nl.idx];
     pushUndo();
@@ -1106,14 +1130,6 @@ cv.addEventListener("pointerdown", e => {
     return;
   }
   // 3) 画线
-  if (S.mode === "h" && inMain(my)) {
-    addLine({type: "h", y: round4(y2p(my))});
-    S.mode = null;                       // 画完一根自动退出，按钮复位
-    syncModeButtons();
-    setStatus("已添加水平线 · 已退出画线模式");
-    draw();
-    return;
-  }
   if (S.mode === "trend" && inMain(my)) {
     const p = {t: x2dt(px2x(mx)), y: y2p(my)};
     if (!S.p1) {
@@ -1421,10 +1437,12 @@ function makeRowEl(code) {
     `<span class="p"></span></div>` +
     `<div class="amt"></div>` +
     `<div class="vbar"><i></i></div>` +
+    `<div class="sparkwrap"><canvas class="spark"></canvas></div>` +
     `<div class="meta"></div>`;
   const q = sel => el.querySelector(sel);
   return {el, nmx: q(".nmx"), star: q(".star"), p: q(".p"),
-          amt: q(".amt"), bar: q(".vbar i"), meta: q(".meta"), metaSig: ""};
+          amt: q(".amt"), bar: q(".vbar i"), spark: q(".spark"),
+          meta: q(".meta"), metaSig: ""};
 }
 
 function updateRowEl(o, r, maxAmt) {
@@ -1458,6 +1476,7 @@ function updateRowEl(o, r, maxAmt) {
     if (r.leader) meta.push(`领涨 <span class="v">${esc(r.leader)}</span>`);
     o.meta.innerHTML = meta.join("");
   }
+  ensureSpark(o, r);
 }
 
 async function fetchMA() {
@@ -1495,17 +1514,34 @@ function renderList() {
     return (r.name || "").toLowerCase().includes(q) || (r.code || "").toLowerCase().includes(q);
   });
   rows = rows.slice();
-  if (maMode) rows.sort((a, b) => maMode === "up" ? (b.slope || 0) - (a.slope || 0)
-                                                     : (a.slope || 0) - (b.slope || 0));
-  else if (sort === "pct") rows.sort((a, b) => (b.pct || 0) - (a.pct || 0));
+  // 默认视图：按涨幅降序全排序，取前 15 + 中 15 + 后 15（共 45）
+  const topMode = !q && !maMode && (sort === "amount" || sort === "pct");
+  let total = rows.length;
+  if (topMode) {
+    const sorted = rows.slice().sort((a, b) => (b.pct || 0) - (a.pct || 0));
+    total = sorted.length;
+    if (total <= 45) {
+      rows = sorted;
+    } else {
+      const midStart = Math.floor((total - 15) / 2);
+      rows = sorted.slice(0, 15)
+        .concat(sorted.slice(midStart, midStart + 15))
+        .concat(sorted.slice(-15));
+    }
+  } else if (maMode) {
+    rows.sort((a, b) => maMode === "up" ? (b.slope || 0) - (a.slope || 0)
+                                        : (a.slope || 0) - (b.slope || 0));
+  } else if (sort === "pct") rows.sort((a, b) => (b.pct || 0) - (a.pct || 0));
   else if (sort === "vr") rows.sort((a, b) => (b.vr || 0) - (a.vr || 0));
   else if (sort === "main") rows.sort((a, b) => (b.main || 0) - (a.main || 0));
   else rows.sort((a, b) => (b.amount || 0) - (a.amount || 0));
 
   $("#cnt").textContent = maMode
     ? `MA21${maMode === "up" ? "↑" : "↓"} ${rows.length} 个`
-    : rows.length + " 个 · " + (S.market === "us" ? "美股ETF" :
-      (S.source === "同花顺" ? "同花顺行业" : "A股板块"));
+    : (topMode
+        ? (total <= 45 ? `${total} 个` : `前15 · 中15 · 后15`)
+        : rows.length + " 个 · " + (S.market === "us" ? "美股ETF" :
+          (S.source === "同花顺" ? "同花顺行业" : "A股板块")));
   const list = $("#list");
   const scrollTop = list.scrollTop;
   const maxAmt = Math.max(1, ...rows.map(r => r.amount || 0));
@@ -1585,7 +1621,7 @@ function renderIdx() {
     if (!o) return;
     o.cns[1].textContent = fmtAmt(it.amount);
     o.cv.style.color = pctColor(it.pct);
-    o.cv.innerHTML = `${fmtNum(it.price, 2)} <span style="font-size:11.5px">${fmtPct(it.pct)}</span>`;
+    o.cv.innerHTML = `${fmtNum(it.price, 2)} <span style="font-size:15.5px">${fmtPct(it.pct)}</span>`;
   });
   syncIdxStars();
 }
@@ -1675,8 +1711,7 @@ function updateHeader() {
   const last = nBars() ? S.bars[nBars() - 1] : null;
   const prev = nBars() > 1 ? S.bars[nBars() - 2] : null;
   const price = S.live?.price ?? rec?.price ?? last?.c ?? 0;
-  const pct = S.live?.pct ?? rec?.pct ??
-    (prev && prev.c ? (last.c / prev.c - 1) * 100 : 0);
+  const pct = livePct();
   $("#cname").textContent = S.name || rec?.name || "—";
   const tag = S.market === "us" ? "US · "
     : (S.akind === "index" ? "指数 · " : (S.akind === "stock" ? "个股 · " : "A股 · "));
@@ -1735,14 +1770,33 @@ async function loadSectors(silent = false) {
 
 function applyLiveToLastBar(price) {
   if (!price || !nBars()) return;
-  const b = S.bars[nBars() - 1];
-  if (!b) return;
-  if (b.c !== price) {
-    b.c = price;
-    if (price > b.h) b.h = price;
-    if (price < b.l) b.l = price;
+  const last = S.bars[nBars() - 1];
+  if (!last) return;
+  const today = todayDateStr(S.market);
+  const lastDate = new Date(last.t).toISOString().slice(0, 10);
+  // 日线：最后一根不是今天时，补一根「当日」K（盘中/收盘后）
+  if (S.tf === "1d" && lastDate < today && isWeekday(today) && inOrAfterSession(S.market)) {
+    const prevClose = last.c;
+    S.bars.push({ t: parseT(today), o: price, h: price, l: price, c: price, v: 0 });
+    if (!S.live || !Number.isFinite(S.live.pct)) {
+      S.live = { price, pct: prevClose ? (price / prevClose - 1) * 100 : 0 };
+    }
     requestDraw();
+    return;
   }
+  let changed = false;
+  if (last.c !== price) {
+    last.c = price;
+    if (price > last.h) last.h = price;
+    if (price < last.l) last.l = price;
+    changed = true;
+  }
+  if (!S.live || !Number.isFinite(S.live.pct)) {
+    const prev = nBars() >= 2 ? S.bars[nBars() - 2].c : last.o;
+    S.live = { price, pct: prev ? (price / prev - 1) * 100 : 0 };
+    changed = true;
+  }
+  if (changed) requestDraw();
 }
 
 /* ---------- 前端 K 线缓存：切回已看过的板块/周期直接出图 ---------- */
@@ -1927,12 +1981,17 @@ function tfLabel(tf) {
 function trendValAt(ln, tLast) {
   const x1 = Date.parse(ln.x1), x2 = Date.parse(ln.x2);
   if (!isFinite(x1) || !isFinite(x2) || x2 === x1) return ln.y2;
-  return ln.y1 + (ln.y2 - ln.y1) * (tLast - x1) / (x2 - x1);
+  const r = (tLast - x1) / (x2 - x1);
+  // 主图是对数坐标时，趋势线在“像素空间”是直线 = 对数插值
+  if (S.log && ln.y1 > 0 && ln.y2 > 0) {
+    return Math.exp(Math.log(ln.y1) + (Math.log(ln.y2) - Math.log(ln.y1)) * r);
+  }
+  return ln.y1 + (ln.y2 - ln.y1) * r;
 }
 /* 最近的下支撑 / 上压力 */
 function levelsFor(lines, price, tLast) {
   const vals = (lines || [])
-    .map(ln => ln.type === "h" ? ln.y : (ln.type === "v" ? null : trendValAt(ln, tLast)))
+    .map(ln => (ln.type === "h" || ln.type === "v") ? null : trendValAt(ln, tLast))
     .filter(v => typeof v === "number" && isFinite(v));
   const below = vals.filter(v => v < price).sort((a, b) => b - a);
   const above = vals.filter(v => v > price).sort((a, b) => a - b);
@@ -1950,15 +2009,21 @@ async function renderWatch() {
       '折线图、画线，以及最近的支撑 / 压力。</div>';
     return;
   }
-  const row = document.createElement("div");
-  row.className = "wrow";
   const nodes = new Map();
   for (const it of WATCH) {
     const el = document.createElement("div");
     el.className = "wcard";
     el.dataset.key = it.market + ":" + it.code;
-    if (it.w) el.style.width = it.w + "px";
-    if (it.h) el.style.height = it.h + "px";
+    el.addEventListener("mouseenter", () => {
+      const br = box.getBoundingClientRect(), r = el.getBoundingClientRect();
+      const mx = Math.max(16, r.width * 0.26), my = Math.max(16, r.height * 0.26);
+      let ox = "center", oy = "center";
+      if (r.left - br.left <= mx) ox = "left";
+      else if (br.right - r.right <= mx) ox = "right";
+      if (r.top - br.top <= my) oy = "top";
+      else if (br.bottom - r.bottom <= my) oy = "bottom";
+      el.style.transformOrigin = ox + " " + oy;
+    });
     el.innerHTML =
       `<div class="wh"><b>${esc(it.name)}</b><span class="muted">${esc(it.code)}</span>` +
       `<span class="wpx" data-px>—</span></div>` +
@@ -1967,8 +2032,7 @@ async function renderWatch() {
       `<span>压力 <b data-res>—</b></span>` +
       `<span class="wtag" data-tag>加载中…</span>` +
       `<button class="wzoom" title="放大这个板块">放大</button>` +
-      `<button class="wdel" title="移出自选（删除）">✕</button></div>` +
-      `<div class="wres" title="拖动调整卡片大小（自动保存）"></div>`;
+      `<button class="wdel" title="移出自选（删除）">✕</button></div>`;
     el.addEventListener("click", e => {
       if (Date.now() - (box._suppress || 0) < 320) return;   // 刚拖拽滚动过，别误触
       if (e.target.closest(".wdel")) { toggleWatch(it); return; }
@@ -1982,11 +2046,9 @@ async function renderWatch() {
       if (e.target.closest(".wdel,.wzoom,.wres")) return;
       openSector(it, true);
     });
-    wireCardResize(el, it);
-    row.appendChild(el);
+    box.appendChild(el);
     nodes.set(it.market + ":" + it.code, el);
   }
-  box.appendChild(row);
   requestAnimationFrame(() => { box.scrollLeft = keepL; box.scrollTop = keepT; });
   const queue = WATCH.slice();
   const worker = async () => {
@@ -1999,78 +2061,7 @@ async function renderWatch() {
 }
 
 /* 卡片右下角改宽高（存进自选，下次打开保持） */
-function wireCardResize(el, it) {
-  const h = el.querySelector(".wres");
-  if (!h) return;
-  h.addEventListener("pointerdown", e => {
-    e.preventDefault(); e.stopPropagation();
-    const r = el.getBoundingClientRect();
-    const st = {x: e.clientX, y: e.clientY, w: r.width, h: r.height};
-    try { h.setPointerCapture(e.pointerId); } catch (_) {}
-    const move = ev => {
-      const w = Math.round(Math.max(220, Math.min(1800, st.w + ev.clientX - st.x)));
-      const hh = Math.round(Math.max(150, Math.min(1200, st.h + ev.clientY - st.y)));
-      if (w === it.w && hh === it.h) return;
-      it.w = w; it.h = hh;
-      el.style.width = w + "px"; el.style.height = hh + "px";
-      if (el._bars) {
-        requestAnimationFrame(() => drawSpark(el.querySelector(".wspark"), el._bars, el._lines, el._price));
-      }
-    };
-    const up = () => {
-      h.removeEventListener("pointermove", move);
-      h.removeEventListener("pointerup", up);
-      h.removeEventListener("pointercancel", up);
-      saveWatch();
-      setStatus("卡片大小已保存：" + it.w + "×" + it.h + "（存本地，下次打开还在）");
-    };
-    h.addEventListener("pointermove", move);
-    h.addEventListener("pointerup", up);
-    h.addEventListener("pointercancel", up);
-  });
-}
-
-/* 横向拖动 / 滚轮横向滚动（一行卡片，不需要翻页） */
-(function wireBoardPan() {
-  const box = $("#wlist");
-  if (!box) return;
-  let pan = null;
-  box.addEventListener("pointerdown", e => {
-    if (e.button !== 0) return;
-    if (e.target.closest(".wdel,.wzoom,.wres")) return;
-    pan = {id: e.pointerId, x: e.clientX, y: e.clientY,
-           l: box.scrollLeft, t: box.scrollTop, moved: false};
-  });
-  box.addEventListener("pointermove", e => {
-    if (!pan || e.pointerId !== pan.id) return;
-    const dx = e.clientX - pan.x, dy = e.clientY - pan.y;
-    if (!pan.moved && Math.hypot(dx, dy) < 7) return;
-    if (!pan.moved) {
-      pan.moved = true;
-      box.classList.add("panning");
-      try { box.setPointerCapture(e.pointerId); } catch (_) {}
-    }
-    box.scrollLeft = pan.l - dx;
-    box.scrollTop = pan.t - dy;
-  });
-  const end = () => {
-    if (!pan) return;
-    if (pan.moved) box._suppress = Date.now();
-    pan = null;
-    box.classList.remove("panning");
-  };
-  box.addEventListener("pointerup", end);
-  box.addEventListener("pointercancel", end);
-  box.addEventListener("pointerleave", end);
-  box.addEventListener("wheel", e => {
-    const max = box.scrollWidth - box.clientWidth;
-    if (max <= 0) return;
-    const d = (e.shiftKey ? (e.deltaY || e.deltaX) : (e.deltaY || e.deltaX));
-    if (!d) return;
-    const next = Math.max(0, Math.min(max, box.scrollLeft + d));
-    if (next !== box.scrollLeft) { e.preventDefault(); box.scrollLeft = next; }
-  }, {passive: false});
-})();
+/* 自选网格：使用原生纵向滚动（不再横向拖动/手动改大小） */
 
 /* 自选卡片定时刷新（每张最多 60s 一次，避免打太多接口） */
 async function refreshWatchValues() {
@@ -2112,7 +2103,7 @@ async function fillWatchCard(it, el, force) {
   const px = el.querySelector("[data-px]");
   px.style.color = pctColor(pct);
   px.innerHTML = fmtNum(price, 2) +
-    ` <span style="font-size:11px">${fmtPct(pct)}</span>`;
+    ` <span style="font-size:15px">${fmtPct(pct)}</span>`;
   const lv = levelsFor(lines, price, last.t);
   const sup = el.querySelector("[data-sup]"), res = el.querySelector("[data-res]");
   sup.textContent = lv.sup == null ? "—" : fmtNum(lv.sup, 2);
@@ -2124,6 +2115,48 @@ async function fillWatchCard(it, el, force) {
   drawSpark(el.querySelector(".wspark"), bars, lines, price);
 }
 
+/* ---------- 列表行迷你图：懒加载 + 并发限流 ---------- */
+const SPARK = new Map();
+const SPARK_Q = [];
+let SPARK_RUN = 0;
+function queueSpark(fn) {
+  SPARK_Q.push(fn);
+  pumpSpark();
+}
+function pumpSpark() {
+  while (SPARK_RUN < 4 && SPARK_Q.length) {
+    const fn = SPARK_Q.shift();
+    SPARK_RUN++;
+    Promise.resolve().then(fn).catch(() => {}).finally(() => { SPARK_RUN--; pumpSpark(); });
+  }
+}
+function ensureSpark(o, r) {
+  if (!o.spark) return;
+  const key = `${S.market}:${r.code}`;
+  const hit = SPARK.get(key);
+  const lines = S.allLines[`${S.market.toUpperCase()}:${r.code}|1d`] || [];
+  const price = r.price || r.c || (hit && hit.bars.length ? hit.bars[hit.bars.length - 1].c : 0);
+  if (hit && hit.bars && hit.bars.length) {
+    drawSpark(o.spark, hit.bars, lines, price || hit.bars[hit.bars.length - 1].c);
+    if (Date.now() - hit.at < 120000) return;
+  } else if (hit && Date.now() - hit.at < 3000) {
+    return;  // 刚请求过但还没数据（后端在后台抓），3 秒后再试
+  }
+  if (hit && hit.pending) return;
+  SPARK.set(key, { bars: (hit && hit.bars) || [], at: (hit && hit.at) || 0, pending: true });
+  const kind = S.kind;
+  queueSpark(async () => {
+    try {
+      const d = await api(`/api/bars?market=${S.market}&kind=${encodeURIComponent(kind)}` +
+        `&code=${encodeURIComponent(r.code)}&name=${encodeURIComponent(r.name || "")}&tf=1d`);
+      const bars = (d.bars || []).map(x => ({ t: parseT(x.t), o: +x.o, h: +x.h, l: +x.l, c: +x.c, v: +x.v || 0 }));
+      SPARK.set(key, { bars, at: Date.now(), pending: false });
+      drawSpark(o.spark, bars, lines, price || (bars.length ? bars[bars.length - 1].c : 0));
+    } catch (e) {
+      SPARK.set(key, { bars: (hit && hit.bars) || [], at: Date.now(), pending: false });
+    }
+  });
+}
 function drawSpark(canvas, bars, lines, price) {
   const dpr = window.devicePixelRatio || 1;
   const w = canvas.clientWidth || 320, h = canvas.clientHeight || 56;
@@ -2136,14 +2169,27 @@ function drawSpark(canvas, bars, lines, price) {
   let lo = Infinity, hi = -Infinity;
   for (const b of bars) { if (b.l < lo) lo = b.l; if (b.h > hi) hi = b.h; }
   if (!isFinite(lo) || !isFinite(hi)) return;
-  const pad = (hi - lo) * 0.1 || Math.max(Math.abs(hi) * 0.01, 0.5);
-  lo -= pad; hi += pad;
+  const useLog = !!S.log && lo > 0 && hi > lo;
+  if (useLog) {
+    const a = Math.log(lo), b = Math.log(hi);
+    const pad = (b - a) * 0.06 || 0.002;
+    lo = Math.exp(a - pad); hi = Math.exp(b + pad);
+  } else {
+    const pad = (hi - lo) * 0.06 || Math.max(Math.abs(hi) * 0.01, 0.5);
+    lo -= pad; hi += pad;
+  }
   const X = i => 2 + (n <= 1 ? 0 : i / (n - 1)) * (w - 4);
-  const Y = v => 5 + (hi - v) / (hi - lo) * (h - 10);
+  const Y = v => {
+    if (useLog) {
+      const a = Math.log(lo), b = Math.log(hi);
+      return 5 + (b - Math.log(Math.max(v, lo * 1e-6))) / (b - a) * (h - 10);
+    }
+    return 5 + (hi - v) / (hi - lo) * (h - 10);
+  };
   c.setLineDash([3, 3]);
   c.lineWidth = 1;
-  // 时间 -> 小图 X 坐标（按比例缩放，保留线段的斜率/形状）
-  const _t0 = bars[0].t, _t1 = bars[n - 1].t;   // 已是毫秒时间戳
+  // 时间 -> 小图 X 坐标：与主图 dt2x 一致，用均匀时间映射
+  const _t0 = bars[0].t, _t1 = bars[n - 1].t;
   const idxOf = t => (n <= 1 || _t1 === _t0) ? 0 : (t - _t0) / (_t1 - _t0) * (n - 1);
   for (const ln of lines || []) {
     if (ln.type === "h") {
@@ -2416,7 +2462,6 @@ $("#bWatch").onclick = () => {
   toggleWatch({market: S.market, kind: S.akind, group: S.group,
                code: S.code, name: S.name, tf: S.tf});
 };
-$("#bH").onclick = () => setMode("h");
 $("#bT").onclick = () => setMode("trend");
 $("#bV").onclick = () => setMode("v");
 $("#bUndo").onclick = undo;
