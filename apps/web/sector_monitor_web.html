@@ -1463,21 +1463,32 @@ async function showMovers(el, code) {
   panel.classList.add("show");
   try {
     const nm = el.querySelector(".nmx")?.textContent || "";
-    const d = await api(`/api/board_movers?code=${encodeURIComponent(code)}&market=cn&name=${encodeURIComponent(nm)}`);
+    const qs = `&market=cn&name=${encodeURIComponent(nm)}`;
+    const [d, sc] = await Promise.all([
+      api(`/api/board_movers?code=${encodeURIComponent(code)}${qs}`).catch(() => ({})),
+      api(`/api/board_scores?code=${encodeURIComponent(code)}${qs}`).catch(() => ({})),
+    ]);
     if (!panel.classList.contains("show")) return;
     const up = d.up || [], down = d.down || [];
-    if (!up.length && !down.length) {
-      panel.innerHTML = `<div class="mtip">${esc(d.note || d.error || "暂无成分股")}</div>`;
-      return;
-    }
     const row = x => {
       const p = Number(x.pct) || 0;
       return `<div class="mi" data-code="${esc(x.code)}" data-name="${esc(x.name)}">` +
         `<span class="n">${esc(x.name)}</span>` +
         `<span class="p" style="color:${p >= 0 ? UP : DOWN}">${p >= 0 ? "+" : ""}${p.toFixed(2)}%</span></div>`;
     };
-    panel.innerHTML = `<h4>领涨</h4>${up.map(row).join("")}` +
-      (down.length ? `<h4>领跌</h4>${down.map(row).join("")}` : "");
+    const scoreRow = (x, i) => `<div class="mi" data-code="${esc(x.code)}" data-name="${esc(x.name)}">` +
+      `<span class="n">${i + 1}. ${esc(x.name)}</span>` +
+      `<span class="p" style="color:${ACCENT}">${Number(x.score).toFixed(1)}</span></div>`;
+    let html = "";
+    if (up.length) html += `<h4>领涨</h4>${up.map(row).join("")}`;
+    if (down.length) html += `<h4>领跌</h4>${down.map(row).join("")}`;
+    if (sc && sc.items && sc.items.length) {
+      html += `<h4>评分前10</h4>${sc.items.map(scoreRow).join("")}`;
+    } else if (sc && sc.pending) {
+      html += `<div class="mtip">评分计算中…（约20秒，稍后再悬停）</div>`;
+    }
+    if (!html) html = `<div class="mtip">${esc((d && (d.note || d.error)) || "暂无数据")}</div>`;
+    panel.innerHTML = html;
     panel.querySelectorAll(".mi").forEach(e => {
       e.onclick = () => {
         const c = e.dataset.code, n = e.dataset.name;

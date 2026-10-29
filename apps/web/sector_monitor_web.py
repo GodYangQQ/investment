@@ -2690,6 +2690,35 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as e:
                 self._json({"up": [], "down": [], "error": str(e)[:120]})
             return
+        if u.path == "/api/board_scores":
+            code = (q.get("code", [""])[0] or "").strip()
+            name = (q.get("name", [""])[0] or "").strip()
+            market = (q.get("market", ["cn"])[0] or "cn").strip()
+            if market != "cn":
+                self._json({"items": [], "note": "美股暂不支持"})
+                return
+            try:
+                from core.scoring.company_score import board_scores, scores_ready
+
+                if not scores_ready():
+                    self._json({"items": [], "pending": True, "note": "评分计算中"})
+                    return
+                codes = []
+                if code:
+                    try:
+                        from core.datasets.cn_data import get_board_constituents
+
+                        cons = get_board_constituents(code, 500)
+                        codes = [str(c.get("code")) for c in cons if c.get("code")]
+                    except Exception:
+                        codes = []
+                items = board_scores(name=name, codes=codes, top=10)
+                self._json(
+                    {"items": items, "basis": "constituents" if len(codes) >= 5 else "industry"}
+                )
+            except Exception as e:
+                self._json({"items": [], "error": str(e)[:120]})
+            return
         if u.path == "/api/search":
             q = (q.get("q", [""])[0] or "").strip()
             try:
@@ -2992,6 +3021,15 @@ def _warmup() -> None:
         pass
 
 
+def _score_warmup() -> None:
+    try:
+        from core.scoring.company_score import load_scores
+
+        load_scores()
+    except Exception:
+        pass
+
+
 def main():
     ap = argparse.ArgumentParser(description="A股/美股板块划线看盘（Web）")
     ap.add_argument("--host", default="127.0.0.1")
@@ -3002,6 +3040,7 @@ def main():
     db()
     db_prune()
     _ensure_game_server()
+    threading.Thread(target=_score_warmup, daemon=True, name="score-warmup").start()
     if not args.no_warm:
         threading.Thread(target=_warmup, daemon=True, name="warmup").start()
         threading.Thread(target=_background_ticker, daemon=True, name="ticker").start()

@@ -74,4 +74,7 @@ external/*
 !external/.gitkeep
 !external/README.md
 
+# 公司评分缓存（可重算）
+data/company_scores.json
+
 
