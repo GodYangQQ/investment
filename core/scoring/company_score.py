@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import json
+import re
 import threading
 import time
 from pathlib import Path
@@ -20,6 +21,7 @@ ROOT = Path(__file__).resolve().parents[2]
 CACHE_FILE = ROOT / "data" / "company_scores.json"
 CACHE_TTL = 6 * 3600
 _LOCK = threading.Lock()
+_MEM = {"df": None, "ts": 0.0}
 
 
 def _code6(s) -> str:
@@ -134,12 +136,18 @@ def build_scores() -> pd.DataFrame:
 
 def load_scores(force: bool = False) -> pd.DataFrame:
     with _LOCK:
+        now = time.time()
+        if not force and _MEM["df"] is not None and now - _MEM["ts"] < CACHE_TTL:
+            return _MEM["df"]
         if not force:
             try:
                 with open(CACHE_FILE, encoding="utf-8") as f:
                     d = json.load(f)
-                if time.time() - float(d.get("ts", 0)) < CACHE_TTL and d.get("rows"):
-                    return pd.DataFrame(d["rows"])
+                if now - float(d.get("ts", 0)) < CACHE_TTL and d.get("rows"):
+                    df = pd.DataFrame(d["rows"])
+                    _MEM["df"] = df
+                    _MEM["ts"] = now
+                    return df
             except Exception:
                 pass
         df = build_scores()
@@ -157,6 +165,8 @@ def load_scores(force: bool = False) -> pd.DataFrame:
                 json.dump(payload, f, ensure_ascii=False)
         except Exception:
             pass
+        _MEM["df"] = df
+        _MEM["ts"] = now
         return df
 
 
@@ -194,6 +204,16 @@ def _records(g: pd.DataFrame, top: int) -> list[dict]:
     return out
 
 
+_ALIAS = {
+    "文化传媒": ["影视院线", "游戏Ⅱ", "广告营销", "出版", "数字媒体"],
+    "军工装备": ["军工电子Ⅱ", "航天装备Ⅱ", "航空装备Ⅱ", "地面兵装Ⅱ"],
+}
+
+
+def _norm_ind(s) -> str:
+    return re.sub(r"[ⅡⅢ]", "", str(s or "")).strip()
+
+
 def board_scores(name: str = "", codes: list[str] | None = None, top: int = 10) -> list[dict]:
     df = load_scores()
     if df is None or df.empty:
@@ -205,18 +225,31 @@ def board_scores(name: str = "", codes: list[str] | None = None, top: int = 10) 
             return _records(g, top)
     if name:
         nm = str(name).strip()
+        nrm = _norm_ind(nm)
         industries = [x for x in df["行业"].dropna().astype(str).unique()]
-        exact = [x for x in industries if x == nm]
-        cand = exact or [x for x in industries if nm and (nm in x or x in nm)]
+        exact = [x for x in industries if _norm_ind(x) == nrm]
+        cand = exact or [
+            x for x in industries if nrm and (nrm in _norm_ind(x) or _norm_ind(x) in nrm)
+        ]
+        if not cand and nm in _ALIAS:
+            cand = [x for x in _ALIAS[nm] if x in industries]
         if cand:
-            return _records(df[df["行业"] == cand[0]], top)
+            g = df[df["行业"].isin(cand)] if len(cand) > 1 else df[df["行业"] == cand[0]]
+            return _records(g, top)
     return []
 
 
 def scores_ready() -> bool:
+    now = time.time()
+    if _MEM["df"] is not None and now - _MEM["ts"] < CACHE_TTL:
+        return True
     try:
         with open(CACHE_FILE, encoding="utf-8") as f:
             d = json.load(f)
-        return bool(d.get("rows")) and time.time() - float(d.get("ts", 0)) < CACHE_TTL
+        if d.get("rows") and now - float(d.get("ts", 0)) < CACHE_TTL:
+            _MEM["df"] = pd.DataFrame(d["rows"])
+            _MEM["ts"] = now
+            return True
     except Exception:
-        return False
+        pass
+    return False

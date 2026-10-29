@@ -2704,15 +2704,17 @@ class Handler(BaseHTTPRequestHandler):
                     self._json({"items": [], "pending": True, "note": "评分计算中"})
                     return
                 codes = []
-                if code:
+                items = board_scores(name=name, codes=codes, top=10)
+                if not items and code:
                     try:
                         from core.datasets.cn_data import get_board_constituents
 
                         cons = get_board_constituents(code, 500)
                         codes = [str(c.get("code")) for c in cons if c.get("code")]
+                        if codes:
+                            items = board_scores(name=name, codes=codes, top=10)
                     except Exception:
-                        codes = []
-                items = board_scores(name=name, codes=codes, top=10)
+                        pass
                 self._json(
                     {"items": items, "basis": "constituents" if len(codes) >= 5 else "industry"}
                 )

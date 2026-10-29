@@ -1448,6 +1448,8 @@ window.addEventListener("pointerup", _afterPointerUp, true);
 window.addEventListener("pointercancel", _afterPointerUp, true);
 
 let _moversTimer = 0;
+let _moversHoverTimer = 0;
+const MOVERS_CACHE = new Map();
 function hideMovers() {
   const p = $("#movers");
   if (p) p.classList.remove("show");
@@ -1459,47 +1461,59 @@ async function showMovers(el, code) {
   const lr = list.getBoundingClientRect(), r = el.getBoundingClientRect();
   panel.style.left = Math.round(lr.right + 8) + "px";
   panel.style.top = Math.round(Math.max(8, Math.min(r.top, window.innerHeight - 430))) + "px";
-  panel.innerHTML = '<div class="mtip">加载中…</div>';
   panel.classList.add("show");
+  const nm = el.querySelector(".nmx")?.textContent || "";
+  const hit = MOVERS_CACHE.get(code);
+  if (hit && Date.now() - hit.at < 60000) {
+    renderMovers(panel, hit.d, hit.sc);
+    return;
+  }
+  panel.innerHTML = '<div class="mtip">评分加载中…</div>';
+  const qs = `&market=cn&name=${encodeURIComponent(nm)}`;
   try {
-    const nm = el.querySelector(".nmx")?.textContent || "";
-    const qs = `&market=cn&name=${encodeURIComponent(nm)}`;
-    const [d, sc] = await Promise.all([
+    const sc = await api(`/api/board_scores?code=${encodeURIComponent(code)}${qs}`).catch(() => ({}));
+    if (!panel.classList.contains("show")) return;
+    renderMovers(panel, { up: [], down: [] }, sc);
+    const d = await Promise.race([
       api(`/api/board_movers?code=${encodeURIComponent(code)}${qs}`).catch(() => ({})),
-      api(`/api/board_scores?code=${encodeURIComponent(code)}${qs}`).catch(() => ({})),
+      new Promise(resolve => setTimeout(() => resolve({}), 2000)),
     ]);
     if (!panel.classList.contains("show")) return;
-    const up = d.up || [], down = d.down || [];
-    const row = x => {
-      const p = Number(x.pct) || 0;
-      return `<div class="mi" data-code="${esc(x.code)}" data-name="${esc(x.name)}">` +
-        `<span class="n">${esc(x.name)}</span>` +
-        `<span class="p" style="color:${p >= 0 ? UP : DOWN}">${p >= 0 ? "+" : ""}${p.toFixed(2)}%</span></div>`;
-    };
-    const scoreRow = (x, i) => `<div class="mi" data-code="${esc(x.code)}" data-name="${esc(x.name)}">` +
-      `<span class="n">${i + 1}. ${esc(x.name)}</span>` +
-      `<span class="p" style="color:${ACCENT}">${Number(x.score).toFixed(1)}</span></div>`;
-    let html = "";
-    if (up.length) html += `<h4>领涨</h4>${up.map(row).join("")}`;
-    if (down.length) html += `<h4>领跌</h4>${down.map(row).join("")}`;
-    if (sc && sc.items && sc.items.length) {
-      html += `<h4>评分前10</h4>${sc.items.map(scoreRow).join("")}`;
-    } else if (sc && sc.pending) {
-      html += `<div class="mtip">评分计算中…（约20秒，稍后再悬停）</div>`;
-    }
-    if (!html) html = `<div class="mtip">${esc((d && (d.note || d.error)) || "暂无数据")}</div>`;
-    panel.innerHTML = html;
-    panel.querySelectorAll(".mi").forEach(e => {
-      e.onclick = () => {
-        const c = e.dataset.code, n = e.dataset.name;
-        const pre = /^[69]/.test(c) ? "SH" : (/^[03]/.test(c) ? "SZ" : "BJ");
-        hideMovers();
-        openSector({ market: "cn", kind: "stock", code: pre + c, name: n }, false);
-      };
-    });
+    MOVERS_CACHE.set(code, { d, sc, at: Date.now() });
+    if ((d.up && d.up.length) || (d.down && d.down.length)) renderMovers(panel, d, sc);
   } catch (e) {
     panel.innerHTML = '<div class="mtip">加载失败</div>';
   }
+}
+function renderMovers(panel, d, sc) {
+  const up = d.up || [], down = d.down || [];
+  const row = x => {
+    const p = Number(x.pct) || 0;
+    return `<div class="mi" data-code="${esc(x.code)}" data-name="${esc(x.name)}">` +
+      `<span class="n">${esc(x.name)}</span>` +
+      `<span class="p" style="color:${p >= 0 ? UP : DOWN}">${p >= 0 ? "+" : ""}${p.toFixed(2)}%</span></div>`;
+  };
+  const scoreRow = (x, i) => `<div class="mi" data-code="${esc(x.code)}" data-name="${esc(x.name)}">` +
+    `<span class="n">${i + 1}. ${esc(x.name)}</span>` +
+    `<span class="p" style="color:${ACCENT}">${Number(x.score).toFixed(1)}</span></div>`;
+  let html = "";
+  if (up.length) html += `<h4>领涨</h4>${up.map(row).join("")}`;
+  if (down.length) html += `<h4>领跌</h4>${down.map(row).join("")}`;
+  if (sc && sc.items && sc.items.length) {
+    html += `<h4>评分前10</h4>${sc.items.map(scoreRow).join("")}`;
+  } else if (sc && sc.pending) {
+    html += `<div class="mtip">评分计算中…（约20秒，稍后再悬停）</div>`;
+  }
+  if (!html) html = `<div class="mtip">${esc((d && (d.note || d.error)) || "暂无数据")}</div>`;
+  panel.innerHTML = html;
+  panel.querySelectorAll(".mi").forEach(e => {
+    e.onclick = () => {
+      const c = e.dataset.code, n = e.dataset.name;
+      const pre = /^[69]/.test(c) ? "SH" : (/^[03]/.test(c) ? "SZ" : "BJ");
+      hideMovers();
+      openSector({ market: "cn", kind: "stock", code: pre + c, name: n }, false);
+    };
+  });
 }
 $("#movers").addEventListener("mouseenter", () => clearTimeout(_moversTimer));
 $("#movers").addEventListener("mouseleave", () => { _moversTimer = setTimeout(hideMovers, 150); });
@@ -1511,9 +1525,10 @@ function makeRowEl(code) {
   el.addEventListener("mouseenter", () => {
     if (S.market !== "cn") return;
     clearTimeout(_moversTimer);
-    showMovers(el, code);
+    _moversHoverTimer = setTimeout(() => showMovers(el, code), 120);
   });
   el.addEventListener("mouseleave", () => {
+    clearTimeout(_moversHoverTimer);
     _moversTimer = setTimeout(hideMovers, 200);
   });
   el.innerHTML =
