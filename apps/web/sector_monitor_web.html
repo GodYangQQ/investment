@@ -174,6 +174,16 @@ padding:6px 12px;border-radius:8px;font-size:17px;cursor:pointer}
 .wcard:hover{border-color:#3c4a59;background:#141c26;transform:scale(1.5);z-index:5;
  box-shadow:0 14px 34px rgba(0,0,0,.6)}
 .wcard.sel{border-color:var(--accent);box-shadow:0 0 0 1px rgba(74,144,217,.45) inset}
+.movers{position:fixed;display:none;z-index:60;width:280px;max-height:70vh;overflow:auto;
+  background:#121922;border:1px solid var(--line);border-radius:10px;padding:8px 10px;
+  box-shadow:0 16px 40px rgba(0,0,0,.6);font-size:14px}
+.movers.show{display:block}
+.movers h4{margin:6px 0 4px;font-size:13px;color:#94a0ad}
+.movers .mi{display:flex;justify-content:space-between;gap:8px;padding:3px 4px;border-radius:5px;cursor:pointer}
+.movers .mi:hover{background:#1c2632}
+.movers .mi .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.movers .mi .p{font-variant-numeric:tabular-nums;font-weight:700}
+.movers .mtip{padding:6px 4px;color:#94a0ad}
 .wcard .wh{display:flex;align-items:baseline;gap:8px;flex-wrap:nowrap;overflow:hidden}
 .wcard .wh b{font-size:17.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .wcard .wh .muted{font-size:15px;white-space:nowrap}
@@ -1427,10 +1437,64 @@ function _afterPointerUp() {
 window.addEventListener("pointerup", _afterPointerUp, true);
 window.addEventListener("pointercancel", _afterPointerUp, true);
 
+let _moversTimer = 0;
+function hideMovers() {
+  const p = $("#movers");
+  if (p) p.classList.remove("show");
+}
+async function showMovers(el, code) {
+  if (S.market !== "cn") return;
+  const panel = $("#movers"), list = $("#list");
+  if (!panel || !list) return;
+  const lr = list.getBoundingClientRect(), r = el.getBoundingClientRect();
+  panel.style.left = Math.round(lr.right + 8) + "px";
+  panel.style.top = Math.round(Math.max(8, Math.min(r.top, window.innerHeight - 430))) + "px";
+  panel.innerHTML = '<div class="mtip">加载中…</div>';
+  panel.classList.add("show");
+  try {
+    const nm = el.querySelector(".nmx")?.textContent || "";
+    const d = await api(`/api/board_movers?code=${encodeURIComponent(code)}&market=cn&name=${encodeURIComponent(nm)}`);
+    if (!panel.classList.contains("show")) return;
+    const up = d.up || [], down = d.down || [];
+    if (!up.length && !down.length) {
+      panel.innerHTML = `<div class="mtip">${esc(d.note || d.error || "暂无成分股")}</div>`;
+      return;
+    }
+    const row = x => {
+      const p = Number(x.pct) || 0;
+      return `<div class="mi" data-code="${esc(x.code)}" data-name="${esc(x.name)}">` +
+        `<span class="n">${esc(x.name)}</span>` +
+        `<span class="p" style="color:${p >= 0 ? UP : DOWN}">${p >= 0 ? "+" : ""}${p.toFixed(2)}%</span></div>`;
+    };
+    panel.innerHTML = `<h4>领涨</h4>${up.map(row).join("")}` +
+      (down.length ? `<h4>领跌</h4>${down.map(row).join("")}` : "");
+    panel.querySelectorAll(".mi").forEach(e => {
+      e.onclick = () => {
+        const c = e.dataset.code, n = e.dataset.name;
+        const pre = /^[69]/.test(c) ? "SH" : (/^[03]/.test(c) ? "SZ" : "BJ");
+        hideMovers();
+        openSector({ market: "cn", kind: "stock", code: pre + c, name: n }, false);
+      };
+    });
+  } catch (e) {
+    panel.innerHTML = '<div class="mtip">加载失败</div>';
+  }
+}
+$("#movers").addEventListener("mouseenter", () => clearTimeout(_moversTimer));
+$("#movers").addEventListener("mouseleave", () => { _moversTimer = setTimeout(hideMovers, 150); });
+
 function makeRowEl(code) {
   const el = document.createElement("div");
   el.className = "row";
   el.dataset.code = code;
+  el.addEventListener("mouseenter", () => {
+    if (S.market !== "cn") return;
+    clearTimeout(_moversTimer);
+    showMovers(el, code);
+  });
+  el.addEventListener("mouseleave", () => {
+    _moversTimer = setTimeout(hideMovers, 200);
+  });
   el.innerHTML =
     `<div class="nm"><span class="nmx"></span>` +
     `<button class="star" data-star=""></button>` +
@@ -2023,6 +2087,10 @@ async function renderWatch() {
       if (r.top - br.top <= my) oy = "top";
       else if (br.bottom - r.bottom <= my) oy = "bottom";
       el.style.transformOrigin = ox + " " + oy;
+      if (el._bars) drawSpark(el.querySelector(".wspark"), el._bars, el._lines, el._price, 1.5);
+    });
+    el.addEventListener("mouseleave", () => {
+      if (el._bars) drawSpark(el.querySelector(".wspark"), el._bars, el._lines, el._price, 1);
     });
     el.innerHTML =
       `<div class="wh"><b>${esc(it.name)}</b><span class="muted">${esc(it.code)}</span>` +
@@ -2070,7 +2138,7 @@ async function refreshWatchValues() {
   for (const it of WATCH) {
     const key = it.market + ":" + it.code;
     const el = [...box.querySelectorAll(".wcard")].find(x => x.dataset.key === key);
-    if (!el || Date.now() - (el._at || 0) < 60000) continue;
+    if (!el || Date.now() - (el._at || 0) < 20000) continue;
     await fillWatchCard(it, el, true);
   }
 }
@@ -2112,7 +2180,7 @@ async function fillWatchCard(it, el, force) {
   res.style.color = lv.res == null ? "" : UP;
   tag.textContent = tfLabel(tf) + (lines.length ? ` · ${lines.length} 条线` : " · 未画线");
   el._bars = bars; el._lines = lines; el._price = price;
-  drawSpark(el.querySelector(".wspark"), bars, lines, price);
+  drawSpark(el.querySelector(".wspark"), bars, lines, price, el.matches(":hover") ? 1.5 : 1);
 }
 
 /* ---------- 列表行迷你图：懒加载 + 并发限流 ---------- */
@@ -2157,13 +2225,14 @@ function ensureSpark(o, r) {
     }
   });
 }
-function drawSpark(canvas, bars, lines, price) {
+function drawSpark(canvas, bars, lines, price, scale = 1) {
   const dpr = window.devicePixelRatio || 1;
   const w = canvas.clientWidth || 320, h = canvas.clientHeight || 56;
-  canvas.width = Math.round(w * dpr);
-  canvas.height = Math.round(h * dpr);
+  const k = dpr * scale;
+  canvas.width = Math.round(w * k);
+  canvas.height = Math.round(h * k);
   const c = canvas.getContext("2d");
-  c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  c.setTransform(k, 0, 0, k, 0, 0);
   c.clearRect(0, 0, w, h);
   const n = bars.length;
   let lo = Infinity, hi = -Infinity;
@@ -2486,17 +2555,17 @@ if (window.ResizeObserver) new ResizeObserver(() => resize()).observe($("#cw"));
 setInterval(async () => {
   if (!S.auto) return;
   await loadSectors(true);
-}, 10000);
+}, 5000);
 
 setInterval(() => {
   if (!S.auto || !S.code || S.loading || _barsAbort) return;
   const age = Date.now() - S.lastBarFetch;
-  const limit = String(S.tf).endsWith("m") ? 30000 : 120000;
+  const limit = String(S.tf).endsWith("m") ? 15000 : 30000;
   if (age >= limit) loadBars({reset: false, silent: true});
-}, 10000);
+}, 5000);
 
 // 自选全屏面板开着时，每张卡片最多 60s 刷新一次
-setInterval(() => { if (watchOpen()) refreshWatchValues(); }, 15000);
+setInterval(() => { if (watchOpen()) refreshWatchValues(); }, 10000);
 
 /* ===================== 启动 ===================== */
 (async function init() {
@@ -2574,5 +2643,6 @@ setInterval(() => { if (watchOpen()) refreshWatchValues(); }, 15000);
   updateButtons();
 })();
 </script>
+<div id="movers" class="movers"></div>
 </body>
 </html>

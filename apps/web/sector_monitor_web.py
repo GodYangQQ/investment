@@ -577,7 +577,7 @@ def fetch_cn_sectors_ths() -> list[dict]:
 
 def fetch_cn_sectors(kind: str = "industry") -> tuple[list[dict], str]:
     cache_key = f"cn_sectors:{kind}"
-    hit = _mem_get(cache_key, 8)
+    hit = _mem_get(cache_key, 5)
     if hit is not None:
         return hit
     fs = SECTOR_FS.get(kind, SECTOR_FS["industry"])
@@ -677,7 +677,7 @@ def _sina_cn_indices() -> list[dict]:
 # ---------------- 美股行情（新浪批量） ----------------
 def fetch_us_quotes(codes: list[str]) -> dict[str, dict]:
     cache_key = "us_quotes:" + ",".join(sorted(codes))
-    hit = _mem_get(cache_key, 8)
+    hit = _mem_get(cache_key, 5)
     if hit is not None:
         return hit
     out: dict[str, dict] = {}
@@ -2100,6 +2100,60 @@ def _unescape_u(s: str) -> str:
     return re.sub(r"\\u([0-9a-fA-F]{4})", lambda m: chr(int(m.group(1), 16)), s)
 
 
+def board_movers(code: str, name: str = ""):
+    """板块成分股：按涨幅取前5领涨、后5领跌。东财失败时用 akshare 兜底。"""
+    rows = []
+    url = (
+        f"/api/qt/clist/get?pn=1&pz=200&po=1&np=1&fltt=2&invt=2&fid=f3&fs=b:{code}"
+        "&fields=f12,f14,f2,f3"
+    )
+    js = em_get(url)
+    for it in _items(js) if js else []:
+        c = str(it.get("f12") or "")
+        if not c:
+            continue
+        rows.append(
+            {
+                "code": c,
+                "name": it.get("f14") or c,
+                "price": _num(it.get("f2")),
+                "pct": _num(it.get("f3")),
+            }
+        )
+    if not rows and name:
+        try:
+            import akshare as ak
+
+            nm = re.sub(r"[（(].*?[）)]", "", str(name)).strip()
+            df = None
+            for fn in (ak.stock_board_industry_cons_em, ak.stock_board_concept_cons_em):
+                try:
+                    df = fn(symbol=nm)
+                    if df is not None and not df.empty:
+                        break
+                except Exception:
+                    df = None
+            if df is not None and not df.empty:
+                for _, r in df.iterrows():
+                    c = str(r.get("代码") or "").strip()
+                    if not c:
+                        continue
+                    rows.append(
+                        {
+                            "code": c,
+                            "name": r.get("名称") or c,
+                            "price": _num(r.get("最新价")),
+                            "pct": _num(r.get("涨跌幅")),
+                        }
+                    )
+                rows.sort(key=lambda x: x["pct"], reverse=True)
+        except Exception:
+            pass
+    up = rows[:5]
+    down = rows[-5:][::-1] if len(rows) > 5 else []
+    return up, down
+
+
 _US_COMMON = [
     ("NVDA", "英伟达"),
     ("AMD", "AMD"),
@@ -2241,6 +2295,63 @@ def search_symbols(q: str) -> list[dict]:
 
 
 # ---------------- 汇总接口 ----------------
+def _append_today_bar(
+    bars: list,
+    market: str,
+    code: str,
+    kind: str,
+    tf: str,
+    name: str = "",
+    retry: bool = False,
+) -> list:
+    """A股个股/指数/板块：日线还没出今天时，用分钟数据合成一根当日 K。"""
+    if not bars or market != "cn" or tf != "1d":
+        return bars
+    today = datetime.now().strftime("%Y-%m-%d")
+    if str(bars[-1].get("t") or "")[:10] >= today:
+        return bars
+    try:
+        if kind in ("stock", "index"):
+            sym = _cn_symbol(_idx_code_norm(code).lower()) if kind == "index" else _cn_symbol(code)
+            df = _sina_cn_kline(sym, 1, 300)
+            if df is None or df.empty:
+                df = _qq_minute(sym)
+            if df is None or df.empty:
+                return bars
+            idx = pd.to_datetime(df.index)
+            day = df[idx.strftime("%Y-%m-%d") == today]
+            if day.empty:
+                return bars
+            bars.append(
+                {
+                    "t": today,
+                    "o": round(float(day["open"].iloc[0]), 4),
+                    "h": round(float(day["high"].max()), 4),
+                    "l": round(float(day["low"].min()), 4),
+                    "c": round(float(day["close"].iloc[-1]), 4),
+                    "v": float(day["volume"].sum()),
+                }
+            )
+        else:
+            mb, _ = cn_bars(code, "1m", name, kind, retry, tail=300)
+            tb = [b for b in (mb or []) if str(b.get("t") or "").startswith(today)]
+            if not tb:
+                return bars
+            bars.append(
+                {
+                    "t": today,
+                    "o": float(tb[0]["o"]),
+                    "h": max(float(b["h"]) for b in tb),
+                    "l": min(float(b["l"]) for b in tb),
+                    "c": float(tb[-1]["c"]),
+                    "v": sum(float(b.get("v") or 0) for b in tb),
+                }
+            )
+    except Exception:
+        pass
+    return bars
+
+
 def _bars_fetch(
     market: str,
     code: str,
@@ -2261,6 +2372,7 @@ def _bars_fetch(
             bars, src = cn_bars(code, tf, name, kind, retry, tail=tail)
     except Exception:
         bars, src = [], ""
+    bars = _append_today_bar(bars, market, code, kind, tf, name, retry)
     if bars:
         if tail is None and market == "us":
             db_bars_replace(market, code, tf, bars, src)
@@ -2302,6 +2414,14 @@ def bars_payload(
     _ACTIVE_BARS[bkey] = time.time()
     _BARS_ARGS[bkey] = (name, kind)
     bars = db_bars_get(market, code, tf)
+    read_code = code
+    if not bars and market == "cn" and kind in ("stock", "index"):
+        bare = re.sub(r"^(SH|SZ|BJ)", "", code)
+        if bare != code:
+            bars = db_bars_get(market, bare, tf)
+            if bars:
+                read_code = bare
+    bars = _append_today_bar(bars, market, read_code, kind, tf, name, retry)
     meta = db_meta_get(bkey)
     age = time.time() - meta["ts"] if meta else 0.0
     fresh = bool(bars) and age < _bar_ttl(tf)
@@ -2517,6 +2637,19 @@ class Handler(BaseHTTPRequestHandler):
                 limit = 30
             try:
                 self._json(sector_ma_payload(market, kind, max(5, min(limit, 60))))
+            except Exception as e:
+                self._json({"up": [], "down": [], "error": str(e)[:120]})
+            return
+        if u.path == "/api/board_movers":
+            code = (q.get("code", [""])[0] or "").strip()
+            market = (q.get("market", ["cn"])[0] or "cn").strip()
+            name = (q.get("name", [""])[0] or "").strip()
+            if market != "cn" or not code:
+                self._json({"up": [], "down": [], "note": "美股ETF无成分股"})
+                return
+            try:
+                up, down = board_movers(code, name)
+                self._json({"up": up, "down": down})
             except Exception as e:
                 self._json({"up": [], "down": [], "error": str(e)[:120]})
             return
