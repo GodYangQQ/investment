@@ -2002,6 +2002,18 @@ async function loadBars(opts = {}) {
     if (key !== cacheKey(S.market, S.code, S.tf)) return;   // 期间已切到别的板块，丢弃旧响应
     const bars = mapBars(d.bars);
     if (!bars.length) {
+      if (d.offline) {
+        if (S.rows.length && S.code !== S.rows[0].code) {
+          const pick = S.rows[0];
+          setStatus("离线模式：该标的无本地数据，自动切到 " + pick.name);
+          selectSector(pick);
+        } else {
+          showMsg("离线模式：该标的没有本地数据。<br>请先运行预取，或点左侧其它板块。", true);
+          setStatus("离线模式无本地数据");
+          requestDraw();
+        }
+        return;
+      }
       const thsOnly = S.market === "cn" && String(S.code).startsWith("T") && String(S.tf).endsWith("m");
       if (thsOnly) {
         showMsg("同花顺分时接口暂时没返回数据（可能被限流）<br>点一下左侧该板块会立即重试，或先看「日 / 周 / 月」", true);
