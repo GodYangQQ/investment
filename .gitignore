@@ -33,3 +33,48 @@ stock_game/strategies_backup/__pycache__/
 # JSON outputs
 stock_game/output/
 *.json.bak
+# 运行时缓存 / 个人状态（不入库）
+data/ui_cache.json
+data/sec_tickers.json
+data/repurchase_cache.csv
+data/soxx_score_intermediate.csv
+data/cn_boards.json
+data/gui_cache/
+data/gui_lines.json
+data/gui_night.json
+data/moneyflow_watch.json
+
+# 板块划线看盘（Web）运行时状态
+data/sector_lines.json
+data/sector_monitor.db
+data/sector_monitor.db-wal
+data/sector_monitor.db-shm
+data/sector_cache/
+
+# 仓位管家运行时状态
+data/position.db
+data/position.db-wal
+data/position.db-shm
+
+# 直播转写产物（模型/音频可重下，不入库）
+chang_informs/models/
+chang_informs/audio/
+
+# 实验/回测输出
+experiments_ma/output/
+experiments/output/
+apps/research/experiments/output/
+
+# 回测游戏运行时状态
+data/backtest_game_lines.json
+data/backtest_game_trades.json
+
+# 外部克隆的开源仓库（本地参考，不入库）
+external/*
+!external/.gitkeep
+!external/README.md
+
+# 公司评分缓存（可重算）
+data/company_scores.json
+
+

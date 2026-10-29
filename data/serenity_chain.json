@@ -1,0 +1,154 @@
+{
+  "_meta": {
+    "desc": "AI 供应链卡点地图（Serenity/@aleabitoreddit 逻辑）。layer.chokepoint=卡点强度(1-5), visibility=需求能见度(1-5)。company.fwd=前瞻PE是否因经营杠杆压缩。",
+    "updated": "2026-10-13",
+    "note": "评分仅研究方法论复现，非投资建议；PE 为实时抓取的 trailing 值，前瞻判断为定性。"
+  },
+  "layers": [
+    {
+      "key": "memory",
+      "name": "存储 DRAM/HBM/NAND",
+      "chokepoint": 5,
+      "visibility": 5,
+      "thesis": "风险回报最强：LTA 锁 70% 产能到 2031 + 价格下限 + 回购；2027 短缺比 2026 更严重。",
+      "companies": [
+        {"code": "MU", "name": "Micron", "market": "US", "fwd": true, "note": "HBM/DRAM 核心，需求能见度到 2030-31"},
+        {"code": "SNDK", "name": "SanDisk", "market": "US", "fwd": true, "note": "NAND，毛利 2030 有望超 80%"},
+        {"code": "WDC", "name": "Western Digital", "market": "US", "fwd": true, "note": "HDD/NAND"},
+        {"code": "005930.KS", "name": "Samsung", "market": "US", "fwd": true, "note": "70% 产能长协锁到 2031，2027E 3x"},
+        {"code": "000660.KS", "name": "SK Hynix", "market": "US", "fwd": true, "note": "HBM 龙头"},
+        {"code": "603986", "name": "兆易创新", "market": "CN", "fwd": false, "note": "A股存储/MCU"},
+        {"code": "301308", "name": "江波龙", "market": "CN", "fwd": false, "note": "A股存储模组"},
+        {"code": "688525", "name": "佰维存储", "market": "CN", "fwd": false, "note": "A股存储模组"}
+      ]
+    },
+    {
+      "key": "optics",
+      "name": "光模块/激光/InP/CPO",
+      "chokepoint": 5,
+      "visibility": 4,
+      "thesis": "2027-2028 光超级周期：LITE 卖到 2029 断货；DSP/TIA/InP/SOI/晶圆全线瓶颈；CPO 放量时云厂抢产能。",
+      "companies": [
+        {"code": "LITE", "name": "Lumentum", "market": "US", "fwd": false, "note": "卖到2029断货，$50亿UHP激光被NVDA锁"},
+        {"code": "COHR", "name": "Coherent", "market": "US", "fwd": true, "note": "激光/光器件"},
+        {"code": "AAOI", "name": "Applied Optoelectronics", "market": "US", "fwd": true, "note": "小厂扩产，前瞻PE或压到个位数"},
+        {"code": "MTSI", "name": "MACOM", "market": "US", "fwd": true, "note": "光学/射频芯片扩产"},
+        {"code": "SIVE", "name": "Sivers Semiconductors", "market": "US", "fwd": true, "note": "1亿+激光产能上线"},
+        {"code": "CIEN", "name": "Ciena", "market": "US", "fwd": false, "note": "光网络设备"},
+        {"code": "300308", "name": "中际旭创", "market": "CN", "fwd": false, "note": "A股光模块龙头"},
+        {"code": "300502", "name": "新易盛", "market": "CN", "fwd": false, "note": "A股光模块"},
+        {"code": "300394", "name": "天孚通信", "market": "CN", "fwd": false, "note": "A股光器件"}
+      ]
+    },
+    {
+      "key": "leaders",
+      "name": "算力龙头/ASIC",
+      "chokepoint": 4,
+      "visibility": 5,
+      "thesis": "NVDA FY28 +70%、AVGO 2027/28 +100%、MRVL FY31 指引上调至$70-90B——全是供给约束的增长。",
+      "companies": [
+        {"code": "NVDA", "name": "NVIDIA", "market": "US", "fwd": true, "note": "FY28 前瞻 +70%，供给约束"},
+        {"code": "AVGO", "name": "Broadcom", "market": "US", "fwd": true, "note": "2027/28 +100% YoY，定制ASIC"},
+        {"code": "MRVL", "name": "Marvell", "market": "US", "fwd": true, "note": "FY31 指引上调至$70-90B"},
+        {"code": "AMD", "name": "AMD", "market": "US", "fwd": true, "note": "AI 加速卡"}
+      ]
+    },
+    {
+      "key": "hbm_packaging",
+      "name": "HBM/先进封装/材料",
+      "chokepoint": 5,
+      "visibility": 4,
+      "thesis": "HBM/封装是真瓶颈，产能刚性、认证周期长。",
+      "companies": [
+        {"code": "TSM", "name": "TSMC", "market": "US", "fwd": true, "note": "CoWoS 封装瓶颈"},
+        {"code": "AMAT", "name": "Applied Materials", "market": "US", "fwd": false, "note": "先进封装设备"},
+        {"code": "BESIY", "name": "BE Semiconductor", "market": "US", "fwd": false, "note": "混合键合"},
+        {"code": "688535", "name": "华海诚科", "market": "CN", "fwd": false, "note": "A股封装材料"},
+        {"code": "002156", "name": "通富微电", "market": "CN", "fwd": false, "note": "A股封装"},
+        {"code": "600584", "name": "长电科技", "market": "CN", "fwd": false, "note": "A股封装龙头"}
+      ]
+    },
+    {
+      "key": "mlcc_passive",
+      "name": "MLCC/被动元件",
+      "chokepoint": 4,
+      "visibility": 4,
+      "thesis": "Serenity 点名 MLCC 属'印钞'瓶颈之一。",
+      "companies": [
+        {"code": "6981.T", "name": "Murata", "market": "US", "fwd": false, "note": "MLCC 全球龙头"},
+        {"code": "6762.T", "name": "TDK", "market": "US", "fwd": false, "note": "被动元件"},
+        {"code": "300408", "name": "三环集团", "market": "CN", "fwd": false, "note": "A股MLCC/陶瓷"},
+        {"code": "000636", "name": "风华高科", "market": "CN", "fwd": false, "note": "A股MLCC"}
+      ]
+    },
+    {
+      "key": "connectors_pcb",
+      "name": "连接器/铜缆/PCB/CCL",
+      "chokepoint": 3,
+      "visibility": 4,
+      "thesis": "系统互联/高层数PCB随XPU放量受益。",
+      "companies": [
+        {"code": "APH", "name": "Amphenol", "market": "US", "fwd": false, "note": "高速连接器龙头"},
+        {"code": "CRDO", "name": "Credo", "market": "US", "fwd": true, "note": "高速互联"},
+        {"code": "ALAB", "name": "Astera Labs", "market": "US", "fwd": true, "note": "高速互联高beta"},
+        {"code": "002463", "name": "沪电股份", "market": "CN", "fwd": false, "note": "AI服务器PCB"},
+        {"code": "300476", "name": "胜宏科技", "market": "CN", "fwd": false, "note": "NV链PCB"},
+        {"code": "600183", "name": "生益科技", "market": "CN", "fwd": false, "note": "AI高端CCL"},
+        {"code": "002475", "name": "立讯精密", "market": "CN", "fwd": false, "note": "连接器/铜缆"}
+      ]
+    },
+    {
+      "key": "power_cooling",
+      "name": "电源/液冷/电网",
+      "chokepoint": 3,
+      "visibility": 4,
+      "thesis": "数据中心供电散热瓶颈，随算力线性受益。",
+      "companies": [
+        {"code": "VRT", "name": "Vertiv", "market": "US", "fwd": true, "note": "数据中心供电/散热"},
+        {"code": "ETN", "name": "Eaton", "market": "US", "fwd": false, "note": "电气设备"},
+        {"code": "GEV", "name": "GE Vernova", "market": "US", "fwd": false, "note": "发电/电网"},
+        {"code": "MPWR", "name": "Monolithic Power", "market": "US", "fwd": true, "note": "电源芯片"},
+        {"code": "002837", "name": "英维克", "market": "CN", "fwd": false, "note": "A股液冷"},
+        {"code": "601138", "name": "工业富联", "market": "CN", "fwd": false, "note": "AI服务器代工"}
+      ]
+    },
+    {
+      "key": "test_equip",
+      "name": "测试/设备",
+      "chokepoint": 3,
+      "visibility": 3,
+      "thesis": "测试玩家能涨价但经济影响较小；设备受出口管制扰动。",
+      "companies": [
+        {"code": "TER", "name": "Teradyne", "market": "US", "fwd": false, "note": "测试设备"},
+        {"code": "LRCX", "name": "Lam Research", "market": "US", "fwd": false, "note": "刻蚀设备"},
+        {"code": "KLAC", "name": "KLA", "market": "US", "fwd": false, "note": "检测设备"},
+        {"code": "002371", "name": "北方华创", "market": "CN", "fwd": false, "note": "A股设备龙头"},
+        {"code": "688012", "name": "中微公司", "market": "CN", "fwd": false, "note": "A股刻蚀设备"}
+      ]
+    },
+    {
+      "key": "ip_license",
+      "name": "IP/纯授权",
+      "chokepoint": 2,
+      "visibility": 2,
+      "thesis": "Serenity 明确：别把 IP 类（如 RMBS）和真瓶颈混为一谈。",
+      "companies": [
+        {"code": "RMBS", "name": "Rambus", "market": "US", "fwd": false, "note": "内存接口IP，被点名不要混入"},
+        {"code": "CEVA", "name": "CEVA", "market": "US", "fwd": false, "note": "IP授权"}
+      ]
+    },
+    {
+      "key": "neocloud",
+      "name": "重资产/算力租赁",
+      "chokepoint": 2,
+      "visibility": 3,
+      "thesis": "烧钱 + 持续融资（ATM）承压；拐点临近、过融资窗口后市场才会认。",
+      "companies": [
+        {"code": "IREN", "name": "IREN", "market": "US", "fwd": false, "note": "2027 花$25-30B，牵手Anthropic仍跌"},
+        {"code": "NBIS", "name": "Nebius", "market": "US", "fwd": false, "note": "签Meta，曾跌到$70-80"},
+        {"code": "CRWV", "name": "CoreWeave", "market": "US", "fwd": false, "note": "算力租赁"},
+        {"code": "GLW", "name": "Corning", "market": "US", "fwd": false, "note": "Serenity 举例'别无脑买'"}
+      ]
+    }
+  ]
+}

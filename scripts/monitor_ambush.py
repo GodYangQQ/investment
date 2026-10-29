@@ -66,44 +66,31 @@ def pad_str(s: str, width: int, align: str = "<") -> str:
 
 
 def fetch_quotes(codes: list[str]) -> dict[str, dict]:
-    """Fetch prices + hi/lo for all codes."""
+    """Fetch prices + hi/lo for all codes via yfinance."""
+    sys.path.insert(0, os.path.join(ROOT_DIR, "core"))
+    from core.datasets.us_data import fetch_batch_quotes
+    raw = fetch_batch_quotes(codes)
     quotes = {}
     for code in codes:
-        prefix = "sh" if code.startswith("6") else "sz"
-        try:
-            r = requests.get(f"https://qt.gtimg.cn/q={prefix}{code}", timeout=3)
-            r.encoding = "gbk"
-            m = re.search(r'="(.+?)"', r.text)
-            if m:
-                f = m.group(1).split("~")
-                price = float(f[3]) if len(f) > 3 and f[3] else 0
-                prev_close = float(f[4]) if len(f) > 4 and f[4] else 0
-                open_today = float(f[5]) if len(f) > 5 and f[5] else 0
-                hi = float(f[41]) if len(f) > 41 and f[41] else 0
-                lo = float(f[42]) if len(f) > 42 and f[42] else 0
-                if price > 0:
-                    quotes[code] = {"price": price, "prev": prev_close, "open": open_today, "hi": hi, "lo": lo}
-        except Exception:
-            pass
-        time.sleep(0.06)
+        q = raw.get(code) or {}
+        price = q.get("price") or 0
+        if price:
+            quotes[code] = {
+                "price": price,
+                "prev": q.get("prev_close") or price,
+                "open": q.get("open") or price,
+                "hi": q.get("high") or price,
+                "lo": q.get("low") or price,
+            }
     return quotes
 
 
 def fetch_kline(code: str, days: int = 30) -> list[float]:
-    """Fetch daily closing prices for RSI calculation. Returns list of closes (oldest first)."""
-    prefix = "sh" if code.startswith("6") else "sz"
+    sys.path.insert(0, os.path.join(ROOT_DIR, "core"))
+    from core.datasets.us_data import fetch_daily_kline
     try:
-        url = f"https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param={prefix}{code},day,,,{days},qfq"
-        r = requests.get(url, timeout=10)
-        data = r.json()
-        key = f"{prefix}{code}"
-        klines = data.get("data", {}).get(key, {}).get("qfqday", [])
-        if not klines:
-            klines = data.get("data", {}).get(key, {}).get("day", [])
-        if not klines:
-            return []
-        closes = [float(k[2]) for k in klines if len(k) >= 6]
-        return closes
+        df = fetch_daily_kline(code, days=days)
+        return df["close"].tolist()
     except Exception:
         return []
 

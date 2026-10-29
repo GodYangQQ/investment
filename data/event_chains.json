@@ -1,0 +1,266 @@
+{
+  "_meta": {
+    "desc": "世界大事件 → 传导逻辑链 → 候选标的 知识库。direction: long=受益/做多, short=受损/回避。semi=true 表示与半导体强相关。",
+    "updated": "2026-10-09",
+    "note": "全部为美股（含 ADR/ETF）代码，方向仅为逻辑推演，需结合行情二次验证。"
+  },
+  "events": {
+    "earthquake": {
+      "name_cn": "强震 / 地震",
+      "keywords": ["earthquake", "magnitude", "quake", "tremor", "地震", "强震", "余震"],
+      "regions": {
+        "taiwan": ["Taiwan", "台湾", "Hsinchu", "TSMC"],
+        "japan": ["Japan", "日本", "Tokyo", "Kumamoto", "Tohoku"],
+        "china": ["Sichuan", "China quake", "中国"],
+        "us": ["California", "San Francisco", "Silicon Valley", "Alaska"],
+        "chile": ["Chile", "智利"]
+      },
+      "logic": "若发生在台/日/硅谷等晶圆代工与封测带 → 停产检修 → 存储/代工供给收缩 → 涨价；重建拉动建材；保险理赔增加。",
+      "long": [
+        {"ticker": "TSM", "why": "台积电代工供给收缩，议价力/转单"},
+        {"ticker": "MU", "why": "存储供给扰动→涨价弹性"},
+        {"ticker": "NUE", "why": "灾后重建钢材"},
+        {"ticker": "VMC", "why": "骨料/建材重建"},
+        {"ticker": "MLM", "why": "骨料/建材重建"}
+      ],
+      "short": [
+        {"ticker": "ALL", "why": "巨额理赔"},
+        {"ticker": "PGR", "why": "理赔压力"},
+        {"ticker": "TRV", "why": "巨灾再保敞口"}
+      ],
+      "semi": true
+    },
+    "hurricane_typhoon": {
+      "name_cn": "飓风 / 台风",
+      "keywords": ["hurricane", "typhoon", "cyclone", "storm surge", "台风", "飓风", "热带气旋"],
+      "logic": "墨西哥湾/美国东岸 → 海上油气平台停产、炼厂关闭 → 原油/天然气跳涨；保险理赔；集装箱/散货运价上行；灾后重建。",
+      "long": [
+        {"ticker": "XOM", "why": "油气供给扰动"},
+        {"ticker": "CVX", "why": "油气供给扰动"},
+        {"ticker": "OXY", "why": "页岩油弹性"},
+        {"ticker": "SLB", "why": "油服"},
+        {"ticker": "UNG", "why": "天然气 ETF"},
+        {"ticker": "ZIM", "why": "运价上行弹性大"},
+        {"ticker": "MATX", "why": "航运"},
+        {"ticker": "NUE", "why": "重建"},
+        {"ticker": "HD", "why": "重建零售"},
+        {"ticker": "GNRC", "why": "备用发电机"}
+      ],
+      "short": [
+        {"ticker": "ALL", "why": "理赔"},
+        {"ticker": "PGR", "why": "理赔"},
+        {"ticker": "DAL", "why": "航班取消"},
+        {"ticker": "UAL", "why": "航班取消"}
+      ],
+      "semi": false
+    },
+    "flood": {
+      "name_cn": "洪水 / 内涝",
+      "keywords": ["flood", "flooding", "dam break", "洪水", "内涝", "决堤"],
+      "logic": "灾后重建拉动建材/机械；保险理赔；农业减产。",
+      "long": [
+        {"ticker": "NUE", "why": "重建钢材"},
+        {"ticker": "CAT", "why": "工程机械"},
+        {"ticker": "DE", "why": "农机"},
+        {"ticker": "XYL", "why": "水处理"}
+      ],
+      "short": [
+        {"ticker": "ALL", "why": "理赔"},
+        {"ticker": "ADM", "why": "农业受损"}
+      ],
+      "semi": false
+    },
+    "drought_el_nino": {
+      "name_cn": "干旱 / 厄尔尼诺 / 拉尼娜",
+      "keywords": ["drought", "el nino", "el niño", "la nina", "la niña", "water shortage", "干旱", "厄尔尼诺", "拉尼娜"],
+      "logic": "极端气候扰动农产品供给 → 软商品涨价；化肥/种业需求；水利/水处理受益；水电占比高地区电价上行。",
+      "long": [
+        {"ticker": "ADM", "why": "农产品贸易/加工"},
+        {"ticker": "BG", "why": "农产品贸易"},
+        {"ticker": "MOS", "why": "化肥涨价"},
+        {"ticker": "NTR", "why": "化肥"},
+        {"ticker": "CF", "why": "氮肥"},
+        {"ticker": "XYL", "why": "水处理"},
+        {"ticker": "DBA", "why": "农业商品 ETF"}
+      ],
+      "short": [
+        {"ticker": "CALM", "why": "饲料成本上升压缩养殖利润"}
+      ],
+      "semi": false
+    },
+    "wildfire": {
+      "name_cn": "野火 / 山火",
+      "keywords": ["wildfire", "bushfire", "forest fire", "山火", "野火", "林火"],
+      "logic": "电力公司设备责任/赔付、电网中断；保险理赔；重建。",
+      "long": [
+        {"ticker": "NUE", "why": "重建"},
+        {"ticker": "GNRC", "why": "备用电源"}
+      ],
+      "short": [
+        {"ticker": "PCG", "why": "潜在责任与赔付"},
+        {"ticker": "EIX", "why": "潜在责任与赔付"},
+        {"ticker": "ALL", "why": "理赔"}
+      ],
+      "semi": false
+    },
+    "heatwave_coldwave": {
+      "name_cn": "极端高温 / 寒潮",
+      "keywords": ["heatwave", "heat wave", "record heat", "cold wave", "freeze", "polar vortex", "高温", "寒潮", "极寒"],
+      "logic": "电力负荷与电价飙升、天然气需求、空调/取暖设备；电网设备高负荷。",
+      "long": [
+        {"ticker": "GEV", "why": "发电/电网设备"},
+        {"ticker": "ETN", "why": "电气设备"},
+        {"ticker": "VST", "why": "独立发电商"},
+        {"ticker": "UNG", "why": "天然气需求"},
+        {"ticker": "IR", "why": "暖通空调"}
+      ],
+      "short": [],
+      "semi": false
+    },
+    "pandemic_outbreak": {
+      "name_cn": "疫情 / 传染病爆发",
+      "keywords": ["outbreak", "pandemic", "epidemic", "virus", "h5n1", "bird flu", "mpox", "cholera", "疫情", "传染病", "禽流感", "病毒"],
+      "logic": "疫苗/抗病毒药需求；远程办公/线上；航空/旅游受损；检测与 PPE。",
+      "long": [
+        {"ticker": "PFE", "why": "疫苗/抗病毒"},
+        {"ticker": "MRNA", "why": "疫苗平台"},
+        {"ticker": "BNTX", "why": "疫苗"},
+        {"ticker": "GILD", "why": "抗病毒药"},
+        {"ticker": "ZM", "why": "远程办公"},
+        {"ticker": "DOCU", "why": "电子签约"},
+        {"ticker": "CRWD", "why": "网络安全（远程化）"}
+      ],
+      "short": [
+        {"ticker": "DAL", "why": "出行需求下降"},
+        {"ticker": "UAL", "why": "出行需求下降"},
+        {"ticker": "MAR", "why": "酒店"},
+        {"ticker": "CCL", "why": "邮轮"}
+      ],
+      "semi": false
+    },
+    "war_geopolitics": {
+      "name_cn": "地缘冲突 / 战争",
+      "keywords": ["war", "invasion", "strike", "missile", "conflict", "military", "escalation", "ceasefire", "战争", "冲突", "导弹", "军事", "升级", "停火"],
+      "regions": {
+        "mideast": ["Israel", "Iran", "Gaza", "Houthi", "Red Sea", "中东", "以色列", "伊朗", "红海"],
+        "russia_ukraine": ["Russia", "Ukraine", "NATO", "俄罗斯", "乌克兰"],
+        "taiwan": ["Taiwan strait", "台海", "China military"]
+      },
+      "logic": "中东/俄乌 → 原油、天然气、国防、黄金、油运运价；台海 → 半导体供应链风险溢价。",
+      "long": [
+        {"ticker": "LMT", "why": "国防订单"},
+        {"ticker": "RTX", "why": "国防/导弹"},
+        {"ticker": "NOC", "why": "国防"},
+        {"ticker": "GD", "why": "国防"},
+        {"ticker": "GLD", "why": "避险黄金"},
+        {"ticker": "NEM", "why": "金矿"},
+        {"ticker": "XOM", "why": "油气风险溢价"},
+        {"ticker": "EQT", "why": "天然气"},
+        {"ticker": "FRO", "why": "油运运价（绕行）"},
+        {"ticker": "DHT", "why": "油运运价"},
+        {"ticker": "STNG", "why": "成品油运"}
+      ],
+      "short": [
+        {"ticker": "DAL", "why": "燃油成本+航线中断"},
+        {"ticker": "ZIM", "why": "红海航线风险（短期运价可能反而利多）"}
+      ],
+      "semi": false
+    },
+    "sanctions_chipban": {
+      "name_cn": "出口管制 / 制裁",
+      "keywords": ["export control", "sanction", "entity list", "chip ban", "restriction", "tariff", "出口管制", "制裁", "实体清单", "禁令", "关税"],
+      "logic": "对华设备/芯片管制 → 美系设备短期利空、长期份额转移；国产替代加速；关键矿物反制（稀土/镓锗）→ MP/ALB；先进制程转单。",
+      "long": [
+        {"ticker": "MP", "why": "稀土/关键矿物国产化"},
+        {"ticker": "ALB", "why": "锂/关键材料"},
+        {"ticker": "TSM", "why": "先进制程转单"},
+        {"ticker": "NVDA", "why": "合规型号/供应紧张"}
+      ],
+      "short": [
+        {"ticker": "AMAT", "why": "中国收入敞口"},
+        {"ticker": "LRCX", "why": "中国收入敞口"},
+        {"ticker": "KLAC", "why": "中国收入敞口"},
+        {"ticker": "ASML", "why": "中国需求下滑"}
+      ],
+      "semi": true
+    },
+    "shipping_disruption": {
+      "name_cn": "航运中断 / 港口堵塞",
+      "keywords": ["port strike", "shipping", "canal", "blockade", "container", "freight rate", "港口", "罢工", "运河", "堵塞", "运价"],
+      "logic": "航线绕行/港口罢工 → 有效运力下降 → 运价飙升；供应链交付延迟。",
+      "long": [
+        {"ticker": "ZIM", "why": "运价弹性最大"},
+        {"ticker": "MATX", "why": "集运"},
+        {"ticker": "FRO", "why": "油运"},
+        {"ticker": "STNG", "why": "成品油运"}
+      ],
+      "short": [
+        {"ticker": "AMZN", "why": "物流成本上升"},
+        {"ticker": "WMT", "why": "进口成本上升"}
+      ],
+      "semi": false
+    },
+    "energy_supply": {
+      "name_cn": "能源供给冲击 / OPEC",
+      "keywords": ["opec", "oil supply", "gas supply", "pipeline", "refinery", "lng", "欧佩克", "减产", "断供", "炼厂", "管道"],
+      "logic": "供给中断/减产 → 油价气价上行；上游受益、下游承压。",
+      "long": [
+        {"ticker": "XOM", "why": "一体化上游"},
+        {"ticker": "CVX", "why": "上游"},
+        {"ticker": "OXY", "why": "弹性"},
+        {"ticker": "SLB", "why": "油服"},
+        {"ticker": "EQT", "why": "天然气"},
+        {"ticker": "UNG", "why": "天然气 ETF"}
+      ],
+      "short": [
+        {"ticker": "DAL", "why": "燃油成本"},
+        {"ticker": "UAL", "why": "燃油成本"}
+      ],
+      "semi": false
+    },
+    "cyber_attack": {
+      "name_cn": "网络攻击 / 大规模停电",
+      "keywords": ["cyberattack", "ransomware", "data breach", "grid outage", "blackout", "hack", "网络攻击", "勒索", "停电", "断网"],
+      "logic": "安全事件推升网络安全预算；电网/基础设施风险推升电力设备；受影响企业短期受损。",
+      "long": [
+        {"ticker": "CRWD", "why": "网络安全"},
+        {"ticker": "PANW", "why": "网络安全"},
+        {"ticker": "ZS", "why": "零信任"},
+        {"ticker": "FTNT", "why": "防火墙"},
+        {"ticker": "ETN", "why": "电网设备"}
+      ],
+      "short": [],
+      "semi": false
+    },
+    "rate_fed": {
+      "name_cn": "利率 / 联储 / 流动性",
+      "keywords": ["federal reserve", "fed", "interest rate", "rate cut", "rate hike", "inflation", "cpi", "treasury", "降息", "加息", "通胀", "流动性", "美联储"],
+      "logic": "降息/宽松 → 成长股（半导体）估值扩张、地产/银行；加息/紧缩 → 反向；通胀 → 黄金、能源。",
+      "long": [
+        {"ticker": "SOXX", "why": "高 beta 成长（宽松）"},
+        {"ticker": "QQQ", "why": "科技成长"},
+        {"ticker": "GLD", "why": "抗通胀/避险"}
+      ],
+      "short": [
+        {"ticker": "SOXX", "why": "高 beta 成长（紧缩）"}
+      ],
+      "semi": true
+    },
+    "ai_capex": {
+      "name_cn": "AI 资本开支 / 大模型进展",
+      "keywords": ["ai capex", "data center", "gpu demand", "hyperscaler", "nvidia", "ai chip", "算力", "数据中心", "资本开支", "大模型"],
+      "logic": "云厂商资本开支上行 → 算力/GPU/HBM/光模块/电源全链受益。",
+      "long": [
+        {"ticker": "NVDA", "why": "AI 芯片核心"},
+        {"ticker": "AVGO", "why": "定制 ASIC/网络"},
+        {"ticker": "MU", "why": "HBM/存储"},
+        {"ticker": "TSM", "why": "先进制程代工"},
+        {"ticker": "AMD", "why": "AI 加速卡"},
+        {"ticker": "ALAB", "why": "高速互联"},
+        {"ticker": "MRVL", "why": "定制/互联"}
+      ],
+      "short": [],
+      "semi": true
+    }
+  }
+}

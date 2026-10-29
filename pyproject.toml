@@ -1,0 +1,28 @@
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+exclude = [
+    "data",
+    "output",
+    "dashboards",
+    "chang_informs/models",
+    "chang_informs/audio",
+    "__pycache__",
+    "apps/research/experiments/output",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = [
+    "E501",  # 长行交给 black
+    "E402",  # 入口脚本先 sys.path 再 import
+    "F403",  # shim 里的 import *
+    "F405",
+]
+
+[tool.black]
+line-length = 100
+target-version = ["py310"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
