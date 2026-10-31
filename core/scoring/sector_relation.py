@@ -28,7 +28,7 @@ WINDOW = 250          # 最近多少个交易日
 MIN_PERIODS = 120
 PEER_MIN = 0.45       # 共振门槛
 RIVAL_MAX = -0.12     # 对手门槛（超额收益相关）
-DUP_CORR = 0.995      # 视为“同一板块的两套代码”
+DUP_CORR = 0.98       # 视为“同一个板块”（东财/同花顺双代码、同主题 ETF）
 CACHE_TTL = 1800      # 30 分钟
 
 _CACHE: dict[tuple, tuple[float, dict]] = {}
@@ -44,20 +44,26 @@ def _connect() -> sqlite3.Connection:
     return conn
 
 
-def _snapshot_names(conn: sqlite3.Connection, market: str, kind: str) -> dict[str, str]:
-    """板块代码 → 名称（来自列表快照；拿不到就退回代码本身）。"""
+def _snapshot_meta(conn: sqlite3.Connection, market: str, kind: str):
+    """列表快照 → (代码→名称, 代码→分组)。"""
     try:
         row = conn.execute(
             "SELECT payload FROM snapshots WHERE key=?", (f"list:{market}:{kind}",)
         ).fetchone()
         if not row:
-            return {}
+            return {}, {}
         import json
 
         payload = json.loads(row["payload"])
-        return {str(r.get("code")): str(r.get("name") or r.get("code")) for r in payload.get("rows") or []}
+        names, groups = {}, {}
+        for r in payload.get("rows") or []:
+            c = str(r.get("code"))
+            names[c] = str(r.get("name") or c)
+            if r.get("group"):
+                groups[c] = str(r.get("group"))
+        return names, groups
     except Exception:
-        return {}
+        return {}, {}
 
 
 def _load_returns(market: str, codes: list[str]):
@@ -105,7 +111,7 @@ def _ths_industry_names() -> dict[str, str]:
 
 def _universe(conn: sqlite3.Connection, market: str, kind: str) -> dict[str, str]:
     """有足够历史的板块：优先用快照列表，否则用库里所有非个股代码。"""
-    names = _snapshot_names(conn, market, kind)
+    names, groups = _snapshot_meta(conn, market, kind)
     have = {
         str(r[0])
         for r in conn.execute(
@@ -142,6 +148,7 @@ def _relations(market: str, kind: str, window: int, top: int) -> dict:
     conn = _connect()
     try:
         names = _universe(conn, market, kind)
+        _, groups = _snapshot_meta(conn, market, kind)   # 美股分组：broad/semi/theme
     finally:
         conn.close()
     if len(names) < 5:
@@ -172,7 +179,7 @@ def _relations(market: str, kind: str, window: int, top: int) -> dict:
             ex = corr_ex.at[a, b]
             if pd.isna(raw) or pd.isna(ex):
                 continue
-            # 同一板块的两套代码：跳过（否则永远是最强共振 + 最强对手）
+            # 同一板块的两套代码 / 近乎同一只 ETF：跳过
             if raw >= DUP_CORR:
                 continue
             peers.append((float(raw), float(ex), b))
