@@ -2976,7 +2976,9 @@ class Handler(BaseHTTPRequestHandler):
                     min_level = int(q.get("level", ["0"])[0] or 0)
                 except Exception:
                     min_level = 0
-                self._json(news_state(limit=limit, category=cat, q=kw, code=code, min_level=min_level))
+                stock = (q.get("stock", [""])[0] or "").strip()
+                self._json(news_state(limit=limit, category=cat, q=kw, code=code,
+                                      stock=stock, min_level=min_level))
             except Exception as e:
                 self._json({"items": [], "counts": {}, "error": str(e)[:160]})
             return

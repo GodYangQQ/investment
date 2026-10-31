@@ -45,6 +45,9 @@ _MEM = {"ts": 0.0, "items": [], "running": False}
 
 # ---------------- 分类关键词 ----------------
 CATEGORY_RULES = [
+    ("财报", ["财报", "业绩", "季报", "年报", "中报", "一季报", "三季报", "预告", "净利润", "营收",
+              "毛利率", "每股收益", "eps", "earnings", "revenue", "guidance", "quarterly", "q1", "q2",
+              "q3", "q4", "beat", "miss", "profit warning", "preliminary results"]),
     ("灾害", ["earthquake", "quake", "tsunami", "hurricane", "typhoon", "cyclone", "flood", "wildfire",
               "drought", "volcano", "landslide", "地震", "台风", "洪水", "山火", "干旱", "海啸", "疫情", "outbreak"]),
     ("地缘", ["war", "conflict", "sanction", "missile", "airstrike", "military", "invasion", "ceasefire",
@@ -84,6 +87,12 @@ def _conn() -> sqlite3.Connection:
                PRIMARY KEY(news_id, market, code))"""
     )
     conn.execute("CREATE INDEX IF NOT EXISTS idx_news_sector_code ON news_sector(code)")
+    conn.execute(
+        """CREATE TABLE IF NOT EXISTS news_stock(
+               news_id TEXT, code TEXT, name TEXT,
+               PRIMARY KEY(news_id, code))"""
+    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_news_stock_code ON news_stock(code)")
     return conn
 
 
@@ -359,6 +368,48 @@ def _sector_index() -> list[dict]:
     return out
 
 
+_STOCK_INDEX = {"ts": 0.0, "items": []}
+
+
+def _stock_index() -> list[dict]:
+    """A股股票名 → 代码（来自评分表，缓存 1 小时）。"""
+    now = time.time()
+    if _STOCK_INDEX["items"] and now - _STOCK_INDEX["ts"] < 3600:
+        return _STOCK_INDEX["items"]
+    items: list[dict] = []
+    try:
+        with open(ROOT / "data" / "company_scores.json", encoding="utf-8") as f:
+            d = json.load(f)
+        for r in d.get("rows") or []:
+            name = str(r.get("名称") or "").strip()
+            code = str(r.get("代码") or "").strip().zfill(6)
+            if len(name) >= 2 and code.isdigit():
+                items.append({"code": code, "name": name})
+    except Exception:
+        items = []
+    _STOCK_INDEX["items"] = items
+    _STOCK_INDEX["ts"] = now
+    return items
+
+
+def _match_stocks(title: str, index: list[dict]) -> list[dict]:
+    """标题里出现股票名（≥2 字）或 6 位代码 → 关联个股，最多 5 只。"""
+    t = str(title or "")
+    low = t.lower()
+    out: list[dict] = []
+    seen: set[str] = set()
+    for it in index:
+        if it["code"] in seen:
+            continue
+        if it["name"] in t or it["code"] in t:
+            # 2 字名字容易误伤（如“中国”），要求前后不是字母数字
+            out.append(it)
+            seen.add(it["code"])
+            if len(out) >= 5:
+                break
+    return out
+
+
 def _match_sectors(title: str, index: list[dict]) -> list[dict]:
     """标题里出现板块名（含同义词）就关联，最多 4 个。"""
     t = str(title or "").lower()
@@ -504,6 +555,14 @@ def _save(items: list[dict]) -> None:
             for it in items:
                 for sec in it.get("sectors") or []:
                     links.append((it["id"], sec["market"], sec["code"], sec["name"]))
+            slinks = []
+            for it in items:
+                for st in it.get("stocks") or []:
+                    slinks.append((it["id"], st["code"], st["name"]))
+            if slinks:
+                conn.executemany(
+                    "INSERT OR REPLACE INTO news_stock(news_id,code,name) VALUES(?,?,?)", slinks
+                )
             if links:
                 conn.executemany(
                     "INSERT OR REPLACE INTO news_sector(news_id,market,code,name) VALUES(?,?,?,?)",
@@ -516,7 +575,7 @@ def _save(items: list[dict]) -> None:
 
 
 def load_news(limit: int = 200, category: str = "", q: str = "", hours: int = 0,
-              code: str = "") -> list[dict]:
+              code: str = "", stock: str = "") -> list[dict]:
     try:
         conn = _conn()
         sql = ("SELECT id,ts,source,tier,category,title,url,lang,importance,"
@@ -532,6 +591,27 @@ def load_news(limit: int = 200, category: str = "", q: str = "", hours: int = 0,
         if hours:
             where.append("ts > ?")
             args.append(time.time() - hours * 3600)
+        if stock:
+            import re as _re2
+
+            sc = _re2.sub(r"\D", "", str(stock))[-6:].zfill(6)
+            sql = ("SELECT n.id,n.ts,n.source,n.tier,n.category,n.title,n.url,n.lang,n.importance,"
+                   "ifnull(n.level,0),ifnull(n.cluster,n.id),ifnull(n.sources_n,1) "
+                   "FROM news n JOIN news_stock t ON t.news_id=n.id WHERE t.code=?")
+            args = [sc]
+            if category:
+                sql += " AND n.category=?"
+                args.append(category)
+            sql += " ORDER BY n.ts DESC LIMIT ?"
+            args.append(max(1, min(int(limit), 500)))
+            rows = conn.execute(sql, args).fetchall()
+            conn.close()
+            return [
+                {"id": r[0], "ts": r[1], "source": r[2], "tier": r[3], "category": r[4],
+                 "title": r[5], "url": r[6], "lang": r[7], "importance": r[8],
+                 "level": r[9], "cluster": r[10], "sources_n": r[11]}
+                for r in rows
+            ]
         if code:
             sql = ("SELECT n.id,n.ts,n.source,n.tier,n.category,n.title,n.url,n.lang,n.importance,"
                    "ifnull(n.level,0),ifnull(n.cluster,n.id),ifnull(n.sources_n,1) "
@@ -583,6 +663,7 @@ def _collect() -> None:
         it["importance"] = _score(it)
         it["ts"] = float(it.get("ts") or now)
         it["sectors"] = _match_sectors(it["title"], index) if index else []
+        it["stocks"] = _match_stocks(it["title"], _stock_index())
     _cluster(items)
     for it in items:
         it["level"] = _level(it)
@@ -612,13 +693,13 @@ def kick_refresh(force: bool = False) -> bool:
 
 
 def state(limit: int = 200, category: str = "", q: str = "", code: str = "",
-          min_level: int = 0) -> dict:
+          stock: str = "", min_level: int = 0) -> dict:
     """给接口用：立即返回库里数据，同时判断是否需要后台刷新。"""
     kick_refresh(False)
     counts: dict[str, int] = {}
     for r in load_news(limit=800):
         counts[r["category"]] = counts.get(r["category"], 0) + 1
-    rows = load_news(limit=limit, category=category, q=q, code=code)
+    rows = load_news(limit=limit, category=category, q=q, code=code, stock=stock)
     if min_level:
         rows = [r for r in rows if int(r.get("level") or 0) >= min_level]
     return {

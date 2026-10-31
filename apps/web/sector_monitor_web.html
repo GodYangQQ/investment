@@ -176,6 +176,11 @@ background:#18212c;box-shadow:-4px 0 14px rgba(0,0,0,.35)}
 .nrow .nti .cat.产业{color:#8fc7ff;border-color:#27476b;background:#111e2c}
 .nrow .nti .cat.市场{color:#7fd6c6;border-color:#1f5a52;background:#10201f}
 .nrow .nti .cat.灾害{color:#ffb37a;border-color:#5c4029;background:#221a12}
+.nrow .nti .cat.财报{color:#c8a6ff;border-color:#43356b;background:#191430}
+.nrow .ncopy{border:1px solid #2f3b47;background:#141d27;color:#8fa6bd;font-size:12px;
+ border-radius:5px;padding:1px 6px;cursor:pointer;margin-left:8px;white-space:nowrap}
+.nrow .ncopy:hover{background:#20304a;color:#fff;border-color:#4d9fff}
+.nrow .ncopy.done{color:#7fd6c6;border-color:#1f5a52}
 .nrow .nti .imp{color:#ffb84d;font-size:12px;margin-left:6px}
 .nrow .lv{font-size:11.5px;font-weight:700;padding:0 4px;border-radius:4px;margin-right:5px;
  border:1px solid #33404f;color:#7d8b9a;vertical-align:1px}
@@ -572,6 +577,7 @@ body.focus.side-hidden .side-handle{left:0}
       <button data-nc="" class="on">全部</button>
       <button data-nc="宏观">宏观</button>
       <button data-nc="地缘">地缘</button>
+      <button data-nc="财报">财报</button>
       <button data-nc="产业">产业</button>
       <button data-nc="市场">市场</button>
       <button data-nc="灾害">灾害</button>
@@ -2354,13 +2360,30 @@ function renderNews() {
       `<span class="nti"><span class="lv lv${it.level || 0}">L${it.level || 0}</span>` +
       `<span class="cat ${esc(it.category)}">${esc(it.category)}</span>${esc(it.title)}` +
       (imp ? `<span class="imp">${imp}</span>` : "") +
-      (it.sources_n > 1 ? `<span class="imp" title="多家来源">×${it.sources_n}</span>` : "") + `</span></div>`;
+      (it.sources_n > 1 ? `<span class="imp" title="多家来源">×${it.sources_n}</span>` : "") +
+      (it.url ? `<button class="ncopy" title="复制链接">复制</button>` : "") + `</span></div>`;
   }).join("");
   box.querySelectorAll(".nrow").forEach(el => {
     el.onclick = () => {
       const u = el.dataset.url;
       if (u) window.open(u, "_blank", "noopener,noreferrer");
       else setStatus("该条没有可用链接");
+    };
+    const cp = el.querySelector(".ncopy");
+    if (cp) cp.onclick = async ev2 => {
+      ev2.stopPropagation();
+      const u = el.dataset.url;
+      if (!u) return;
+      try {
+        await navigator.clipboard.writeText(u);
+      } catch (e) {
+        const ta = document.createElement("textarea");
+        ta.value = u; document.body.appendChild(ta); ta.select();
+        try { document.execCommand("copy"); } catch (e2) {}
+        ta.remove();
+      }
+      cp.textContent = "已复制"; cp.classList.add("done");
+      setTimeout(() => { cp.textContent = "复制"; cp.classList.remove("done"); }, 1200);
     };
   });
 }
@@ -2369,9 +2392,10 @@ async function loadNews(refresh) {
   NEWS.loading = true;
   try {
     const useCur = NEWS.onlyCur && S.code;
+    const isStock = useCur && (S.akind === "stock" || /^(SH|SZ|BJ)/.test(String(S.code)) && !String(S.code).startsWith("T"));
     const d = await api(`/api/news?limit=300` +
       (NEWS.cat ? `&category=${encodeURIComponent(NEWS.cat)}` : "") +
-      (useCur ? `&code=${encodeURIComponent(S.code)}` : "") +
+      (useCur ? (isStock ? `&stock=${encodeURIComponent(S.code)}` : `&code=${encodeURIComponent(S.code)}`) : "") +
       (NEWS.minLevel ? `&level=${NEWS.minLevel}` : "") +
       (refresh ? "&refresh=1" : ""));
     NEWS.items = d.items || [];
