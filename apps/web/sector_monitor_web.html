@@ -543,6 +543,8 @@ body.focus.side-hidden .side-handle{left:0}
       <span class="sp"></span>
       <div class="tfs" id="tfs"></div>
       <div class="tools">
+        <button id="bNews" title="只看当前标的的相关新闻">相关新闻</button>
+        <button id="bFin" title="当前标的的财报 / 公司公告">财报</button>
         <div class="matogs" id="maTogs" title="点击单独开关每条均线"><span class="mlab">均线</span></div>
         <button id="bLog" class="on" title="对数坐标：同样涨幅的波段看起来一样高；点击可切回普通价格坐标">对数</button>
         <button id="bT" title="趋势线（画完自动退出）">趋势线</button>
@@ -2445,6 +2447,11 @@ async function loadNews(refresh) {
     NEWS.loading = false;
   }
 }
+function syncNewsTabs() {
+  [...document.querySelectorAll("#ntabs button")].forEach(x => {
+    x.classList.toggle("on", (x.dataset.nc || "") === NEWS.cat);
+  });
+}
 function syncNewsCur() {
   const b = $("#nCur");
   if (!b) return;
@@ -3970,6 +3977,22 @@ setInterval(() => { if (watchOpen()) refreshWatchValues(); }, 10000);
     syncNewsCur();
     loadNews();
   };
+  function openNewsFor(cat) {
+    if (!S.code) { setStatus("先选一个板块或个股"); return; }
+    if (S.market === "us" && S.akind !== "stock") {
+      setStatus("美股 ETF 暂无个股新闻/财报");
+      return;
+    }
+    NEWS.cur = {market: S.market, code: String(S.code), kind: S.akind, name: S.name || ""};
+    NEWS.onlyCur = true;
+    NEWS.onlyWatch = false;
+    NEWS.cat = cat || "";
+    syncNewsTabs();
+    $("#nWatch").classList.remove("on");
+    openNews();
+  }
+  $("#bNews").onclick = () => openNewsFor("");
+  $("#bFin").onclick = () => openNewsFor("财报");
   $("#nWatch").onclick = () => {
     NEWS.onlyWatch = !NEWS.onlyWatch;
     $("#nWatch").classList.toggle("on", NEWS.onlyWatch);
