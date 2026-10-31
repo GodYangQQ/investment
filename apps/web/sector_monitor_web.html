@@ -2088,8 +2088,9 @@ function updateHeader() {
   const price = S.live?.price ?? rec?.price ?? last?.c ?? 0;
   const pct = livePct();
   $("#cname").textContent = S.name || rec?.name || "—";
+  const wt = watchType({market: S.market, code: S.code, kind: S.akind});
   const tag = S.market === "us" ? "US · "
-    : (S.akind === "index" ? "指数 · " : (S.akind === "stock" ? "个股 · " : "A股 · "));
+    : (wt === "index" ? "指数 · " : wt === "etf" ? "ETF · " : wt === "sector" ? "A股 · " : "个股 · ");
   const codeTxt = (S.akind === "stock" || S.akind === "index")
     ? String(S.code || "") : String(S.code || "").replace(/^T/, "");
   $("#ccode").textContent = tag + codeTxt;
@@ -2582,7 +2583,7 @@ function styleRank(it) {
 }
 
 function watchType(it) {
-  const c = String(it.code || "").toUpperCase();
+  const c = String(it.code || "").toUpperCase().replace(/^(SH|SZ|BJ)/, "");
   if (it.kind === "index") return "index";
   if (it.kind === "industry" || it.kind === "concept") {
     return it.market === "us" ? "etf" : "sector";
