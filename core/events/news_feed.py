@@ -46,7 +46,7 @@ _MEM = {"ts": 0.0, "items": [], "running": False}
 
 # ---------------- 分类关键词 ----------------
 CATEGORY_RULES = [
-    ("财报", ["财报", "业绩", "季报", "年报", "中报", "一季报", "三季报", "预告", "净利润", "营收",
+    ("财报", ["财报", "业绩", "季报", "年报", "年度报告", "季度报告", "半年度报告", "中报", "一季报", "三季报", "预告", "净利润", "营收",
               "毛利率", "每股收益", "eps", "earnings", "revenue", "guidance", "quarterly", "q1", "q2",
               "q3", "q4", "beat", "miss", "profit warning", "preliminary results"]),
     ("灾害", ["earthquake", "quake", "tsunami", "hurricane", "typhoon", "cyclone", "flood", "wildfire",

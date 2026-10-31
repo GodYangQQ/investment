@@ -23,3 +23,8 @@ def test_sec_filing_level_floor():
 def test_decay_keeps_week_old_items_alive():
     old = {"tier": "official", "title": "某公司季报", "ts": time.time() - 5 * 86400}
     assert nf._score(old) > 1.0   # 旧逻辑 3 天衰减到地板只剩 0.56
+
+
+def test_categorize_cn_reports():
+    assert nf._categorize("生益科技2025年年度报告") == "财报"
+    assert nf._categorize("兆易创新2026年第三季度报告") == "财报"
