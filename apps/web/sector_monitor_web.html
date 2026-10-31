@@ -2379,6 +2379,13 @@ function hidePeek() {
   }, 220);
 }
 /* 鼠标离开卡片时给 220ms 缓冲：足够移到预览的操作条上 */
+const PEEK_STILL_MS = 500;   // 鼠标静止满 0.5 秒才弹预览
+function schedulePeekShow(card) {
+  clearTimeout(PEEK.showTimer);
+  clearTimeout(PEEK.hideTimer);
+  PEEK.showTimer = setTimeout(() => showPeekSmall(card), PEEK_STILL_MS);
+}
+
 function schedulePeekHide() {
   if (PEEK.pinned) return;          // 全屏后不跟随鼠标，只能点「关闭」
   clearTimeout(PEEK.showTimer);
@@ -2608,13 +2615,15 @@ async function renderWatch() {
     el.addEventListener("mouseenter", e => {
       PEEK.xy = {x: e.clientX, y: e.clientY};
       if (PEEK.pinned) return;      // 全屏预览已打开：底下卡片不再响应 hover
-      // hover：只弹 2 倍小窗（无按钮）
-      clearTimeout(PEEK.showTimer);
-      clearTimeout(PEEK.hideTimer);
       PEEK.card = el;
-      PEEK.showTimer = setTimeout(() => showPeekSmall(el), 90);
+      schedulePeekShow(el);
     });
-    el.addEventListener("mousemove", e => { PEEK.xy = {x: e.clientX, y: e.clientY}; });
+    el.addEventListener("mousemove", e => {
+      const moved = !PEEK.xy || Math.abs(e.clientX - PEEK.xy.x) + Math.abs(e.clientY - PEEK.xy.y) > 0;
+      PEEK.xy = {x: e.clientX, y: e.clientY};
+      if (PEEK.pinned || PEEK.mode === "sm" || !moved) return;
+      schedulePeekShow(el);   // 鼠标在动 -> 一直重置，不动满 0.5s 才弹
+    });
     el.addEventListener("mouseleave", () => { if (!PEEK.pinned) schedulePeekHide(); });
     // 按下就立刻压暗（不等 click 触发），松开 70ms 后恢复，手感更实
     el.addEventListener("mousedown", () => {
@@ -2638,15 +2647,13 @@ async function renderWatch() {
       `<span class="wtag" data-tag>加载中…</span>` +
       (canScore ? `<button class="wscore" title="查看该板块个股评分前50">个股评分</button>` : "") +
       (watchType(it) === "etf" ? `<button class="whold" title="查看该 ETF 前10大持仓">持仓</button>` : "") +
-      `<button class="wzoom" title="放大这个板块">放大</button>` +
-      `<button class="wdel" title="移出自选（删除）">✕</button></div>`;
+      `</div>`;
     el.addEventListener("click", e => {
       if (PEEK.pinned) return;                                // 全屏时只认全屏里的按钮
       if (Date.now() - (box._suppress || 0) < 320) return;   // 刚拖拽滚动过，别误触
       if (e.target.closest(".wscore")) { openScoreRanking(it); return; }
       if (e.target.closest(".whold")) { openHoldings(it); return; }
       if (e.target.closest(".wdel,.wdel-x")) { hidePeek(); toggleWatch(it); return; }
-      if (e.target.closest(".wzoom")) { openSector(it, true); return; }
       if (e.target.closest(".wres")) return;
       // 点击反馈：按下瞬间压暗一下，随后挂「等待判定」高亮
       const _p = $("#peek");
