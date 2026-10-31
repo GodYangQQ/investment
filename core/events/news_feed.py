@@ -1506,9 +1506,32 @@ def _save(items: list[dict]) -> None:
 
 
 def load_news(limit: int = 200, category: str = "", q: str = "", hours: int = 0,
-              code: str = "", stock: str = "") -> list[dict]:
+              code: str = "", stock: str = "", watch: bool = False) -> list[dict]:
     try:
         conn = _conn()
+        # 自选过滤直接在 SQL 里做，避免先 LIMIT 再筛导致一年前的财报被截掉
+        w_secs: list[str] = []
+        w_codes: list[str] = []
+        if watch:
+            _w = _watch_codes()
+            w_secs = list(_w[0])
+            w_codes = list(_w[1]) + [t.upper() for t in (_w[2] if len(_w) > 2 else [])]
+
+        def _watch_cond(alias: str = "") -> tuple[str, list]:
+            prefix = alias + "." if alias else ""
+            parts: list[str] = []
+            a: list = []
+            if w_codes:
+                qm = ",".join("?" * len(w_codes))
+                parts.append(f"{prefix}id IN (SELECT news_id FROM news_stock WHERE code IN ({qm}))")
+                a += w_codes
+            if w_secs:
+                qm = ",".join("?" * len(w_secs))
+                parts.append(f"{prefix}id IN (SELECT news_id FROM news_sector WHERE code IN ({qm}))")
+                a += w_secs
+            if not parts:
+                return "0=1", []
+            return "(" + " OR ".join(parts) + ")", a
         sql = ("SELECT id,ts,source,tier,category,title,url,lang,importance,"
                "ifnull(level,0),ifnull(cluster,id),ifnull(sources_n,1) FROM news")
         args: list = []
@@ -1536,6 +1559,10 @@ def load_news(limit: int = 200, category: str = "", q: str = "", hours: int = 0,
             if category:
                 sql += " AND n.category=?"
                 args.append(category)
+            if watch:
+                cond, wa = _watch_cond("n")
+                sql += " AND " + cond
+                args += wa
             sql += " ORDER BY n.ts DESC LIMIT ?"
             args.append(max(1, min(int(limit), 500)))
             rows = conn.execute(sql, args).fetchall()
@@ -1554,6 +1581,10 @@ def load_news(limit: int = 200, category: str = "", q: str = "", hours: int = 0,
             if category:
                 sql += " AND n.category=?"
                 args.append(category)
+            if watch:
+                cond, wa = _watch_cond("n")
+                sql += " AND " + cond
+                args += wa
             sql += " ORDER BY n.ts DESC LIMIT ?"
             args.append(max(1, min(int(limit), 500)))
             rows = conn.execute(sql, args).fetchall()
@@ -1564,6 +1595,10 @@ def load_news(limit: int = 200, category: str = "", q: str = "", hours: int = 0,
                  "level": r[9], "cluster": r[10], "sources_n": r[11]}
                 for r in rows
             ]
+        if watch:
+            cond, wa = _watch_cond("")
+            where.append(cond)
+            args += wa
         if where:
             sql += " WHERE " + " AND ".join(where)
         sql += " ORDER BY ts DESC LIMIT ?"
@@ -1728,30 +1763,9 @@ def start_poller(interval: int = 300) -> None:
 def state(limit: int = 200, category: str = "", q: str = "", code: str = "",
           stock: str = "", min_level: int = 0, watch: bool = False) -> dict:
     """给接口用：只读库，一次查询搞定（前端刷新频率高，别做多余统计）。"""
-    rows = load_news(limit=limit, category=category, q=q, code=code, stock=stock)
+    rows = load_news(limit=limit, category=category, q=q, code=code, stock=stock, watch=watch)
     if min_level:
         rows = [r for r in rows if int(r.get("level") or 0) >= min_level]
-    if watch:   # 只看自选板块 / 自选个股相关
-        w = _watch_codes()
-        secs, stks = w[0], w[1]
-        us_tk = [t.upper() for t in (w[2] if len(w) > 2 else [])]
-        stks = list(stks) + us_tk
-        if secs or stks:
-            ids: set[str] = set()
-            try:
-                conn = _conn()
-                if secs:
-                    q1 = ",".join("?" * len(secs))
-                    ids |= {r[0] for r in conn.execute(
-                        f"SELECT DISTINCT news_id FROM news_sector WHERE code IN ({q1})", secs)}
-                if stks:
-                    q2 = ",".join("?" * len(stks))
-                    ids |= {r[0] for r in conn.execute(
-                        f"SELECT DISTINCT news_id FROM news_stock WHERE code IN ({q2})", stks)}
-                conn.close()
-            except Exception:
-                ids = set()
-            rows = [r for r in rows if r["id"] in ids]
     return {
         "items": rows,
         "counts": {},          # 前端不用，别算（省一次全表扫描）

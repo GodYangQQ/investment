@@ -599,6 +599,7 @@ body.focus.side-hidden .side-handle{left:0}
       <button data-nc="热榜">热榜</button>
     </div>
     <button id="nCur" title="只看与当前板块相关的新闻">当前板块</button>
+    <button id="nWatch" title="只看与自选（个股/板块）相关的新闻">自选</button>
     <button id="nLv" title="只看重大事件（L2 及以上）">重大 L2+</button>
     <span class="sp"></span>
     <button id="nRefresh" title="立即刷新">刷新</button>
@@ -2355,8 +2356,8 @@ function syncFab() {
   btn.style.display = watchOpen() ? "none" : "";
 }
 /* ---------- 事件 / 新闻 ---------- */
-const NEWS = {items: [], cat: "", onlyCur: false, cur: null, minLevel: 0, loading: false,
-  pending: false, timer: 0, updated: 0};
+const NEWS = {items: [], cat: "", onlyCur: false, onlyWatch: false, cur: null, minLevel: 0,
+  loading: false, pending: false, timer: 0, updated: 0};
 function newsOpen() { return $("#news").classList.contains("open"); }
 function renderNews() {
   const box = $("#nlist");
@@ -2366,7 +2367,8 @@ function renderNews() {
   const upd = NEWS.updated
     ? " · 更新于 " + new Date(NEWS.updated * 1000).toLocaleTimeString("zh-CN", {hour12: false})
     : "";
-  const suffix = (NEWS.cat === "财报" ? " · 仅自选相关" : "") + (NEWS.pending ? " · 抓取中…" : "") + upd;
+  const suffix = (NEWS.cat === "财报" || NEWS.onlyWatch ? " · 仅自选相关" : "") +
+    (NEWS.pending ? " · 抓取中…" : "") + upd;
   if (sub) sub.textContent = items.length ? `${items.length} 条${suffix}` : "";
   if (!items.length) {
     box.innerHTML = `<div class="nempty">${NEWS.pending ? "正在抓取新闻…" : "暂无新闻，点右上「刷新」"}</div>`;
@@ -2426,7 +2428,7 @@ async function loadNews(refresh) {
       (NEWS.cat ? `&category=${encodeURIComponent(NEWS.cat)}` : "") +
       (curQ ? `&${curQ}` : "") +
       (NEWS.minLevel ? `&level=${NEWS.minLevel}` : "") +
-      (NEWS.cat === "财报" ? "&watch=1" : "") +
+      (NEWS.cat === "财报" || NEWS.onlyWatch ? "&watch=1" : "") +
       (refresh ? "&refresh=1" : ""));
     NEWS.items = d.items || [];
     NEWS.pending = !!d.pending;
@@ -3966,6 +3968,11 @@ setInterval(() => { if (watchOpen()) refreshWatchValues(); }, 10000);
     NEWS.cur = null;
     NEWS.onlyCur = !NEWS.onlyCur;
     syncNewsCur();
+    loadNews();
+  };
+  $("#nWatch").onclick = () => {
+    NEWS.onlyWatch = !NEWS.onlyWatch;
+    $("#nWatch").classList.toggle("on", NEWS.onlyWatch);
     loadNews();
   };
   $("#nLv").onclick = () => {
