@@ -3360,6 +3360,22 @@ def _background_ticker() -> None:
         time.sleep(1.5)
 
 
+def _relations_warm() -> None:
+    """后台维持共振/对手矩阵的热缓存（前端打开明细直接命中）。"""
+    time.sleep(5)
+    while True:
+        for market in ("cn", "us"):
+            try:
+                from core.scoring.sector_relation import sector_relations
+
+                t0 = time.time()
+                d = sector_relations(market, "industry", top=2)
+                print(f"[rel] {market} 预计算 {d.get('count')} 个 · {time.time() - t0:.1f}s", flush=True)
+            except Exception as e:  # noqa: BLE001
+                print(f"[rel] {market} 预计算失败: {e}", flush=True)
+        time.sleep(480)
+
+
 def _warmup() -> None:
     """启动预热：列表 + 成交额前 N 个板块的日线，首屏点击基本秒开。
 
@@ -3447,6 +3463,8 @@ def main():
         start_poller(300)
     except Exception as e:
         print(f"[news] 轮询启动失败: {e}", flush=True)
+    # 共振/对手预计算：每 8 分钟算一次，前端打开明细零等待
+    threading.Thread(target=_relations_warm, daemon=True, name="relations-warm").start()
     if not args.no_warm:
         threading.Thread(target=_warmup, daemon=True, name="warmup").start()
         threading.Thread(target=_background_ticker, daemon=True, name="ticker").start()

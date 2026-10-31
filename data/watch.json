@@ -1,6 +1,16 @@
 [
  {
   "market": "cn",
+  "code": "T881273",
+  "name": "白酒",
+  "kind": "industry",
+  "tf": "1d",
+  "group": "broad",
+  "w": null,
+  "h": null
+ },
+ {
+  "market": "cn",
   "code": "SH511010",
   "name": "国债ETF国泰",
   "kind": "stock",

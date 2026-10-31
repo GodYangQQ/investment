@@ -4019,6 +4019,8 @@ setInterval(() => { if (watchOpen()) refreshWatchValues(); }, 10000);
       (WATCH.length ? "" : " · 点标题旁 ☆ 或列表里的 ☆ 加自选"));
   }
   updateButtons();
+  // 首屏后预热一次新闻，打开抽屉时直接有内容
+  setTimeout(() => { if (!NEWS.items.length) loadNews(); }, 2500);
 })();
 </script>
 </body>

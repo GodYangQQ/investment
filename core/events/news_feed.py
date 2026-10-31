@@ -922,6 +922,7 @@ def start_poller(interval: int = 300) -> None:
 
     def loop() -> None:
         time.sleep(2)
+        cycle = 0
         while True:
             t0 = time.time()
             try:
@@ -930,6 +931,15 @@ def start_poller(interval: int = 300) -> None:
                 print(f"[news] 抓取完成 {len(_MEM['items'])} 条 · {time.time() - t0:.1f}s", flush=True)
             except Exception as e:  # noqa: BLE001
                 print(f"[news] 抓取失败: {e}", flush=True)
+            cycle += 1
+            # 每 6 轮（约 30 分钟）给自选个股补抓一次公告
+            if cycle % 6 == 0:
+                try:
+                    n = refresh_watch_stocks(days=7)
+                    if n:
+                        print(f"[news] 自选公告补抓 {n} 条", flush=True)
+                except Exception as e:  # noqa: BLE001
+                    print(f"[news] 自选公告补抓失败: {e}", flush=True)
             time.sleep(_POLLER["interval"])
 
     threading.Thread(target=loop, daemon=True, name="news-poller").start()
@@ -937,10 +947,7 @@ def start_poller(interval: int = 300) -> None:
 
 def state(limit: int = 200, category: str = "", q: str = "", code: str = "",
           stock: str = "", min_level: int = 0, watch: bool = False) -> dict:
-    """给接口用：立即返回库里数据，同时判断是否需要后台刷新。"""
-    counts: dict[str, int] = {}
-    for r in load_news(limit=800):
-        counts[r["category"]] = counts.get(r["category"], 0) + 1
+    """给接口用：只读库，一次查询搞定（前端刷新频率高，别做多余统计）。"""
     rows = load_news(limit=limit, category=category, q=q, code=code, stock=stock)
     if min_level:
         rows = [r for r in rows if int(r.get("level") or 0) >= min_level]
@@ -964,8 +971,7 @@ def state(limit: int = 200, category: str = "", q: str = "", code: str = "",
             rows = [r for r in rows if r["id"] in ids]
     return {
         "items": rows,
-        "counts": counts,
-        "levels": {str(l): sum(1 for r in load_news(limit=800) if int(r.get("level") or 0) == l) for l in range(5)},
+        "counts": {},          # 前端不用，别算（省一次全表扫描）
         "pending": _MEM["running"],
         "updated": _MEM["ts"],
         "poller": {"on": _POLLER["started"], "interval": _POLLER["interval"], "last": _POLLER["last"]},
