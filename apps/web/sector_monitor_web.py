@@ -3281,7 +3281,7 @@ class Handler(BaseHTTPRequestHandler):
                         try:
                             from core.events import news_feed
 
-                            n = news_feed.refresh_watch_stocks(days=7)
+                            n = news_feed.refresh_watch_stocks(days=365)
                             print(f"[news] 新增自选补抓 {sorted(added)} → {n} 条", flush=True)
                         except Exception as e:  # noqa: BLE001
                             print(f"[news] 新增自选补抓失败: {e}", flush=True)

@@ -1,21 +1,21 @@
 [
  {
   "market": "cn",
-  "code": "T881273",
-  "name": "白酒",
-  "kind": "industry",
+  "code": "SZ002384",
+  "name": "东山精密",
+  "kind": "stock",
   "tf": "1d",
-  "group": "broad",
+  "group": "semi",
   "w": null,
   "h": null
  },
  {
   "market": "cn",
-  "code": "SH511010",
-  "name": "国债ETF国泰",
-  "kind": "stock",
+  "code": "T881273",
+  "name": "白酒",
+  "kind": "industry",
   "tf": "1d",
-  "group": "semi",
+  "group": "broad",
   "w": null,
   "h": null
  },

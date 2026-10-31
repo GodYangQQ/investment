@@ -25,7 +25,7 @@ import sqlite3
 import threading
 import time
 import xml.etree.ElementTree as ET
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 
@@ -38,7 +38,8 @@ HEADERS = {
 }
 TIMEOUT = 12
 TTL = 600           # 10 分钟内不重复抓
-KEEP_DAYS = 7       # 新闻只保留最近 7 天
+KEEP_DAYS = 7       # 普通新闻只保留最近 7 天
+KEEP_DAYS_FIN = 365 # 自选相关的财报/公司公告保留 1 年
 
 _LOCK = threading.Lock()
 _MEM = {"ts": 0.0, "items": [], "running": False}
@@ -375,7 +376,7 @@ def fetch_cninfo_stock(code: str, days: int = 7, limit: int = 20) -> list[dict]:
     return out
 
 
-def refresh_watch_stocks(days: int = 7) -> int:
+def refresh_watch_stocks(days: int = KEEP_DAYS_FIN) -> int:
     """给自选里的 A股个股补抓最近公告（新增订阅时触发，也可定时跑）。"""
     w = _watch_codes()
     _secs, stocks = w[0], w[1]
@@ -387,13 +388,13 @@ def refresh_watch_stocks(days: int = 7) -> int:
     items: list[dict] = []
     for c6 in stocks[:40]:
         try:
-            items += fetch_cninfo_stock(c6, days=days)
+            items += fetch_cninfo_stock(c6, days=days, limit=50)
         except Exception:
             continue
         time.sleep(0.25)
     if us_tk:
         try:
-            items += fetch_sec_filings(us_tk, per=5)
+            items += fetch_sec_filings(us_tk, per=60, days=days)
         except Exception:
             pass
     if not items:
@@ -460,8 +461,11 @@ def _sec_ticker_map() -> dict[str, dict]:
     return out
 
 
-def fetch_sec_filings(tickers: list[str], per: int = 5) -> list[dict]:
-    """自选美股的 SEC 财报/重大事项（8-K / 10-Q / 10-K）。"""
+def fetch_sec_filings(tickers: list[str], per: int = 5, days: int = 7) -> list[dict]:
+    """自选美股的 SEC 财报/重大事项（8-K / 10-Q / 10-K）。
+
+    days 控制回溯天数：日常轮询 7 天；自选补抓传 365 以回填一年。
+    """
     tmap = _sec_ticker_map()
     if not tmap:
         return []
@@ -485,10 +489,14 @@ def fetch_sec_filings(tickers: list[str], per: int = 5) -> list[dict]:
         accs = rec.get("accessionNumber") or []
         desc = rec.get("primaryDocDescription") or []
         cik = str(d.get("cik") or info["cik"]).lstrip("0")
+        cutoff = (datetime.now() - timedelta(days=max(1, days))).strftime("%Y-%m-%d")
         n = 0
         for i, form in enumerate(forms):
             if form not in ("8-K", "10-Q", "10-K", "6-K", "20-F"):
                 continue
+            fdate = dates[i] if i < len(dates) else ""
+            if fdate and fdate < cutoff:
+                break
             try:
                 url = (f"https://www.sec.gov/Archives/edgar/data/{cik}/"
                        f"{str(accs[i]).replace('-', '')}/{docs[i]}")
@@ -871,7 +879,18 @@ def _save(items: list[dict]) -> None:
                     for it in items
                 ],
             )
-            conn.execute("DELETE FROM news WHERE ts < ?", (time.time() - KEEP_DAYS * 86400,))
+            now_ts = time.time()
+            conn.execute(
+                "DELETE FROM news WHERE ts < ? AND NOT "
+                "(category='财报' OR source IN ('巨潮公告','SEC公告'))",
+                (now_ts - KEEP_DAYS * 86400,),
+            )
+            conn.execute(
+                "DELETE FROM news WHERE ts < ?",
+                (now_ts - KEEP_DAYS_FIN * 86400,),
+            )
+            conn.execute("DELETE FROM news_stock WHERE news_id NOT IN (SELECT id FROM news)")
+            conn.execute("DELETE FROM news_sector WHERE news_id NOT IN (SELECT id FROM news)")
             # 关联板块
             links = []
             for it in items:
@@ -1079,7 +1098,7 @@ def start_poller(interval: int = 300) -> None:
             # 每 6 轮（约 30 分钟）给自选个股补抓一次公告
             if cycle % 6 == 0:
                 try:
-                    n = refresh_watch_stocks(days=7)
+                    n = refresh_watch_stocks(days=KEEP_DAYS_FIN)
                     if n:
                         print(f"[news] 自选公告补抓 {n} 条", flush=True)
                 except Exception as e:  # noqa: BLE001
