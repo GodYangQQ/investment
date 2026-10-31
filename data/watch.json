@@ -71,16 +71,6 @@
  },
  {
   "market": "cn",
-  "code": "SH603186",
-  "name": "华正新材",
-  "kind": "stock",
-  "tf": "1d",
-  "group": "industry",
-  "w": null,
-  "h": null
- },
- {
-  "market": "cn",
   "code": "SZ002384",
   "name": "东山精密",
   "kind": "stock",
