@@ -175,12 +175,12 @@ padding:6px 12px;border-radius:8px;font-size:17px;cursor:pointer}
  transition:border-color .12s,background .12s,box-shadow .12s}
 /* hover：卡片本身大小不变（hover 命中区不变），另外弹出一个 3 倍的清晰预览 */
 .wcard:hover{border-color:#3c4a59;background:#141c26;box-shadow:0 0 0 1px rgba(74,144,217,.25) inset}
-#peek{position:fixed;z-index:70;pointer-events:none;border-radius:12px;overflow:hidden;
- border:1px solid #3c4a59;background:#0f151d;box-shadow:0 26px 64px rgba(0,0,0,.78);
- opacity:0;visibility:hidden;transform:scale(.94);transform-origin:center center;
- transition:opacity .16s ease,transform .18s cubic-bezier(.2,.8,.3,1),visibility 0s linear .18s}
-#peek.show{opacity:1;visibility:visible;transform:scale(1);
- transition:opacity .16s ease,transform .2s cubic-bezier(.2,.8,.3,1),visibility 0s}
+#peek{position:fixed;inset:0;z-index:70;pointer-events:none;display:flex;align-items:center;
+ justify-content:center;flex-direction:column;gap:14px;background:rgba(5,8,12,.88);
+ opacity:0;visibility:hidden;transition:opacity .16s ease,visibility 0s linear .18s}
+#peek.show{opacity:1;visibility:visible;transition:opacity .16s ease,visibility 0s}
+#peek .pinh{position:relative;border-radius:14px;overflow:hidden;border:1px solid #3c4a59;
+ background:#0f151d;box-shadow:0 30px 80px rgba(0,0,0,.8)}
 #peek .wcard{border:0;border-radius:0;width:100%;height:100%;cursor:default}
 #peek .wcard .wscore,#peek .wcard .whold,#peek .wcard .wzoom,#peek .wcard .wdel{display:none}
 /* 预览里把代码让给名称，避免名字被截断（代码在下面原卡片上也能看到） */
@@ -188,6 +188,11 @@ padding:6px 12px;border-radius:8px;font-size:17px;cursor:pointer}
  align-items:baseline;overflow:visible}
 #peek .wcard .wh .muted{display:none}
 #peek .wcard .wh b{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.3}
+/* 全屏预览底部操作条：唯一能接收鼠标的部分（卡片命中区逻辑不变） */
+#peek .peek-actions{display:flex;gap:10px;pointer-events:auto}
+#peek .peek-actions button{font-size:15px;padding:6px 14px;border-radius:8px;background:#16202b;
+ border:1px solid #33404f;color:#cfe0f2;cursor:pointer}
+#peek .peek-actions button:hover{background:#20304a;color:#fff;border-color:#4d9fff}
 .wcard.sel{border-color:var(--accent);box-shadow:0 0 0 1px rgba(74,144,217,.45) inset}
 .wcard .wscore{border:1px solid #3c5680;background:#18212c;color:#9cc4ef;font-size:14px;
  padding:1px 7px;border-radius:6px;line-height:1.5;opacity:0;visibility:hidden;transition:opacity .12s}
@@ -359,9 +364,9 @@ body.focus main{grid-template-columns:304px 1fr}
   · 图表操作：左键拖拽平移（X+Y）、滚轮缩放（自动适配 Y 轴）、中键平移、双击/「重置视图」恢复。<br>
   · <b>自选</b>：左侧点 ☆ 收藏，右侧「自选」抽屉看迷你图 + 已画线；卡片显示最近的下支撑 / 上压力，
     点卡片切换板块，「放大」看单图专注模式（<code>Esc</code> 退出）。<br>
-  · <b>自选卡片</b>：悬停时弹出 <b>3 倍大小的清晰预览</b>（矢量重排 + K 线按 3 倍像素重绘，
-    卡片本身不变形，鼠标命中区仍是原来那一小块）；左上角标签标明 <b>A股 / 美股</b>；
-    ETF 卡片悬停出现「持仓」按钮，看前 10 大成分股。<br>
+  · <b>自选卡片</b>：悬停弹出 <b>全屏放大预览</b>（内容重新排版 + K 线按真实像素重绘，放大也清晰）；
+    卡片本身不变形，<b>hover 命中区仍是原来那一小块</b>；底部操作条可点「个股评分 / 前10大持仓 / 放大看单图 / 关闭」。
+    左上角标签标明 <b>A股 / 美股</b>。<br>
   · <b>自选板块</b>：鼠标悬停卡片会出现「个股评分」，点击查看该板块<b>评分前50</b>的个股，可按板块标签筛选；
     双击卡片空白处仍是原来的放大/画线逻辑。<br>
   · <b>板块明细</b>：标题栏「板块明细」按钮打开全量列表，点表头可按<b>成交额 / 主力净额 / 涨跌幅 / 量比 / 板块名</b>
@@ -2173,43 +2178,77 @@ function watchType(it) {
   if (/^(15|16|50|51|52|56|58)/.test(c)) return "etf";
   return "stock";
 }
-/* ---------- hover 预览：3 倍尺寸、按真实分辨率重绘（清晰）+ 不接管鼠标 ---------- */
-const PEEK = {timer: 0, scale: 3, hideTimer: 0};
+/* ---------- hover 预览：全屏放大、按真实分辨率重绘（清晰）+ 不接管鼠标 ---------- */
+const PEEK = {showTimer: 0, hideTimer: 0, clearTimer: 0};
 function hidePeek() {
-  clearTimeout(PEEK.timer);
+  clearTimeout(PEEK.showTimer);
+  clearTimeout(PEEK.hideTimer);
   const p = $("#peek");
   if (!p) return;
   p.classList.remove("show");            // 走 160ms 淡出，淡完再清空内容
-  clearTimeout(PEEK.hideTimer);
-  PEEK.hideTimer = setTimeout(() => {
+  clearTimeout(PEEK.clearTimer);
+  PEEK.clearTimer = setTimeout(() => {
     if (!p.classList.contains("show")) p.innerHTML = "";
   }, 220);
+}
+/* 鼠标离开卡片时给 220ms 缓冲：足够移到预览底部的操作条上 */
+function schedulePeekHide() {
+  clearTimeout(PEEK.showTimer);
+  clearTimeout(PEEK.hideTimer);
+  PEEK.hideTimer = setTimeout(hidePeek, 220);
 }
 function showPeek(card) {
   const p = $("#peek");
   if (!p || !card || !card.isConnected) return;
   const r = card.getBoundingClientRect();
   if (!r.width || !r.height) return;
+  if (!card._bars) {   // 数据还没到，稍后再弹（避免弹出个空图）
+    PEEK.showTimer = setTimeout(() => showPeek(card), 400);
+    return;
+  }
   clearTimeout(PEEK.hideTimer);
-  const s = PEEK.scale, W = r.width, H = r.height;
+  const it = card._it || null;
+  const W = r.width, H = r.height;
+  // 全屏铺满：按视口算缩放倍数，内容按真实像素重排/重绘，所以放大也清晰
+  const availW = window.innerWidth - 64;
+  const availH = window.innerHeight - 150;   // 给底部操作条留位置
+  const s = Math.max(2, Math.min(availW / W, availH / H));
   p.innerHTML = "";
-  p.style.width = Math.round(W * s) + "px";
-  p.style.height = Math.round(H * s) + "px";
-  let left = r.left + W / 2 - W * s / 2;
-  let top = r.top + H / 2 - H * s / 2;
-  left = Math.max(8, Math.min(left, window.innerWidth - W * s - 8));
-  top = Math.max(8, Math.min(top, window.innerHeight - H * s - 8));
-  p.style.left = Math.round(left) + "px";
-  p.style.top = Math.round(top) + "px";
+  const box = document.createElement("div");
+  box.className = "pinh";
+  box.style.width = Math.round(W * s) + "px";
+  box.style.height = Math.round(H * s) + "px";
   const holder = document.createElement("div");
-  // zoom 让内容按 3 倍重新排版（文字是矢量放大，不是位图拉伸）；
-  // 画布再用 drawSpark 的 scale 参数把后备像素按 3 倍重画。
   holder.style.cssText = `width:${W}px;height:${H}px;zoom:${s}`;
   const clone = card.cloneNode(true);
   clone.classList.remove("sel");
   holder.appendChild(clone);
-  p.appendChild(holder);
+  box.appendChild(holder);
+  // 操作条（唯一 pointer-events:auto 的区域）
+  const bar = document.createElement("div");
+  bar.className = "peek-actions";
+  const btns = [`<button data-act="close">关闭</button>`,
+    `<button data-act="zoom">放大看单图</button>`];
+  if (it && it.market === "cn" && watchType(it) === "sector") btns.unshift(`<button data-act="score">个股评分</button>`);
+  if (it && watchType(it) === "etf") btns.unshift(`<button data-act="hold">前10大持仓</button>`);
+  bar.innerHTML = btns.join("");
+  p.appendChild(box);
+  p.appendChild(bar);
   p.classList.add("show");
+  bar.addEventListener("mouseenter", () => { clearTimeout(PEEK.showTimer); clearTimeout(PEEK.hideTimer); });
+  bar.addEventListener("mouseleave", hidePeek);
+  bar.querySelectorAll("button[data-act]").forEach(b => {
+    b.onclick = e => {
+      e.stopPropagation();
+      const act = b.dataset.act;
+      if (act === "close") { hidePeek(); return; }
+      if (!it) return;
+      hidePeek();
+      if (act === "score") openScoreRanking(it);
+      else if (act === "hold") openHoldings(it);
+      else openSector(it, true);
+    };
+  });
   const cv = clone.querySelector(".wspark");
   if (cv && card._bars) {
     try { drawSpark(cv, card._bars, card._lines, card._price, s); } catch (e) { /* ignore */ }
@@ -2234,12 +2273,14 @@ async function renderWatch() {
     const el = document.createElement("div");
     el.className = "wcard";
     el.dataset.key = it.market + ":" + it.code;
+    el._it = it;
     el.addEventListener("mouseenter", () => {
-      // 卡片本身不变形（hover 命中区还是原来那一小块），只弹出 3 倍清晰预览
-      clearTimeout(PEEK.timer);
-      PEEK.timer = setTimeout(() => showPeek(el), 90);
+      // 卡片本身不变形（hover 命中区还是原来那一小块），只弹出全屏预览
+      clearTimeout(PEEK.showTimer);
+      clearTimeout(PEEK.hideTimer);
+      PEEK.showTimer = setTimeout(() => showPeek(el), 90);
     });
-    el.addEventListener("mouseleave", hidePeek);
+    el.addEventListener("mouseleave", schedulePeekHide);
     el.addEventListener("click", () => hidePeek());
     el.innerHTML =
       `<div class="wh"><span class="mtag ${it.market === "us" ? "us" : "cn"}">` +

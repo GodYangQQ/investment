@@ -550,11 +550,122 @@ def _strip_tags(s: str) -> str:
     return re.sub(r"<[^>]+>", "", s or "").replace("&nbsp;", " ").strip()
 
 
-_THS_LIST_URLS = [
-    "https://q.10jqka.com.cn/thshy/",
-    "https://q.10jqka.com.cn/thshy/index/field/199112/order/desc/page/2/ajax/1/",
-    "https://q.10jqka.com.cn/thshy/index/field/199112/order/desc/page/3/ajax/1/",
-]
+_THS_LIST_PAGE = "https://q.10jqka.com.cn/thshy/index/field/199112/order/desc/page/{p}/ajax/1/"
+_THS_LIST_MAX_PAGE = 8
+
+
+def fetch_cn_sectors_ths() -> list[dict]:
+    """同花顺行业一览（逐页翻到底，通常 90 个）。东财不可用时兜底。"""
+    rows, seen = [], set()
+    for p in range(1, _THS_LIST_MAX_PAGE + 1):
+        url = "https://q.10jqka.com.cn/thshy/" if p == 1 else _THS_LIST_PAGE.format(p=p)
+        try:
+            r = requests.get(url, headers=_ths_headers(), timeout=12)
+            r.encoding = "gbk"
+            html = r.text
+        except Exception:
+            break
+        new = 0
+        for row in _parse_ths_industry(html):
+            if row["code"] in seen:
+                continue
+            seen.add(row["code"])
+            rows.append(row)
+            new += 1
+        if not new:
+            break
+    return rows
+
+
+# ---------------- 腾讯板块行情（东财不可用时的兜底，概念板块尤其需要） ----------------
+_QQ_RANK = (
+    "https://proxy.finance.qq.com/cgi/cgi-bin/rank/pt/getRank"
+    "?board_type={bt}&sort_type=price&direct=down&offset={off}&count=200"
+)
+_QQ_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/120.0 Safari/537.36",
+    "Referer": "https://gu.qq.com/",
+}
+
+
+def _ths_concept_code_map() -> dict[str, str]:
+    """同花顺概念名 → 代码（881xxx 之外的 3xxxxx），用来把腾讯的概念对齐到同花顺口径。"""
+    hit = _mem_get("ths_concept_codes", 6 * 3600)
+    if hit is not None:
+        return hit
+    out: dict[str, str] = {}
+    try:
+        import contextlib
+        import io
+
+        import akshare as ak
+
+        with contextlib.redirect_stderr(io.StringIO()):
+            df = ak.stock_board_concept_name_ths()
+        for _, r in df.iterrows():
+            code = str(r.get("code") or "").strip()
+            name = str(r.get("name") or "").strip()
+            if code and name:
+                out[_norm_board_name(name)] = "T" + code
+    except Exception:
+        out = {}
+    if out:
+        _mem_set("ths_concept_codes", out)
+    return out
+
+
+def fetch_cn_sectors_qq(kind: str = "concept") -> list[dict]:
+    """腾讯板块行情（概念 805 个 / 行业 31 个），带涨跌幅、成交额、量比、领涨股。"""
+    cache_key = f"qq_sectors:{kind}"
+    hit = _mem_get(cache_key, 120)
+    if hit is not None:
+        return hit
+    bt = "gn" if kind == "concept" else "hy"
+    code_map = _ths_concept_code_map() if kind == "concept" else {}
+    rows, seen = [], set()
+    for off in range(0, 2000, 200):
+        try:
+            r = requests.get(
+                _QQ_RANK.format(bt=bt, off=off), headers=_QQ_HEADERS, timeout=15
+            )
+            data = (r.json() or {}).get("data") or {}
+        except Exception:
+            break
+        items = data.get("rank_list") or []
+        for it in items:
+            name = str(it.get("name") or "").strip()
+            qcode = str(it.get("code") or "").strip()
+            if not name or not qcode:
+                continue
+            code = code_map.get(_norm_board_name(name)) or qcode
+            if code in seen:
+                continue
+            seen.add(code)
+            lzg = it.get("lzg") or {}
+            rows.append(
+                {
+                    "market": "cn",
+                    "code": code,
+                    "name": name,
+                    "price": _num(it.get("zxj"), 0.0),
+                    "pct": _num(it.get("zdf"), 0.0),
+                    # 腾讯 turnover 单位是万元
+                    "amount": (_num(it.get("turnover"), 0.0) or 0.0) * 1e4,
+                    "turnover": _num(it.get("hsl"), None),
+                    "vr": _num(it.get("lb"), None),
+                    "main": None,
+                    "up": None,
+                    "down": None,
+                    "leader": str(lzg.get("name") or ""),
+                    "group": kind,
+                }
+            )
+        if len(items) < 200:
+            break
+    if rows:
+        _mem_set(cache_key, rows)
+    return rows
 
 
 def _parse_ths_industry(html: str) -> list[dict]:
@@ -587,26 +698,6 @@ def _parse_ths_industry(html: str) -> list[dict]:
                 "group": "industry",
             }
         )
-    return rows
-
-
-def fetch_cn_sectors_ths() -> list[dict]:
-    """同花顺行业一览（分页合并，通常 90+ 个）。东财不可用时兜底。"""
-    rows, seen = [], set()
-    for u in _THS_LIST_URLS:
-        try:
-            r = requests.get(u, headers=THS_H, timeout=12)
-            r.encoding = "gbk"
-            html = r.text
-        except Exception:
-            continue
-        for row in _parse_ths_industry(html):
-            if row["code"] in seen:
-                continue
-            seen.add(row["code"])
-            rows.append(row)
-        if len(rows) >= 120:
-            break
     return rows
 
 
@@ -646,6 +737,10 @@ def fetch_cn_sectors(kind: str = "industry") -> tuple[list[dict], str]:
     if not rows and kind == "industry":
         rows = fetch_cn_sectors_ths()
         src = "同花顺"
+    if not rows:
+        # 东财挂掉且同花顺没有该类型（概念）时，用腾讯板块行情兜底
+        rows = fetch_cn_sectors_qq(kind)
+        src = "腾讯" + ("概念" if kind == "concept" else "行业")
     if rows:
         _mem_set(cache_key, (rows, src))
     return rows, src
