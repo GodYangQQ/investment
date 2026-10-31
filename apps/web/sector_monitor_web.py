@@ -1331,11 +1331,11 @@ def _ths_try(nm: str, kind: str):
         with _THS_SEM, contextlib.redirect_stderr(io.StringIO()):
             if kind == "concept":
                 df = ak.stock_board_concept_index_ths(
-                    symbol=nm, start_date="20180101", end_date=end
+                    symbol=nm, start_date="20150101", end_date=end
                 )
             else:
                 df = ak.stock_board_industry_index_ths(
-                    symbol=nm, start_date="20180101", end_date=end
+                    symbol=nm, start_date="20150101", end_date=end
                 )
     except Exception:
         return None

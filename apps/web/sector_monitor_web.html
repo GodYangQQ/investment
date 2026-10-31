@@ -1516,6 +1516,12 @@ document.addEventListener("keydown", e => {
     if (e.key === "Escape") closeHoldings();
     return;
   }
+  // 全屏预览：Esc 关闭（等同点「关闭」按钮）
+  if (e.key === "Escape" && PEEK.mode === "full" && $("#peek").classList.contains("show")) {
+    PEEK.pinned = false;
+    hidePeek();
+    return;
+  }
   if (detailOpen()) {
     if (e.key === "Escape") { closeDetail(); return; }
   }
