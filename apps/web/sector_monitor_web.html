@@ -2425,13 +2425,14 @@ async function renderWatch() {
     el.dataset.key = it.market + ":" + it.code;
     el._it = it;
     el.addEventListener("mouseenter", () => {
+      if (PEEK.pinned) return;      // 全屏预览已打开：底下卡片不再响应 hover
       // hover：只弹 2 倍小窗（无按钮）
       clearTimeout(PEEK.showTimer);
       clearTimeout(PEEK.hideTimer);
       PEEK.card = el;
       PEEK.showTimer = setTimeout(() => showPeekSmall(el), 90);
     });
-    el.addEventListener("mouseleave", schedulePeekHide);
+    el.addEventListener("mouseleave", () => { if (!PEEK.pinned) schedulePeekHide(); });
     el.innerHTML =
       `<div class="wh"><span class="mtag ${it.market === "us" ? "us" : "cn"}">` +
       `${it.market === "us" ? "美股" : "A股"}</span>` +
@@ -2446,6 +2447,7 @@ async function renderWatch() {
       `<button class="wzoom" title="放大这个板块">放大</button>` +
       `<button class="wdel" title="移出自选（删除）">✕</button></div>`;
     el.addEventListener("click", e => {
+      if (PEEK.pinned) return;                                // 全屏时只认全屏里的按钮
       if (Date.now() - (box._suppress || 0) < 320) return;   // 刚拖拽滚动过，别误触
       if (e.target.closest(".wscore")) { openScoreRanking(it); return; }
       if (e.target.closest(".whold")) { openHoldings(it); return; }
@@ -2461,6 +2463,7 @@ async function renderWatch() {
       }, PEEK_CLICK_DELAY);
     });
     el.addEventListener("dblclick", e => {
+      if (PEEK.pinned) return;
       if (e.target.closest(".wdel,.wzoom,.wscore,.whold,.wres")) return;
       clearTimeout(PEEK.clickTimer);          // 双击 = 看线，取消单击的全屏
       hidePeek();
