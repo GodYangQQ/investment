@@ -345,34 +345,63 @@ def fetch_cninfo_stock(code: str, days: int = 7, limit: int = 20) -> list[dict]:
         return []
     end = _dt.now()
     start = end - _td(days=max(1, days))
-    data = {
-        "pageNum": 1, "pageSize": limit, "column": "szse", "tabName": "fulltext",
-        "plate": "", "stock": "", "searchkey": c6, "secid": "", "category": "",
-        "trade": "", "seDate": f"{start:%Y-%m-%d}~{end:%Y-%m-%d}",
-        "sortName": "", "sortType": "", "isHLtitle": "true",
-    }
-    try:
-        import requests
+    import requests
 
-        r = requests.post("http://www.cninfo.com.cn/new/hisAnnouncement/query",
-                          data=data, headers=HEADERS, timeout=TIMEOUT)
-        rows = (r.json() or {}).get("announcements") or []
-    except Exception:
-        return []
-    out = []
-    for it in rows[:limit]:
-        if str(it.get("secCode") or "").strip() != c6:
-            continue
-        title = _clean(it.get("announcementTitle") or "")
-        if not title:
-            continue
-        name = _clean(it.get("secName") or "")
-        url = str(it.get("adjunctUrl") or "")
-        if url and not url.startswith("http"):
-            url = "http://static.cninfo.com.cn/" + url.lstrip("/")
-        out.append({"title": f"{name} {title}".strip()[:180], "url": url,
-                    "source": "巨潮公告", "tier": "official", "lang": "zh",
-                    "ts": _to_ts(it.get("announcementTime") or "")})
+    out: list[dict] = []
+    seen: set[str] = set()
+
+    def _query(w_start, w_end, page: int) -> tuple[list, dict]:
+        data = {
+            "pageNum": page, "pageSize": 30, "column": "szse", "tabName": "fulltext",
+            "plate": "", "stock": "", "searchkey": c6, "secid": "", "category": "",
+            "trade": "", "seDate": f"{w_start:%Y-%m-%d}~{w_end:%Y-%m-%d}",
+            "sortName": "time", "sortType": "desc", "isHLtitle": "true",
+        }
+        for attempt in range(2):
+            try:
+                r = requests.post("http://www.cninfo.com.cn/new/hisAnnouncement/query",
+                                  data=data, headers=HEADERS, timeout=TIMEOUT)
+                d = r.json() or {}
+                rows = d.get("announcements") or []
+            except Exception:
+                rows, d = [], {}
+            if rows:
+                return rows, d
+            time.sleep(0.4)
+        return [], {}
+
+    # 巨潮单次最多返回 30 条，且大区间翻页不稳定：按 3 个月切片回填
+    win_end = end
+    while win_end > start and len(out) < limit:
+        win_start = max(start, win_end - _td(days=92))
+        for page in (1, 2):
+            rows, d = _query(win_start, win_end, page)
+            if not rows:
+                break
+            for it in rows:
+                if str(it.get("secCode") or "").strip() != c6:
+                    continue
+                title = _clean(it.get("announcementTitle") or "")
+                if not title:
+                    continue
+                name = _clean(it.get("secName") or "")
+                url = str(it.get("adjunctUrl") or "")
+                if url and not url.startswith("http"):
+                    url = "http://static.cninfo.com.cn/" + url.lstrip("/")
+                key = f"{title}|{url}"
+                if key in seen:
+                    continue
+                seen.add(key)
+                out.append({"title": f"{name} {title}".strip()[:180], "url": url,
+                            "source": "巨潮公告", "tier": "official", "lang": "zh",
+                            "ts": _to_ts(it.get("announcementTime") or "")})
+                if len(out) >= limit:
+                    return out
+            if not d.get("hasMore"):
+                break
+            time.sleep(0.2)
+        win_end = win_start
+        time.sleep(0.2)
     return out
 
 
@@ -388,7 +417,7 @@ def refresh_watch_stocks(days: int = KEEP_DAYS_FIN) -> int:
     items: list[dict] = []
     for c6 in stocks[:40]:
         try:
-            items += fetch_cninfo_stock(c6, days=days, limit=50)
+            items += fetch_cninfo_stock(c6, days=days, limit=120)
         except Exception:
             continue
         time.sleep(0.25)
