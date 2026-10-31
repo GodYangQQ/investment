@@ -212,12 +212,9 @@ padding:6px 12px;border-radius:8px;font-size:17px;cursor:pointer}
 .wcard{position:relative;box-sizing:border-box;height:100%;
  border:1px solid var(--line);border-radius:10px;padding:8px 10px 7px;background:#111821;
  cursor:pointer;display:flex;flex-direction:column;
- transition:border-color .12s,background .12s,box-shadow .12s,transform .2s cubic-bezier(.2,.8,.3,1);
- transform-origin:center center;will-change:transform}
-/* hover 只高亮；鼠标“停住”后才放大（.zoomed） */
+ transition:border-color .12s,background .12s,box-shadow .12s}
+/* hover 只高亮，不放大 */
 .wcard:hover{border-color:#3c4a59;background:#141c26}
-.wcard.zoomed{transform:scale(2);z-index:6;border-color:#3c4a59;background:#141c26;
- box-shadow:0 18px 40px rgba(0,0,0,.62)}
 .wcard:active{background:#090d12;border-color:#4d9fff}
 #peek{position:fixed;z-index:70;pointer-events:none;
  opacity:0;visibility:hidden;transition:opacity .16s ease,visibility 0s linear .18s}
