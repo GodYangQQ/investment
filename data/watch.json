@@ -1,6 +1,16 @@
 [
  {
   "market": "us",
+  "code": "IGV",
+  "name": "北美科软股ETF",
+  "kind": "industry",
+  "tf": "1d",
+  "group": "semi",
+  "w": null,
+  "h": null
+ },
+ {
+  "market": "us",
   "code": "PL",
   "name": "Planet Labs PBC",
   "kind": "stock",

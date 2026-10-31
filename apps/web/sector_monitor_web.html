@@ -357,15 +357,16 @@ body.side-hidden main{grid-template-columns:0 1fr}
 body.focus main{grid-template-columns:304px 1fr}
 body.focus.side-hidden main{grid-template-columns:0 1fr}
 /* 收起时内容淡出、不响应鼠标，但保留在网格里做宽度动画 */
-aside{transition:opacity .18s ease,padding .22s ease;min-width:0;overflow:hidden}
-body.side-hidden aside{opacity:0;pointer-events:none;border-right-width:0}
+main > aside{transition:opacity .18s ease,padding .22s ease;min-width:0;overflow:hidden}
+body.side-hidden main > aside{opacity:0;pointer-events:none;border-right-width:0}
 /* 右侧小把手：贴着板块区右边缘，收起/展开时平滑移动 */
 .side-handle{position:absolute;z-index:12;top:50%;left:570px;transform:translate(-50%,-50%);
- width:16px;height:52px;padding:0;border-radius:8px;border:1px solid var(--line);
- background:#131b24;color:#9fb0c2;font-size:15px;line-height:1;display:flex;align-items:center;
- justify-content:center;cursor:pointer;transition:left .22s cubic-bezier(.4,0,.2,1),background .12s,color .12s}
-.side-handle:hover{background:#1d2a38;color:#fff;border-color:#3c5680}
-body.side-hidden .side-handle{left:0;transform:translate(0,-50%);border-radius:0 8px 8px 0}
+ width:24px;height:84px;padding:0;border-radius:10px;border:1px solid #33404f;
+ background:#16202b;color:#a8bccf;font-size:22px;line-height:1;display:flex;align-items:center;
+ justify-content:center;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.45);
+ transition:left .22s cubic-bezier(.4,0,.2,1),background .12s,color .12s}
+.side-handle:hover{background:#22303f;color:#fff;border-color:#4d9fff;box-shadow:0 6px 18px rgba(0,0,0,.55)}
+body.side-hidden .side-handle{left:0;transform:translate(0,-50%);border-radius:0 10px 10px 0}
 body.focus .side-handle{left:304px}
 body.focus.side-hidden .side-handle{left:0}
 @media (max-width:860px){ body.focus main{grid-template-columns:1fr;grid-template-rows:44% 56%} }
@@ -2207,6 +2208,8 @@ function closeWatch() {
   $("#watch").classList.remove("open");
   $("#watchBtn").classList.remove("on");
   syncFab();
+  // 抽屉是整屏覆盖层，关掉后按最终尺寸重算一次画布（否则可能被按旧分辨率拉伸而发虚）
+  setTimeout(() => { resize(); requestDraw(); }, 30);
 }
 function tfLabel(tf) {
   const it = TFS.find(([id]) => id === tf);
@@ -3373,6 +3376,16 @@ window.addEventListener("resize", () => {
   if ($("#qsug").classList.contains("show")) sugPos();
   hidePeek();
 });
+/* 画布容器尺寸一变（折叠板块、切专注、抽屉收放）就按新尺寸重建位图，保证清晰 */
+(function watchCanvasSize() {
+  const cw = $("#cw");
+  if (!cw || !("ResizeObserver" in window)) return;
+  let t = 0;
+  new ResizeObserver(() => {
+    clearTimeout(t);
+    t = setTimeout(() => { resize(); requestDraw(); }, 60);
+  }).observe(cw);
+})();
 $("#wlist").addEventListener("scroll", hidePeek, {passive: true});
 $("#sort").addEventListener("change", renderList);
 $("#auto").addEventListener("change", e => { S.auto = e.target.checked; });
@@ -3436,6 +3449,7 @@ setInterval(() => { if (watchOpen()) refreshWatchValues(); }, 10000);
     // 列宽是 220ms 过渡：动画中先重绘一次，结束后再按最终宽度校正
     setTimeout(() => { resize(); requestDraw(); }, 60);
     setTimeout(() => { resize(); requestDraw(); }, 260);
+    setTimeout(() => { resize(); requestDraw(); }, 420);
   }
   $("#sideBtn").onclick = () => setSideHidden(!document.body.classList.contains("side-hidden"));
   if (localStorage.getItem("sm_side_hidden") === "1") setSideHidden(true);
