@@ -1,5 +1,15 @@
 [
  {
+  "market": "us",
+  "code": "PL",
+  "name": "Planet Labs PBC",
+  "kind": "stock",
+  "tf": "1d",
+  "group": "semi",
+  "w": null,
+  "h": null
+ },
+ {
   "market": "cn",
   "code": "T881107",
   "name": "油气开采及服务",

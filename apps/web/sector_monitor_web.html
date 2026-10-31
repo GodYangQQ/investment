@@ -175,6 +175,7 @@ padding:6px 12px;border-radius:8px;font-size:17px;cursor:pointer}
  transition:border-color .12s,background .12s,box-shadow .12s}
 /* hover：卡片本身大小不变（hover 命中区不变），另外弹出一个 3 倍的清晰预览 */
 .wcard:hover{border-color:#3c4a59;background:#141c26;box-shadow:0 0 0 1px rgba(74,144,217,.25) inset}
+.wcard:active{background:#090d12;border-color:#4d9fff}
 #peek{position:fixed;z-index:70;pointer-events:none;
  opacity:0;visibility:hidden;transition:opacity .16s ease,visibility 0s linear .18s}
 #peek.show{opacity:1;visibility:visible;transition:opacity .16s ease,visibility 0s}
@@ -185,7 +186,12 @@ padding:6px 12px;border-radius:8px;font-size:17px;cursor:pointer}
 #peek.full{inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
  gap:14px;background:rgba(5,8,12,.88)}
 #peek .pinh{position:relative;border-radius:12px;overflow:hidden;border:1px solid #3c4a59;
- background:#0f151d;box-shadow:0 30px 80px rgba(0,0,0,.8)}
+ background:#0f151d;box-shadow:0 30px 80px rgba(0,0,0,.8);
+ transition:filter .07s ease,transform .07s ease,box-shadow .12s ease}
+/* 点击反馈：按下去瞬间压暗 + 轻微内缩 */
+#peek.pressed .pinh{filter:brightness(.45) saturate(.7);transform:scale(.97);border-color:#4d9fff}
+/* 已点下、还在等双击判定：加一圈高亮，告诉用户“点到了” */
+#peek.pending .pinh{border-color:#4d9fff;box-shadow:0 0 0 2px rgba(77,159,255,.65),0 30px 80px rgba(0,0,0,.8)}
 #peek.sm .pinh{border:0;border-radius:0;box-shadow:none}
 #peek .wcard{border:0;border-radius:0;width:100%;height:100%;cursor:default}
 #peek .wcard .wscore,#peek .wcard .whold,#peek .wcard .wzoom,#peek .wcard .wdel{display:none}
@@ -2226,7 +2232,7 @@ function hidePeek() {
   PEEK.pinned = false;
   const p = $("#peek");
   if (!p) return;
-  p.classList.remove("show");            // 走 160ms 淡出，淡完再清空内容
+  p.classList.remove("show", "pending", "pressed");            // 走 160ms 淡出，淡完再清空内容
   clearTimeout(PEEK.clearTimer);
   PEEK.clearTimer = setTimeout(() => {
     if (!p.classList.contains("show")) {
@@ -2442,6 +2448,15 @@ async function renderWatch() {
       PEEK.showTimer = setTimeout(() => showPeekSmall(el), 90);
     });
     el.addEventListener("mouseleave", () => { if (!PEEK.pinned) schedulePeekHide(); });
+    // 按下就立刻压暗（不等 click 触发），松开 70ms 后恢复，手感更实
+    el.addEventListener("mousedown", () => {
+      const p = $("#peek");
+      if (p && p.classList.contains("show")) p.classList.add("pressed");
+    });
+    el.addEventListener("mouseup", () => {
+      const p = $("#peek");
+      if (p) setTimeout(() => p.classList.remove("pressed"), 70);
+    });
     el.innerHTML =
       `<div class="wh"><span class="mtag ${it.market === "us" ? "us" : "cn"}">` +
       `${it.market === "us" ? "美股" : "A股"}</span>` +
@@ -2463,10 +2478,19 @@ async function renderWatch() {
       if (e.target.closest(".wdel")) { toggleWatch(it); return; }
       if (e.target.closest(".wzoom")) { openSector(it, true); return; }
       if (e.target.closest(".wres")) return;
-      // 单击：等 1 秒确认不是双击，再进全屏
+      // 点击反馈：按下瞬间压暗一下，随后挂「等待判定」高亮
+      const _p = $("#peek");
+      if (_p && _p.classList.contains("show")) {
+        _p.classList.add("pressed");
+        setTimeout(() => _p.classList.remove("pressed"), 120);
+        _p.classList.add("pending");
+      }
+      // 单击：等 0.5 秒确认不是双击，再进全屏
       clearTimeout(PEEK.clickTimer);
       PEEK.clickTimer = setTimeout(() => {
         setStatus(`全屏预览：${it.name}`);
+        const pv = $("#peek");
+        if (pv) pv.classList.remove("pending");
         PEEK.pinned = true;
         showPeekFull(el);
       }, PEEK_CLICK_DELAY);
@@ -2475,6 +2499,7 @@ async function renderWatch() {
       if (PEEK.pinned) return;
       if (e.target.closest(".wdel,.wzoom,.wscore,.whold,.wres")) return;
       clearTimeout(PEEK.clickTimer);          // 双击 = 看线，取消单击的全屏
+      $("#peek").classList.remove("pending");
       hidePeek();
       openSector(it, true);
     });
