@@ -303,6 +303,13 @@ def db_bars_put(market: str, code: str, tf: str, bars: list[dict], src: str) -> 
                 "VALUES(?,?,?,?,?,?,?,?,?)",
                 [(market, code, tf, b["t"], b["o"], b["h"], b["l"], b["c"], b["v"]) for b in bars],
             )
+            if tf == "1m":
+                # 分时只保留最后一个交易日：写新数据时把更早的分钟线删掉
+                last_day = max(str(b["t"])[:10] for b in bars)
+                conn.execute(
+                    "DELETE FROM bars WHERE market=? AND code=? AND tf='1m' AND substr(ts,1,10) < ?",
+                    (market, code, last_day),
+                )
             conn.execute(
                 "INSERT OR REPLACE INTO meta(key,ts,src) VALUES(?,?,?)",
                 (f"bars:{market}:{code}:{tf}", time.time(), src or ""),
@@ -325,6 +332,13 @@ def db_bars_replace(market: str, code: str, tf: str, bars: list[dict], src: str)
                 "VALUES(?,?,?,?,?,?,?,?,?)",
                 [(market, code, tf, b["t"], b["o"], b["h"], b["l"], b["c"], b["v"]) for b in bars],
             )
+            if tf == "1m":
+                # 分时只保留最后一个交易日：写新数据时把更早的分钟线删掉
+                last_day = max(str(b["t"])[:10] for b in bars)
+                conn.execute(
+                    "DELETE FROM bars WHERE market=? AND code=? AND tf='1m' AND substr(ts,1,10) < ?",
+                    (market, code, last_day),
+                )
             conn.execute(
                 "INSERT OR REPLACE INTO meta(key,ts,src) VALUES(?,?,?)",
                 (f"bars:{market}:{code}:{tf}", time.time(), src or ""),
@@ -2542,6 +2556,17 @@ def _bars_fetch(
     return bars, src
 
 
+def _tail_day(bars: list[dict]) -> list[dict]:
+    """分时只保留最后一个交易日。"""
+    if not bars:
+        return bars
+    try:
+        last = max(str(b.get("t") or "")[:10] for b in bars)
+        return [b for b in bars if str(b.get("t") or "")[:10] == last]
+    except Exception:
+        return bars
+
+
 def bars_payload(
     market: str, code: str, tf: str, name: str = "", kind: str = "industry", retry: bool = False
 ) -> dict:
@@ -2593,7 +2618,7 @@ def bars_payload(
             "code": code,
             "name": name,
             "tf": tf,
-            "bars": bars,
+            "bars": _tail_day(bars) if tf == "1m" else bars,
             "src": (meta or {}).get("src", ""),
             "count": len(bars),
             "time": datetime.now().strftime("%H:%M:%S"),
@@ -2630,7 +2655,7 @@ def bars_payload(
         "code": code,
         "name": name,
         "tf": tf,
-        "bars": bars,
+        "bars": _tail_day(bars) if tf == "1m" else bars,
         "src": (meta or {}).get("src", ""),
         "count": len(bars),
         "time": datetime.now().strftime("%H:%M:%S"),
