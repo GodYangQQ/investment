@@ -2052,6 +2052,7 @@ $("#list").addEventListener("click", e => {
 
 /* ===================== 选择 / 加载 ===================== */
 async function selectSector(rec) {
+  NEWS.cur = null;                 // 手动切板块后，新闻回到「跟随主图」
   S.code = rec.code;
   S.name = rec.name;
   S.akind = rec.kind || S.kind;
@@ -2354,8 +2355,8 @@ function syncFab() {
   btn.style.display = watchOpen() ? "none" : "";
 }
 /* ---------- 事件 / 新闻 ---------- */
-const NEWS = {items: [], cat: "", onlyCur: false, minLevel: 0, loading: false, pending: false,
-  timer: 0, updated: 0};
+const NEWS = {items: [], cat: "", onlyCur: false, cur: null, minLevel: 0, loading: false,
+  pending: false, timer: 0, updated: 0};
 function newsOpen() { return $("#news").classList.contains("open"); }
 function renderNews() {
   const box = $("#nlist");
@@ -2413,11 +2414,17 @@ async function loadNews(refresh) {
   if (NEWS.loading) return;
   NEWS.loading = true;
   try {
-    const useCur = NEWS.onlyCur && S.code;
-    const isStock = useCur && (S.akind === "stock" || /^(SH|SZ|BJ)/.test(String(S.code)) && !String(S.code).startsWith("T"));
+    // 从自选卡片预览点「全部」时，NEWS.cur 指向那张卡片，而不是当前主图选中项
+    const cur = NEWS.cur || (S.code ? {market: S.market, code: S.code, kind: S.akind, name: S.name} : null);
+    const useCur = NEWS.onlyCur && cur && cur.code;
+    const curCode = useCur ? String(cur.code) : "";
+    const curMkt = (cur && cur.market) || S.market;
+    const isStock = useCur && (cur.kind === "stock" || /^(SH|SZ|BJ)/.test(curCode));
+    const curQ = isStock ? `stock=${encodeURIComponent(curCode)}`
+      : (curMkt === "cn" ? `code=${encodeURIComponent(curCode)}` : "");
     const d = await api(`/api/news?limit=300` +
       (NEWS.cat ? `&category=${encodeURIComponent(NEWS.cat)}` : "") +
-      (useCur ? (isStock ? `&stock=${encodeURIComponent(S.code)}` : `&code=${encodeURIComponent(S.code)}`) : "") +
+      (curQ ? `&${curQ}` : "") +
       (NEWS.minLevel ? `&level=${NEWS.minLevel}` : "") +
       (NEWS.cat === "财报" ? "&watch=1" : "") +
       (refresh ? "&refresh=1" : ""));
@@ -2837,6 +2844,7 @@ async function fillPeekNews(p, it) {
     row.querySelector(".pk-more").onclick = () => {
       PEEK.pinned = false;
       hidePeek();
+      NEWS.cur = {market: mkt, code: String(it.code), kind: it.kind || "industry", name: it.name || ""};
       NEWS.onlyCur = true;
       openNews();
     };
@@ -3954,7 +3962,12 @@ setInterval(() => { if (watchOpen()) refreshWatchValues(); }, 10000);
   $("#nClose").onclick = closeNews;
   $("#nback").onclick = () => { closeNews(); setFocus(false); };
   $("#nRefresh").onclick = () => loadNews(true);
-  $("#nCur").onclick = () => { NEWS.onlyCur = !NEWS.onlyCur; syncNewsCur(); loadNews(); };
+  $("#nCur").onclick = () => {
+    NEWS.cur = null;
+    NEWS.onlyCur = !NEWS.onlyCur;
+    syncNewsCur();
+    loadNews();
+  };
   $("#nLv").onclick = () => {
     NEWS.minLevel = NEWS.minLevel ? 0 : 2;
     $("#nLv").classList.toggle("on", !!NEWS.minLevel);
