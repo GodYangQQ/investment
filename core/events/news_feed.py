@@ -73,6 +73,11 @@ def _conn() -> sqlite3.Connection:
                title TEXT, url TEXT, lang TEXT, importance REAL, fetched REAL)"""
     )
     conn.execute("CREATE INDEX IF NOT EXISTS idx_news_ts ON news(ts DESC)")
+    for col, typ in (("level", "INTEGER"), ("cluster", "TEXT"), ("sources_n", "INTEGER")):
+        try:
+            conn.execute(f"ALTER TABLE news ADD COLUMN {col} {typ}")
+        except Exception:
+            pass
     conn.execute(
         """CREATE TABLE IF NOT EXISTS news_sector(
                news_id TEXT, market TEXT, code TEXT, name TEXT,
@@ -216,7 +221,58 @@ def fetch_usgs(min_mag: float = 4.5) -> list[dict]:
     return out
 
 
+def fetch_eia() -> list[dict]:
+    """EIA Today in Energy（能源政策/油价/库存评论）。"""
+    return fetch_rss("https://www.eia.gov/rss/todayinenergy.xml", "EIA", tier="official", lang="en", limit=15)
+
+
+def fetch_fao_giews() -> list[dict]:
+    """FAO GIEWS：粮食预警（HTML 列表，抓标题+链接）。"""
+    out = []
+    try:
+        import re as _re
+        r = _get("https://www.fao.org/giews/en/")
+        txt = r.text
+        for m in _re.finditer(r'<a[^>]+href="([^"]+)"[^>]*>([^<]{15,140})</a>', txt):
+            href, title = m.group(1), _clean(m.group(2))
+            if not title or len(title) < 15:
+                continue
+            if not href.startswith("http"):
+                href = "https://www.fao.org" + ("" if href.startswith("/") else "/") + href
+            out.append({"title": title, "url": href, "source": "FAO GIEWS",
+                        "tier": "official", "lang": "en", "ts": time.time()})
+            if len(out) >= 12:
+                break
+    except Exception:
+        return []
+    return out
+
+
+def fetch_cma_alerts() -> list[dict]:
+    """中国气象局预警（nmc.cn）：红/橙/黄 级别预警。"""
+    out = []
+    try:
+        import re as _re
+        r = _get("http://www.nmc.cn/publish/alarm.html")
+        r.encoding = r.apparent_encoding or "utf-8"
+        txt = r.text
+        for m in _re.finditer(r"<li[^>]*>\s*<a[^>]*href=\"([^\"]+)\"[^>]*>(.*?)</a>", txt, _re.S):
+            href, title = m.group(1), _clean(m.group(2))
+            if not title or len(title) < 6:
+                continue
+            if href.startswith("/"):
+                href = "http://www.nmc.cn" + href
+            out.append({"title": title, "url": href, "source": "气象局预警",
+                        "tier": "official", "lang": "zh", "ts": time.time()})
+            if len(out) >= 12:
+                break
+    except Exception:
+        return []
+    return out
+
+
 SOURCES = [
+    ("EIA", fetch_eia),
     ("东财快讯", lambda: fetch_em_kuaixun()),
     ("新浪财经", lambda: fetch_rss("https://rss.sina.com.cn/roll/finance/hot_roll.xml", "新浪财经")),
     ("新浪国际", lambda: fetch_rss("https://rss.sina.com.cn/news/world/focus15.xml", "新浪国际")),
@@ -324,6 +380,80 @@ def _match_sectors(title: str, index: list[dict]) -> list[dict]:
     return hits
 
 
+# ---------------- 事件聚类 & 注意力级别 ----------------
+_GLOBAL_KW = ["全球", "世界", "国际", "global", "world", "international"]
+_NATION_KW = ["全国", "国家", "national", "nationwide", "联邦"]
+_LONG_KW = ["持续", "长期", "多年", "season", "long-term", "蔓延", "escalat"]
+
+
+def _cluster(items: list[dict]) -> None:
+    """把同一事件的多条新闻归到一个 cluster（标题相似度 ≥0.82 且 12 小时内）。"""
+    from difflib import SequenceMatcher
+
+    items.sort(key=lambda x: -(x.get("ts") or 0))
+    reps: list[dict] = []
+    for it in items:
+        title = (it.get("title") or "")[:120]
+        hit = None
+        for rep in reps:
+            if abs((it.get("ts") or 0) - (rep.get("ts") or 0)) > 12 * 3600:
+                continue
+            if SequenceMatcher(None, title, (rep.get("title") or "")[:120]).ratio() >= 0.82:
+                hit = rep
+                break
+        if hit is None:
+            it["cluster"] = it["id"]
+            it["sources_n"] = 1
+            reps.append(it)
+        else:
+            hit["sources_n"] = int(hit.get("sources_n") or 1) + 1
+            it["cluster"] = hit["cluster"]
+            it["sources_n"] = 0            # 0 = 聚类里的非代表条目，前端可折叠
+
+
+def _level(it: dict) -> int:
+    """注意力级别 L0-L4：分数 + 硬门控。"""
+    title = (it.get("title") or "")
+    t = title.lower()
+    score = float(it.get("importance") or 1.4)
+    score += 0.4 * max(0, min(int(it.get("sources_n") or 1) - 1, 3))     # 多源确认
+    if any(k in t for k in _GLOBAL_KW):
+        score += 0.6
+    elif any(k in t for k in _NATION_KW):
+        score += 0.3
+    if any(k in t for k in _LONG_KW):
+        score += 0.3
+
+    lv = 4 if score >= 5.4 else 3 if score >= 4.4 else 2 if score >= 3.5 else 1 if score >= 2.6 else 0
+
+    # 硬门控：客观量级直接提级
+    import re as _re
+
+    m = _re.search(r"\bm\s*([3-9](?:\.\d)?)\b|震级\s*([3-9](?:\.\d)?)", t)
+    if m:
+        mag = float(m.group(1) or m.group(2))
+        if mag >= 7.5:
+            lv = max(lv, 4)
+        elif mag >= 6.5:
+            lv = max(lv, 3)
+
+    gates = [
+        (["pheic", "pandemic", "大流行", "pandemic", "who declares"], 3),
+        (["宣战", "战争升级", "全面战争", "invasion", "nuclear", "核武"], 3),
+        (["封锁海峡", "航道封锁", "strait closed", "苏伊士", "红海"], 3),
+        (["出口管制", "制裁名单", "sanction", "entity list", "关税"], 2),
+        (["红色预警", "red alert", "最高级别"], 2),
+        (["台风", "飓风", "hurricane", "typhoon", "洪水", "地震", "海啸"], 1),
+    ]
+    for kws, floor in gates:
+        if any(k in t for k in kws):
+            lv = max(lv, floor)
+
+    if int(it.get("sources_n") or 1) >= 3:
+        lv = max(lv, 2)
+    return min(4, lv)
+
+
 def _fingerprint(title: str) -> str:
     key = re.sub(r"[^a-z0-9\u4e00-\u9fff]", "", str(title or "").lower())[:80]
     return hashlib.md5(key.encode("utf-8")).hexdigest()[:16]
@@ -359,11 +489,12 @@ def _save(items: list[dict]) -> None:
         with _LOCK:
             conn = _conn()
             conn.executemany(
-                "INSERT OR REPLACE INTO news(id,ts,source,tier,category,title,url,lang,importance,fetched)"
-                " VALUES(?,?,?,?,?,?,?,?,?,?)",
+                "INSERT OR REPLACE INTO news(id,ts,source,tier,category,title,url,lang,importance,fetched,"
+                "level,cluster,sources_n) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 [
                     (it["id"], it["ts"], it["source"], it["tier"], it["category"],
-                     it["title"], it["url"], it["lang"], it["importance"], time.time())
+                     it["title"], it["url"], it["lang"], it["importance"], time.time(),
+                     it.get("level", 0), it.get("cluster", it["id"]), it.get("sources_n", 1))
                     for it in items
                 ],
             )
@@ -388,7 +519,8 @@ def load_news(limit: int = 200, category: str = "", q: str = "", hours: int = 0,
               code: str = "") -> list[dict]:
     try:
         conn = _conn()
-        sql = "SELECT id,ts,source,tier,category,title,url,lang,importance FROM news"
+        sql = ("SELECT id,ts,source,tier,category,title,url,lang,importance,"
+               "ifnull(level,0),ifnull(cluster,id),ifnull(sources_n,1) FROM news")
         args: list = []
         where = []
         if category:
@@ -401,7 +533,8 @@ def load_news(limit: int = 200, category: str = "", q: str = "", hours: int = 0,
             where.append("ts > ?")
             args.append(time.time() - hours * 3600)
         if code:
-            sql = ("SELECT n.id,n.ts,n.source,n.tier,n.category,n.title,n.url,n.lang,n.importance "
+            sql = ("SELECT n.id,n.ts,n.source,n.tier,n.category,n.title,n.url,n.lang,n.importance,"
+                   "ifnull(n.level,0),ifnull(n.cluster,n.id),ifnull(n.sources_n,1) "
                    "FROM news n JOIN news_sector s ON s.news_id=n.id WHERE s.code=?")
             args = [str(code)]
             if category:
@@ -413,7 +546,8 @@ def load_news(limit: int = 200, category: str = "", q: str = "", hours: int = 0,
             conn.close()
             return [
                 {"id": r[0], "ts": r[1], "source": r[2], "tier": r[3], "category": r[4],
-                 "title": r[5], "url": r[6], "lang": r[7], "importance": r[8]}
+                 "title": r[5], "url": r[6], "lang": r[7], "importance": r[8],
+                 "level": r[9], "cluster": r[10], "sources_n": r[11]}
                 for r in rows
             ]
         if where:
@@ -426,7 +560,8 @@ def load_news(limit: int = 200, category: str = "", q: str = "", hours: int = 0,
         return []
     return [
         {"id": r[0], "ts": r[1], "source": r[2], "tier": r[3], "category": r[4],
-         "title": r[5], "url": r[6], "lang": r[7], "importance": r[8]}
+         "title": r[5], "url": r[6], "lang": r[7], "importance": r[8],
+         "level": r[9], "cluster": r[10], "sources_n": r[11]}
         for r in rows
     ]
 
@@ -448,6 +583,9 @@ def _collect() -> None:
         it["importance"] = _score(it)
         it["ts"] = float(it.get("ts") or now)
         it["sectors"] = _match_sectors(it["title"], index) if index else []
+    _cluster(items)
+    for it in items:
+        it["level"] = _level(it)
     _save(items)
     _MEM["ts"] = now
     _MEM["items"] = items
@@ -473,15 +611,20 @@ def kick_refresh(force: bool = False) -> bool:
     return True
 
 
-def state(limit: int = 200, category: str = "", q: str = "", code: str = "") -> dict:
+def state(limit: int = 200, category: str = "", q: str = "", code: str = "",
+          min_level: int = 0) -> dict:
     """给接口用：立即返回库里数据，同时判断是否需要后台刷新。"""
     kick_refresh(False)
     counts: dict[str, int] = {}
     for r in load_news(limit=800):
         counts[r["category"]] = counts.get(r["category"], 0) + 1
+    rows = load_news(limit=limit, category=category, q=q, code=code)
+    if min_level:
+        rows = [r for r in rows if int(r.get("level") or 0) >= min_level]
     return {
-        "items": load_news(limit=limit, category=category, q=q, code=code),
+        "items": rows,
         "counts": counts,
+        "levels": {str(l): sum(1 for r in load_news(limit=800) if int(r.get("level") or 0) == l) for l in range(5)},
         "pending": _MEM["running"],
         "updated": _MEM["ts"],
     }

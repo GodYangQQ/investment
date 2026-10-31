@@ -177,6 +177,12 @@ background:#18212c;box-shadow:-4px 0 14px rgba(0,0,0,.35)}
 .nrow .nti .cat.市场{color:#7fd6c6;border-color:#1f5a52;background:#10201f}
 .nrow .nti .cat.灾害{color:#ffb37a;border-color:#5c4029;background:#221a12}
 .nrow .nti .imp{color:#ffb84d;font-size:12px;margin-left:6px}
+.nrow .lv{font-size:11.5px;font-weight:700;padding:0 4px;border-radius:4px;margin-right:5px;
+ border:1px solid #33404f;color:#7d8b9a;vertical-align:1px}
+.nrow .lv.lv1{color:#8fa6bd;border-color:#33404f}
+.nrow .lv.lv2{color:#7fd6c6;border-color:#1f5a52;background:#10201f}
+.nrow .lv.lv3{color:#ffd479;border-color:#5f4f22;background:#221d10}
+.nrow .lv.lv4{color:#fff;border-color:#8a3b3b;background:#5a1f1f}
 .nempty{padding:40px;text-align:center;color:#7d8b9a;font-size:15px}
 /* 自选：全屏面板（一行卡片 · 横向拖动 · 独立改宽高 · 双击放大） */
 .drawer{position:fixed;inset:0;z-index:40;background:#0b0f14;display:none;flex-direction:column}
@@ -571,6 +577,7 @@ body.focus.side-hidden .side-handle{left:0}
       <button data-nc="灾害">灾害</button>
     </div>
     <button id="nCur" title="只看与当前板块相关的新闻">当前板块</button>
+    <button id="nLv" title="只看重大事件（L2 及以上）">重大 L2+</button>
     <span class="sp"></span>
     <button id="nRefresh" title="立即刷新">刷新</button>
     <button id="nClose">关闭</button>
@@ -2324,7 +2331,7 @@ function syncFab() {
   btn.style.display = watchOpen() ? "none" : "";
 }
 /* ---------- 事件 / 新闻 ---------- */
-const NEWS = {items: [], cat: "", onlyCur: false, loading: false, pending: false, timer: 0};
+const NEWS = {items: [], cat: "", onlyCur: false, minLevel: 0, loading: false, pending: false, timer: 0};
 function newsOpen() { return $("#news").classList.contains("open"); }
 function renderNews() {
   const box = $("#nlist");
@@ -2344,8 +2351,10 @@ function renderNews() {
     return `<div class="nrow" data-url="${esc(it.url || "")}" title="${esc(it.source)}">` +
       `<span class="nt">${when}</span>` +
       `<span class="ns">${esc(it.source)}</span>` +
-      `<span class="nti"><span class="cat ${esc(it.category)}">${esc(it.category)}</span>${esc(it.title)}` +
-      (imp ? `<span class="imp">${imp}</span>` : "") + `</span></div>`;
+      `<span class="nti"><span class="lv lv${it.level || 0}">L${it.level || 0}</span>` +
+      `<span class="cat ${esc(it.category)}">${esc(it.category)}</span>${esc(it.title)}` +
+      (imp ? `<span class="imp">${imp}</span>` : "") +
+      (it.sources_n > 1 ? `<span class="imp" title="多家来源">×${it.sources_n}</span>` : "") + `</span></div>`;
   }).join("");
   box.querySelectorAll(".nrow").forEach(el => {
     el.onclick = () => {
@@ -2363,6 +2372,7 @@ async function loadNews(refresh) {
     const d = await api(`/api/news?limit=300` +
       (NEWS.cat ? `&category=${encodeURIComponent(NEWS.cat)}` : "") +
       (useCur ? `&code=${encodeURIComponent(S.code)}` : "") +
+      (NEWS.minLevel ? `&level=${NEWS.minLevel}` : "") +
       (refresh ? "&refresh=1" : ""));
     NEWS.items = d.items || [];
     NEWS.pending = !!d.pending;
@@ -3826,6 +3836,11 @@ setInterval(() => { if (watchOpen()) refreshWatchValues(); }, 10000);
   $("#nback").onclick = () => { closeNews(); setFocus(false); };
   $("#nRefresh").onclick = () => loadNews(true);
   $("#nCur").onclick = () => { NEWS.onlyCur = !NEWS.onlyCur; syncNewsCur(); loadNews(); };
+  $("#nLv").onclick = () => {
+    NEWS.minLevel = NEWS.minLevel ? 0 : 2;
+    $("#nLv").classList.toggle("on", !!NEWS.minLevel);
+    loadNews();
+  };
   $("#ntabs").addEventListener("click", e => {
     const b = e.target.closest("button[data-nc]");
     if (!b) return;
