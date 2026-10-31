@@ -1,6 +1,36 @@
 [
  {
   "market": "cn",
+  "code": "SZ159928",
+  "name": "消费ETF汇添富",
+  "kind": "stock",
+  "tf": "1d",
+  "group": "industry",
+  "w": null,
+  "h": null
+ },
+ {
+  "market": "cn",
+  "code": "SH600785",
+  "name": "新华百货",
+  "kind": "stock",
+  "tf": "1d",
+  "group": "industry",
+  "w": null,
+  "h": null
+ },
+ {
+  "market": "cn",
+  "code": "SH511010",
+  "name": "国债ETF国泰",
+  "kind": "stock",
+  "tf": "1d",
+  "group": "industry",
+  "w": null,
+  "h": null
+ },
+ {
+  "market": "cn",
   "code": "T881140",
   "name": "化学制药",
   "kind": "industry",

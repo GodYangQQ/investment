@@ -225,8 +225,9 @@ _DB: sqlite3.Connection | None = None
 _DB_LOCK = threading.RLock()
 
 _POOL = ThreadPoolExecutor(max_workers=4, thread_name_prefix="smw")
+_FG_POOL = ThreadPoolExecutor(max_workers=8, thread_name_prefix="smw-fg")
 _HOLD_POOL = ThreadPoolExecutor(max_workers=2, thread_name_prefix="hold")
-_INFLIGHT: set[str] = set()
+_INFLIGHT: dict[str, float] = {}   # key -> 开始时间，防止卡死任务永久占用
 _INFLIGHT_LOCK = threading.Lock()
 _BARS_LOCKS: dict[str, threading.Lock] = {}
 _BARS_LOCKS_GUARD = threading.Lock()
@@ -394,12 +395,14 @@ def db_prune() -> None:
         pass
 
 
-def _submit_once(key: str, fn):
+def _submit_once(key: str, fn, pool=None):
     """同一 key 同时只跑一个抓取（single-flight），返回 Future 或 None。"""
+    now = time.time()
     with _INFLIGHT_LOCK:
-        if key in _INFLIGHT:
+        started = _INFLIGHT.get(key)
+        if started and now - started < 120:      # 卡住超过 2 分钟允许重试
             return None
-        _INFLIGHT.add(key)
+        _INFLIGHT[key] = now
 
     def _run():
         try:
@@ -408,9 +411,9 @@ def _submit_once(key: str, fn):
             pass
         finally:
             with _INFLIGHT_LOCK:
-                _INFLIGHT.discard(key)
+                _INFLIGHT.pop(key, None)
 
-    return _POOL.submit(_run)
+    return (pool or _POOL).submit(_run)
 
 
 def _spawn_once(key: str, fn) -> bool:
@@ -2227,7 +2230,10 @@ def cn_stock_bars(code: str, tf: str, tail: int | None = None) -> tuple[list[dic
     if df is None or df.empty:
         df = _sina_cn_kline(sym, 240, tail or MAX_BARS)
         src = "新浪日线"
-    if df is None or df.empty or len(df) < 1000:
+    is_etf = re.sub(r"^(SH|SZ|BJ)", "", str(code).upper()).startswith(
+        ("15", "16", "50", "51", "52", "56", "58"))
+    # ETF 的新浪数据就是全历史，不必再等 akshare（它的请求没有超时，容易卡住线程池）
+    if df is None or df.empty or (len(df) < 1000 and not is_etf):
         ak_rows = _ak_stock_bars(code)
         if ak_rows:
             return ak_rows, "akshare日线"
@@ -2695,7 +2701,9 @@ def bars_payload(
         )
     pending = False
     if not bars:  # 首次访问：最多等 2.5s，超时就后台继续抓
-        fut = _submit_once(bkey, lambda: _bars_fetch(market, code, tf, name, kind, retry))
+        # 首次访问走独立池：后台预取卡住时，用户点开仍能立刻抓
+        fut = _submit_once("fg:" + bkey, lambda: _bars_fetch(market, code, tf, name, kind, retry),
+                           pool=_FG_POOL)
         if fut is not None:
             try:
                 fut.result(timeout=2.5)
