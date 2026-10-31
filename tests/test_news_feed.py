@@ -28,3 +28,13 @@ def test_decay_keeps_week_old_items_alive():
 def test_categorize_cn_reports():
     assert nf._categorize("生益科技2025年年度报告") == "财报"
     assert nf._categorize("兆易创新2026年第三季度报告") == "财报"
+
+
+def test_market_relevance_gate():
+    ctx = {"sector_kw": ["半导体"], "stock_names": {"长鑫科技"}, "us": {"AMD"}}
+    assert nf._market_relevant("A股今日放量上涨", ctx)
+    assert nf._market_relevant("长鑫科技前三季度净利润1320亿元", ctx)
+    assert nf._market_relevant("AMD 发布财报", ctx)
+    assert nf._market_relevant("半导体板块大涨", ctx)          # 主题 + 语境
+    assert not nf._market_relevant("人工智能医生诊断更准确", ctx)  # 只有主题，不算股票
+    assert not nf._market_relevant("黑神话悟空游戏评测", ctx)

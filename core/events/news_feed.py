@@ -20,12 +20,16 @@ from __future__ import annotations
 import hashlib
 import html
 import json
+import os
 import re
+import socket
 import sqlite3
 import threading
 import time
 import xml.etree.ElementTree as ET
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta, timezone
+from urllib.parse import urlsplit
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 
@@ -138,11 +142,50 @@ def _score(item: dict) -> float:
     return round(base * (1 + 0.25 * hits) * decay, 3)
 
 
-# ---------------- 各数据源 ----------------
-def _get(url: str, **kw):
+# ---------------- 代理（外网源需要，国内源直连） ----------------
+_PROXY: dict = {"done": False, "val": None}
+
+
+def _probe_proxy() -> dict | None:
+    """优先环境变量，其次常见本地/局域网代理；都没有就直连。"""
+    cands = [
+        os.environ.get("NEWS_PROXY") or "",
+        os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy") or "",
+        os.environ.get("HTTP_PROXY") or os.environ.get("http_proxy") or "",
+        "http://127.0.0.1:7890",
+        "http://192.168.11.228:7897",
+    ]
+    for c in cands:
+        c = (c or "").strip()
+        if not c:
+            continue
+        if "://" not in c:
+            c = "http://" + c
+        try:
+            u = urlsplit(c)
+            with socket.create_connection((u.hostname, u.port or 80), timeout=0.2):
+                return {"http": c, "https": c}
+        except Exception:
+            continue
+    return None
+
+
+def _proxy() -> dict | None:
+    if not _PROXY["done"]:
+        _PROXY["val"] = _probe_proxy()
+        _PROXY["done"] = True
+    return _PROXY["val"]
+
+
+def _get(url: str, use_proxy: bool = False, **kw):
     import requests
 
-    return requests.get(url, headers=HEADERS, timeout=TIMEOUT, **kw)
+    hdr = kw.pop("headers", None) or {}
+    if use_proxy:
+        p = _proxy()
+        if p:
+            kw.setdefault("proxies", p)
+    return requests.get(url, headers={**HEADERS, **hdr}, timeout=TIMEOUT, **kw)
 
 
 # 便于测试替换
@@ -203,9 +246,10 @@ def _parse_rss(xml_text: str, source: str, tier: str, lang: str, limit: int = 40
     return out
 
 
-def fetch_rss(url: str, source: str, tier: str = "tier1", lang: str = "zh", limit: int = 40) -> list[dict]:
+def fetch_rss(url: str, source: str, tier: str = "tier1", lang: str = "zh", limit: int = 40,
+              use_proxy: bool = False) -> list[dict]:
     try:
-        r = _get(url)
+        r = _get(url, use_proxy=use_proxy)
         if r.status_code != 200:
             return []
         return _parse_rss(r.text, source, tier, lang, limit)
@@ -602,17 +646,512 @@ def fetch_cma_alerts() -> list[dict]:
 
 # 说明：新浪国际/人民网/WSJ 的 RSS 内容是几年前的老条目（实测最新也有 500~2900 天前），
 # 在 5 天保留窗口下会被立刻清掉，只会白耗时间，所以不接。
+# ---------------- 市场相关性门控（热榜/综合媒体用） ----------------
+MARKET_KW = [
+    "股票", "股市", "A股", "港股", "美股", "IPO", "上市", "退市", "财报", "业绩", "营收", "净利润",
+    "预告", "并购", "重组", "回购", "增持", "减持", "分红", "停牌", "复牌", "涨停", "跌停",
+    "北向", "融资", "融券", "基金", "ETF", "债券", "国债", "利率", "降息", "加息", "美联储",
+    "央行", "降准", "CPI", "PPI", "GDP", "PMI", "通胀", "汇率", "人民币", "美元", "关税",
+    "制裁", "出口管制", "实体清单", "贸易战", "地缘", "原油", "油价", "黄金", "金价",
+    "铜价", "锂价", "大宗商品", "房地产", "楼市", "监管", "反垄断", "解禁",
+    "股价", "股东", "市值", "市盈率", "估值",
+]
+
+# 行业主题词：单独出现（如「人工智能医生」）不算股票新闻，需要叠加市场语境
+THEME_KW = ["芯片", "半导体", "光刻", "算力", "人工智能", "AI", "新能源", "光伏", "储能",
+            "锂电", "电动车", "汽车", "医药", "集采", "创新药", "军工", "银行", "券商", "保险",
+            "消费", "白酒", "旅游", "航空", "航运", "港口", "煤炭", "电力", "钢铁", "化工",
+            "稀土", "农业", "粮食", "猪价", "白银", "英伟达", "特斯拉", "苹果", "微软", "谷歌",
+            "亚马逊", "台积电", "三星", "OpenAI"]
+CONTEXT_KW = ["政策", "公司", "行业", "市场", "价格", "涨价", "降价", "涨", "跌", "出口", "进口",
+              "产量", "需求", "供给", "产能", "订单", "投资", "补贴", "利润", "板块", "龙头",
+              "销量", "份额", "收购", "上市", "融资", "股东", "美元", "盎司", "期货", "库存"]
+_EN_KW = [
+    "stock", "stocks", "shares", "earnings", "revenue", "profit", "guidance", "ipo", "merger",
+    "acquisition", "buyback", "dividend", "tariff", "sanctions", "fed", "rate cut", "rate hike",
+    "inflation", "cpi", "gdp", "oil", "gold", "copper", "lithium", "semiconductor", "chip",
+    "nvidia", "tesla", "apple", "microsoft", "google", "amazon", "tsmc", "openai",
+    "recession", "default", "bankruptcy",
+]
+
+
+def _relevance_ctx(sector_index: list[dict], stock_index: list[dict]) -> dict:
+    """预构建一次，避免每条新闻都扫 5000 只股票。"""
+    _watch_secs, _stks, us = _watch_codes()
+    watched = set(_watch_secs)
+    sector_kw: set[str] = set()
+    for sec in sector_index or []:
+        if str(sec.get("code") or "") not in watched:
+            continue
+        name = str(sec.get("name") or "").strip()
+        if name:
+            sector_kw.add(name)
+        for k in SECTOR_ALIAS.get(name, []) or []:
+            if k:
+                sector_kw.add(str(k))
+    stock_names = {
+        str(it.get("name") or "").strip()
+        for it in stock_index or []
+        if len(str(it.get("name") or "").strip()) >= 3
+    }
+    return {
+        "sector_kw": [k for k in sector_kw if len(k) >= 2],
+        "stock_names": stock_names,
+        "us": {t.upper() for t in us},
+    }
+
+
+def _market_relevant(title: str, ctx: dict) -> bool:
+    """标题是否和股票市场有关：关键词 / 自选 / 股票名 / 板块 / 美股 ticker。"""
+    t = str(title or "")
+    if not t:
+        return False
+    tl = t.lower()
+    if any(k in t for k in MARKET_KW):
+        return True
+    if any(k in t for k in THEME_KW) and any(k in t for k in CONTEXT_KW):
+        return True
+    for k in _EN_KW:
+        if re.search(rf"(?<![a-z0-9]){re.escape(k)}(?![a-z0-9])", tl):
+            return True
+    for name in ctx["stock_names"]:
+        if name not in t:
+            continue
+        # 3 字股票名容易误伤（如「老百姓」「理想」），要求标题里有市场语境
+        if len(name) >= 4 or any(k in t for k in CONTEXT_KW):
+            return True
+    for k in ctx["sector_kw"]:
+        if k.lower() in tl:
+            return True
+    for tk in ctx["us"]:
+        if re.search(rf"(?<![A-Za-z0-9]){re.escape(tk)}(?![A-Za-z0-9])", t):
+            return True
+    return False
+
+
+# ---------------- 新增数据源：气候/环境/媒体/热榜 ----------------
+def _item(title: str, url: str, source: str, tier: str = "tier1", lang: str = "zh",
+          ts: float | None = None, gate: bool = False, hot: bool = False) -> dict:
+    it = {
+        "title": _clean(title)[:180], "url": url, "source": source,
+        "tier": tier, "lang": lang, "ts": float(ts or time.time()),
+    }
+    if gate:
+        it["_gate"] = True
+    if hot:
+        it["_hot"] = True
+    return it
+
+
+_GDACS = {"ts": 0.0, "items": []}
+
+
+def fetch_gdacs(limit: int = 15) -> list[dict]:
+    now = time.time()
+    if _GDACS["items"] and now - _GDACS["ts"] < 1800:
+        return _GDACS["items"][:limit]
+    items = fetch_rss("https://www.gdacs.org/xml/rss.xml", "GDACS", tier="official", lang="en", limit=limit)
+    if items:
+        _GDACS["ts"], _GDACS["items"] = now, items
+    return items
+
+
+def fetch_eonet(limit: int = 10) -> list[dict]:
+    try:
+        ev = (_get("https://eonet.gsfc.nasa.gov/api/v3/events?status=open&days=7").json() or {}).get("events") or []
+    except Exception:
+        return []
+    out = []
+    for e in ev[:limit]:
+        cats = e.get("categories") or [{}]
+        geo = e.get("geometry") or [{}]
+        ts = _to_ts(geo[-1].get("date") or "") if geo else time.time()
+        out.append(_item(f"{cats[0].get('title') or '自然事件'} · {e.get('title') or ''}",
+                         e.get("link") or "", "NASA EONET", tier="official", lang="en", ts=ts))
+    return out
+
+
+def fetch_noaa(limit: int = 15) -> list[dict]:
+    try:
+        r = _get("https://api.weather.gov/alerts/active",
+                 use_proxy=True,
+                 params={"status": "actual", "message_type": "alert", "severity": "Severe,Extreme"})
+        feats = (r.json() or {}).get("features") or []
+    except Exception:
+        return []
+    out = []
+    for f in feats[:limit]:
+        p = f.get("properties") or {}
+        title = f"{p.get('event') or ''} · {p.get('headline') or p.get('areaDesc') or ''}".strip(" ·")
+        out.append(_item(title, p.get("uri") or "https://www.weather.gov/", "NOAA",
+                         tier="official", lang="en", ts=_to_ts(p.get("onset") or p.get("sent") or "")))
+    return out
+
+
+_NMC = {"ts": 0.0, "items": []}
+_NMC_TYPES = ("台风", "暴雨", "暴雪", "寒潮", "大风", "沙尘暴", "干旱", "高温", "冰雹", "雷电", "道路结冰")
+
+
+def fetch_nmc_alerts(limit: int = 12) -> list[dict]:
+    """中央气象台预警：只留高影响类型 + 红/橙色（蓝黄太多，会淹没新闻流）。"""
+    now = time.time()
+    if _NMC["items"] and now - _NMC["ts"] < 600:
+        return _NMC["items"][:limit]
+    try:
+        d = _get("http://www.nmc.cn/rest/findAlarm",
+                 params={"pageNo": 1, "pageSize": 500, "signaltype": "", "signallevel": "", "province": ""}).json() or {}
+        rows = ((d.get("data") or {}).get("page") or {}).get("list") or []
+    except Exception:
+        return []
+    out = []
+    for it in rows:
+        title = str(it.get("title") or "")
+        if not title or not any(k in title for k in ("红色", "橙色")):
+            continue
+        if not any(k in title for k in _NMC_TYPES):
+            continue
+        out.append(_item(title, "http://www.nmc.cn" + str(it.get("url") or ""), "中央气象台",
+                         tier="official", ts=_to_ts(it.get("issuetime") or "")))
+        if len(out) >= limit:
+            break
+    _NMC["ts"], _NMC["items"] = now, out
+    return out
+
+
+def _html_list(text: str, base: str, must: tuple[str, ...], source: str, limit: int) -> list[dict]:
+    out = []
+    for m in re.finditer(r'<a[^>]+href="([^"]+)"[^>]*>(.*?)</a>', text, re.S | re.I):
+        href, raw = m.group(1), m.group(2)
+        title = _clean(re.sub(r"<[^>]+>", "", raw))
+        if len(title) < 8 or len(title) > 120:
+            continue
+        if must and not any(k in href for k in must):
+            continue
+        url = href if href.startswith("http") else base + href.lstrip("/")
+        out.append(_item(title, url, source, tier="official"))
+        if len(out) >= limit:
+            break
+    return out
+
+
+def fetch_mee(limit: int = 10) -> list[dict]:
+    try:
+        r = _get("https://www.mee.gov.cn/ywdt/xwfb/")
+        return _html_list(r.content.decode("utf-8", "ignore"), "https://www.mee.gov.cn/",
+                          ("/ywdt/", "/2026"), "生态环境部", limit)
+    except Exception:
+        return []
+
+
+def fetch_mem(limit: int = 10) -> list[dict]:
+    try:
+        r = _get("https://www.mem.gov.cn/xw/yjglbgzdt/")
+        return _html_list(r.content.decode("utf-8", "ignore"), "https://www.mem.gov.cn/",
+                          ("/xw/", "/2026"), "应急管理部", limit)
+    except Exception:
+        return []
+
+
+def fetch_bbc(limit: int = 20) -> list[dict]:
+    # World 是综合新闻 → 需要股票相关性门控；Business 本来就和市场相关 → 直接放行
+    out = [dict(x, _gate=True) for x in
+           fetch_rss("https://feeds.bbci.co.uk/news/world/rss.xml", "BBC", limit=limit,
+                     lang="en", use_proxy=True)]
+    out += fetch_rss("https://feeds.bbci.co.uk/news/business/rss.xml", "BBC", limit=10,
+                     lang="en", use_proxy=True)
+    return out
+
+
+def fetch_guardian(limit: int = 20) -> list[dict]:
+    return fetch_rss("https://www.theguardian.com/uk/business/rss", "Guardian", limit=limit,
+                     lang="en", use_proxy=True)
+
+
+def fetch_nyt(limit: int = 20) -> list[dict]:
+    return fetch_rss("https://rss.nytimes.com/services/xml/rss/nyt/Business.xml", "NYT",
+                     limit=limit, lang="en", use_proxy=True)
+
+
+def fetch_aljazeera(limit: int = 15) -> list[dict]:
+    out = fetch_rss("https://www.aljazeera.com/xml/rss/all.xml", "Al Jazeera", limit=limit,
+                    lang="en", use_proxy=True)
+    for x in out:
+        x["_gate"] = True
+    return out
+
+
+def fetch_un_news(limit: int = 15) -> list[dict]:
+    out = fetch_rss("https://news.un.org/feed/subscribe/en/news/all/rss.xml", "UN News",
+                    tier="official", limit=limit, lang="en", use_proxy=True)
+    for x in out:
+        x["_gate"] = True
+    return out
+
+
+def fetch_carbon_brief(limit: int = 15) -> list[dict]:
+    return fetch_rss("https://www.carbonbrief.org/feed/", "Carbon Brief", limit=limit,
+                     lang="en", use_proxy=True)
+
+
+def fetch_cctv(limit: int = 40) -> list[dict]:
+    try:
+        txt = _get("https://news.cctv.com/2019/07/gaiban/cmsdatainterface/page/news_1.jsonp?callback=news").content.decode(
+            "utf-8", "ignore")
+        m = re.search(r"news\((.*)\)\s*;?\s*$", txt, re.S)
+        rows = (((json.loads(m.group(1)) if m else {}).get("data") or {}).get("list")) or []
+    except Exception:
+        return []
+    out = []
+    for it in rows[:limit]:
+        out.append(_item(it.get("title") or "", it.get("url") or "", "央视新闻",
+                         ts=_to_ts(it.get("focus_date") or ""), gate=True))
+    return out
+
+
+def fetch_thepaper(limit: int = 20) -> list[dict]:
+    try:
+        d = (_get("https://cache.thepaper.cn/contentapi/wwwIndex/rightSidebar").json() or {}).get("data") or {}
+    except Exception:
+        return []
+    rows = list(d.get("hotNews") or []) + list(d.get("financialInformationNews") or [])
+    out = []
+    for it in rows[:limit]:
+        cid = it.get("contId")
+        if not cid or not it.get("name"):
+            continue
+        out.append(_item(it.get("name") or "", f"https://www.thepaper.cn/newsDetail_forward_{cid}",
+                         "澎湃新闻", ts=(it.get("pubTimeLong") or 0) / 1000 or None, gate=True))
+    return out
+
+
+def fetch_wallstreetcn(limit: int = 30) -> list[dict]:
+    try:
+        items = ((_get("https://api-one.wallstcn.com/apiv1/content/lives?channel=global-channel&limit=50").json()
+                  or {}).get("data") or {}).get("items") or []
+    except Exception:
+        return []
+    out = []
+    for it in items[:limit]:
+        text = _clean(it.get("content_text") or it.get("content") or "")
+        if not text:
+            continue
+        out.append(_item(text, it.get("uri") or "https://wallstreetcn.com/livenews",
+                         "华尔街见闻", ts=it.get("display_time")))
+    return out
+
+
+def fetch_sina7x24(limit: int = 30) -> list[dict]:
+    try:
+        d = _get("https://zhibo.sina.com.cn/api/zhibo/feed",
+                 params={"page": 1, "page_size": 50, "zhibo_id": 152, "tag_id": 0, "dire": "f", "dpc": 1}).json() or {}
+        rows = (((d.get("result") or {}).get("data") or {}).get("feed") or {}).get("list") or []
+    except Exception:
+        return []
+    out = []
+    for it in rows[:limit]:
+        text = _clean(it.get("rich_text") or "")
+        if not text:
+            continue
+        out.append(_item(text, "https://finance.sina.com.cn/7x24/", "新浪财经",
+                         ts=_to_ts(it.get("create_time") or "")))
+    return out
+
+
+# ---- 股票热榜（本身就是股票，不过滤） ----
+def fetch_ths_hot(limit: int = 30) -> list[dict]:
+    try:
+        d = _get("https://dq.10jqka.com.cn/fuyao/hot_list_data/out/hot_list/v1/stock"
+                 "?stock_type=a&type=hour&list_type=normal").json() or {}
+        rows = (d.get("data") or {}).get("stock_list") or []
+    except Exception:
+        return []
+    out = []
+    for it in rows[:limit]:
+        code = str(it.get("code") or "")
+        name = str(it.get("name") or "")
+        if not code or not name:
+            continue
+        reason = _clean(it.get("analyse_title") or it.get("analyse") or "")[:80]
+        title = f"{name}（{code}）" + (f" · {reason}" if reason else "")
+        out.append(_item(title, f"https://stockpage.10jqka.com.cn/{code}/", "同花顺热榜",
+                         tier="tier1", hot=True))
+    return out
+
+
+def fetch_em_hot(limit: int = 30) -> list[dict]:
+    # 东财人气榜是 POST 接口
+    try:
+        import requests
+
+        d = requests.post(
+            "https://emappdata.eastmoney.com/stockrank/getAllCurrentList",
+            headers={**HEADERS, "Content-Type": "application/json"},
+            json={"appId": "appId01", "globalId": "786e4c21-70dc-435a-93bb-38",
+                  "marketType": "", "pageNo": 1, "pageSize": max(20, limit)},
+            timeout=TIMEOUT,
+        ).json() or {}
+        rows = d.get("data") or []
+    except Exception:
+        return []
+    idx = {str(x.get("code")): x.get("name") for x in _stock_index()}
+    out = []
+    for it in rows[:limit]:
+        sc = str(it.get("sc") or "")
+        c6 = re.sub(r"\D", "", sc)[-6:]
+        name = idx.get(c6) or sc
+        out.append(_item(f"{name}（{c6}） · 东财人气榜第{it.get('rk')}名",
+                         f"https://guba.eastmoney.com/list,{c6}.html", "东财人气榜",
+                         tier="tier1", hot=True))
+    return out
+
+
+# ---- 社会热榜（需要市场相关性门控） ----
+def _hot_item(title: str, url: str, source: str, ts: float | None = None) -> dict:
+    return _item(title, url, source, tier="other", ts=ts, gate=True, hot=True)
+
+
+def fetch_weibo_hot(limit: int = 50) -> list[dict]:
+    try:
+        d = _get("https://weibo.com/ajax/side/hotSearch", use_proxy=False,
+                 headers={**HEADERS, "Referer": "https://weibo.com/"}).json() or {}
+        rows = (d.get("data") or {}).get("realtime") or []
+    except Exception:
+        return []
+    out = []
+    for it in rows[:limit]:
+        if it.get("is_ad"):
+            continue
+        word = it.get("word") or it.get("note") or ""
+        if not word:
+            continue
+        from urllib.parse import quote
+
+        out.append(_hot_item(word, f"https://s.weibo.com/weibo?q=%23{quote(word)}%23", "微博热搜"))
+    return out
+
+
+def fetch_zhihu_hot(limit: int = 50) -> list[dict]:
+    try:
+        rows = (_get("https://api.zhihu.com/topstory/hot-lists/total?limit=50").json() or {}).get("data") or []
+    except Exception:
+        return []
+    out = []
+    for it in rows[:limit]:
+        tg = it.get("target") or {}
+        title = tg.get("title") or ""
+        if not title:
+            continue
+        out.append(_hot_item(title, f"https://www.zhihu.com/question/{tg.get('id')}", "知乎热榜"))
+    return out
+
+
+def fetch_bilibili_hot(limit: int = 30) -> list[dict]:
+    try:
+        d = _get("https://api.bilibili.com/x/web-interface/search/square?limit=50",
+                 headers={**HEADERS, "Referer": "https://www.bilibili.com/"}).json() or {}
+        rows = ((d.get("data") or {}).get("trending") or {}).get("list") or []
+    except Exception:
+        return []
+    from urllib.parse import quote
+
+    out = []
+    for it in rows[:limit]:
+        title = it.get("show_name") or it.get("keyword") or ""
+        if not title:
+            continue
+        out.append(_hot_item(title, f"https://search.bilibili.com/all?keyword={quote(title)}", "B站热搜"))
+    return out
+
+
+def fetch_douyin_hot(limit: int = 30) -> list[dict]:
+    try:
+        d = _get("https://www.iesdouyin.com/web/api/v2/hotsearch/billboard/word/").json() or {}
+        rows = d.get("word_list") or []
+    except Exception:
+        return []
+    from urllib.parse import quote
+
+    out = []
+    for it in rows[:limit]:
+        word = it.get("word") or ""
+        if not word:
+            continue
+        out.append(_hot_item(word, f"https://www.douyin.com/search/{quote(word)}", "抖音热榜"))
+    return out
+
+
+def fetch_toutiao_hot(limit: int = 30) -> list[dict]:
+    try:
+        rows = (_get("https://www.toutiao.com/hot-event/hot-board/?origin=toutiao_pc").json() or {}).get("data") or []
+    except Exception:
+        return []
+    out = []
+    for it in rows[:limit]:
+        title = it.get("Title") or ""
+        if not title:
+            continue
+        out.append(_hot_item(title, it.get("Url") or "", "头条热榜"))
+    return out
+
+
+def fetch_baidu_hot(limit: int = 30) -> list[dict]:
+    try:
+        t = _get("https://top.baidu.com/board?tab=realtime").text
+        m = re.search(r"<!--s-data:(.*?)-->", t, re.S)
+        cards = ((json.loads(m.group(1)) if m else {}).get("data") or {}).get("cards") or []
+        rows = (cards[0].get("content") if cards else []) or []
+    except Exception:
+        return []
+    out = []
+    for it in rows[:limit]:
+        word = it.get("word") or it.get("query") or ""
+        if not word:
+            continue
+        out.append(_hot_item(word, it.get("appUrl") or it.get("url") or "", "百度热搜"))
+    return out
+
+
 SOURCES = [
+    # 中文财经/公告（直连）
     ("同花顺快讯", lambda: fetch_ths_flash()),
     ("金十快讯", lambda: fetch_jin10()),
     ("巨潮公告", lambda: fetch_cninfo()),
     ("EIA", fetch_eia),
     ("东财快讯", lambda: fetch_em_kuaixun()),
+    ("华尔街见闻", fetch_wallstreetcn),
+    ("新浪财经", fetch_sina7x24),
+    ("澎湃新闻", fetch_thepaper),
+    ("央视新闻", fetch_cctv),
+    # 国际财经/官方（需代理时自动走代理）
     ("CNBC", lambda: fetch_rss("https://www.cnbc.com/id/100003114/device/rss/rss.html", "CNBC", lang="en", limit=25)),
+    ("MarketWatch", lambda: fetch_rss("https://feeds.marketwatch.com/marketwatch/topstories/", "MarketWatch", lang="en", limit=20)),
+    ("BBC", fetch_bbc),
+    ("Guardian", fetch_guardian),
+    ("NYT", fetch_nyt),
+    ("Al Jazeera", fetch_aljazeera),
+    # 气候 / 环境 / 灾害
+    ("GDACS", fetch_gdacs),
+    ("NASA EONET", fetch_eonet),
+    ("NOAA", fetch_noaa),
+    ("UN News", fetch_un_news),
+    ("Carbon Brief", fetch_carbon_brief),
+    ("中央气象台", fetch_nmc_alerts),
+    ("生态环境部", fetch_mee),
+    ("应急管理部", fetch_mem),
     ("WHO", lambda: fetch_rss("https://www.who.int/rss-feeds/news-english.xml", "WHO", tier="official", lang="en", limit=15)),
     ("CDC", lambda: fetch_rss("https://tools.cdc.gov/api/v2/resources/media/132608.rss", "CDC", tier="official", lang="en", limit=15)),
     ("FAO", lambda: fetch_rss("https://www.fao.org/feeds/fao-newsroom-rss", "FAO", tier="official", lang="en", limit=15)),
     ("USGS", lambda: fetch_usgs()),
+    # 股票热榜（不过滤）
+    ("同花顺热榜", fetch_ths_hot),
+    ("东财人气榜", fetch_em_hot),
+    # 社会热榜（只保留和股票相关的）
+    ("微博热搜", fetch_weibo_hot),
+    ("知乎热榜", fetch_zhihu_hot),
+    ("B站热搜", fetch_bilibili_hot),
+    ("抖音热榜", fetch_douyin_hot),
+    ("头条热榜", fetch_toutiao_hot),
+    ("百度热搜", fetch_baidu_hot),
 ]
 
 
@@ -1044,11 +1583,14 @@ def load_news(limit: int = 200, category: str = "", q: str = "", hours: int = 0,
 def _collect() -> None:
     """真正抓一轮：多源 → 去重 → 分类打分 → 落库。"""
     collected: list[dict] = []
-    for _name, fn in SOURCES:
-        try:
-            collected += fn() or []
-        except Exception:
-            continue
+    # 源多了以后串行太慢：并行抓，单个源失败不影响其他源
+    with ThreadPoolExecutor(max_workers=10) as ex:
+        futs = {ex.submit(fn): name for name, fn in SOURCES}
+        for fut in as_completed(futs):
+            try:
+                collected += fut.result() or []
+            except Exception:
+                continue
     try:
         w = _watch_codes()
         us_tk = w[2] if len(w) > 2 else []
@@ -1060,9 +1602,15 @@ def _collect() -> None:
     items = _dedupe(collected)
     now = time.time()
     index = _sector_index()
+    stock_idx = _stock_index()
+    # 社会热榜 / 综合媒体：只保留和股票市场相关的条目（默认隐藏无关项）
+    ctx = _relevance_ctx(index, stock_idx)
+    items = [it for it in items if not it.get("_gate") or _market_relevant(it["title"], ctx)]
     for it in items:
         it["id"] = _fingerprint(it["title"])
         it["category"] = _categorize(it["title"])
+        if it.get("_hot"):
+            it["category"] = "热榜"
         it["importance"] = _score(it)
         it["ts"] = float(it.get("ts") or now)
         it["sectors"] = _match_sectors(it["title"], index) if index else []
@@ -1070,7 +1618,7 @@ def _collect() -> None:
             it["stocks"] = [{"code": it["_ticker"], "name": it["_ticker"]}]
             it["category"] = "财报"
         else:
-            it["stocks"] = _match_stocks(it["title"], _stock_index())
+            it["stocks"] = _match_stocks(it["title"], stock_idx)
         # 自选美股 ticker 也参与关联（CNBC 等英文新闻里的 AMD/AVGO…）
         if us_tk and not it.get("_ticker"):
             have = {x["code"] for x in it.get("stocks") or []}
@@ -1092,6 +1640,24 @@ def _collect() -> None:
                     continue
             kept.append(it)
         items = kept
+
+    # 热榜每轮都会抓到同一条：保留首次出现时间，否则会一直霸占新闻流顶部
+    hot_ids = [it["id"] for it in items if it.get("_hot")]
+    if hot_ids:
+        old: dict[str, float] = {}
+        try:
+            conn = _conn()
+            for i in range(0, len(hot_ids), 400):
+                chunk = hot_ids[i:i + 400]
+                q = ",".join("?" * len(chunk))
+                for nid, ts in conn.execute(f"SELECT id, ts FROM news WHERE id IN ({q})", chunk):
+                    old[nid] = float(ts or 0)
+            conn.close()
+        except Exception:
+            old = {}
+        for it in items:
+            if it.get("_hot") and it["id"] in old:
+                it["ts"] = old[it["id"]]
 
     _cluster(items)
     for it in items:
