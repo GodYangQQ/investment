@@ -3214,8 +3214,30 @@ class Handler(BaseHTTPRequestHandler):
                             "h": int(it.get("h") or 0) or None,
                         }
                     )
+                old_stocks = {
+                    re.sub(r"\D", "", str(x.get("code") or ""))[-6:].zfill(6)
+                    for x in (load_watch_db() or [])
+                    if x.get("market") != "us" and str(x.get("kind")) not in ("industry", "concept")
+                }
                 save_watch_db(clean)
-                self._json({"ok": True, "n": len(clean)})
+                new_stocks = {
+                    re.sub(r"\D", "", str(x.get("code") or ""))[-6:].zfill(6)
+                    for x in clean
+                    if x.get("market") != "us" and str(x.get("kind")) not in ("industry", "concept")
+                }
+                added = new_stocks - old_stocks
+                if added:
+                    # 新增订阅：后台立刻补这只票的公告/财报
+                    def _warm_news():
+                        try:
+                            from core.events import news_feed
+
+                            n = news_feed.refresh_watch_stocks(days=7)
+                            print(f"[news] 新增自选补抓 {sorted(added)} → {n} 条", flush=True)
+                        except Exception as e:  # noqa: BLE001
+                            print(f"[news] 新增自选补抓失败: {e}", flush=True)
+                    threading.Thread(target=_warm_news, daemon=True, name="watch-news").start()
+                self._json({"ok": True, "n": len(clean), "news_added": sorted(added)})
             except Exception as e:
                 self._json({"ok": False, "error": str(e)[:120]}, 400)
             return

@@ -334,6 +334,80 @@ def fetch_cninfo(limit: int = 60) -> list[dict]:
     return out
 
 
+def fetch_cninfo_stock(code: str, days: int = 7, limit: int = 20) -> list[dict]:
+    """按股票代码抓巨潮公告（新增自选时用）。"""
+    from datetime import datetime as _dt
+    from datetime import timedelta as _td
+
+    c6 = re.sub(r"\D", "", str(code))[-6:]
+    if not c6:
+        return []
+    end = _dt.now()
+    start = end - _td(days=max(1, days))
+    data = {
+        "pageNum": 1, "pageSize": limit, "column": "szse", "tabName": "fulltext",
+        "plate": "", "stock": "", "searchkey": c6, "secid": "", "category": "",
+        "trade": "", "seDate": f"{start:%Y-%m-%d}~{end:%Y-%m-%d}",
+        "sortName": "", "sortType": "", "isHLtitle": "true",
+    }
+    try:
+        import requests
+
+        r = requests.post("http://www.cninfo.com.cn/new/hisAnnouncement/query",
+                          data=data, headers=HEADERS, timeout=TIMEOUT)
+        rows = (r.json() or {}).get("announcements") or []
+    except Exception:
+        return []
+    out = []
+    for it in rows[:limit]:
+        if str(it.get("secCode") or "").strip() != c6:
+            continue
+        title = _clean(it.get("announcementTitle") or "")
+        if not title:
+            continue
+        name = _clean(it.get("secName") or "")
+        url = str(it.get("adjunctUrl") or "")
+        if url and not url.startswith("http"):
+            url = "http://static.cninfo.com.cn/" + url.lstrip("/")
+        out.append({"title": f"{name} {title}".strip()[:180], "url": url,
+                    "source": "巨潮公告", "tier": "official", "lang": "zh",
+                    "ts": _to_ts(it.get("announcementTime") or "")})
+    return out
+
+
+def refresh_watch_stocks(days: int = 7) -> int:
+    """给自选里的 A股个股补抓最近公告（新增订阅时触发，也可定时跑）。"""
+    _secs, stocks = _watch_codes()
+    if not stocks:
+        return 0
+    index = _stock_index()
+    idx_map = {it["code"]: it for it in index}
+    items: list[dict] = []
+    for c6 in stocks[:40]:
+        try:
+            items += fetch_cninfo_stock(c6, days=days)
+        except Exception:
+            continue
+        time.sleep(0.25)
+    if not items:
+        return 0
+    items = _dedupe(items)
+    now = time.time()
+    sector_index = _sector_index()
+    for it in items:
+        it["id"] = _fingerprint(it["title"])
+        it["category"] = _categorize(it["title"])
+        it["importance"] = _score(it)
+        it["ts"] = float(it.get("ts") or now)
+        it["sectors"] = _match_sectors(it["title"], sector_index)
+        it["stocks"] = _match_stocks(it["title"], index)
+        it["level"] = _level(it)
+        it.setdefault("cluster", it["id"])
+        it.setdefault("sources_n", 1)
+    _save(items)
+    return len(items)
+
+
 def fetch_eia() -> list[dict]:
     """EIA Today in Energy（能源政策/油价/库存评论）。"""
     return fetch_rss("https://www.eia.gov/rss/todayinenergy.xml", "EIA", tier="official", lang="en", limit=15)
@@ -791,6 +865,20 @@ def _collect() -> None:
         it["ts"] = float(it.get("ts") or now)
         it["sectors"] = _match_sectors(it["title"], index) if index else []
         it["stocks"] = _match_stocks(it["title"], _stock_index())
+    # 财报 / 公司公告：只保留与自选（板块或个股）相关的
+    secs, stks = _watch_codes()
+    watch_sec, watch_stk = set(secs), set(stks)
+    if watch_sec or watch_stk:
+        kept = []
+        for it in items:
+            if it.get("category") == "财报" or it.get("source") == "巨潮公告":
+                codes = {x["code"] for x in it.get("stocks") or []}
+                scodes = {x["code"] for x in it.get("sectors") or []}
+                if not (codes & watch_stk or scodes & watch_sec):
+                    continue
+            kept.append(it)
+        items = kept
+
     _cluster(items)
     for it in items:
         it["level"] = _level(it)
