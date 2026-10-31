@@ -198,11 +198,29 @@ padding:6px 12px;border-radius:8px;font-size:17px;cursor:pointer}
 #peek .wcard .wl{flex-wrap:nowrap;overflow:hidden}
 /* 小预览右下角提示 */
 #peek .peek-hint{display:none}
-/* 全屏预览底部操作条：唯一能接收鼠标的部分（卡片命中区逻辑不变） */
-#peek .peek-actions{display:flex;gap:10px;pointer-events:auto}
+/* 操作条：唯一能接收鼠标的部分（卡片命中区逻辑不变） */
+#peek .peek-actions{display:flex;gap:10px;pointer-events:auto;justify-content:center}
 #peek .peek-actions button{font-size:15px;padding:6px 14px;border-radius:8px;background:#16202b;
- border:1px solid #33404f;color:#cfe0f2;cursor:pointer}
+ border:1px solid #33404f;color:#cfe0f2;cursor:pointer;font-family:inherit}
 #peek .peek-actions button:hover{background:#20304a;color:#fff;border-color:#4d9fff}
+#peek .peek-actions .pk-close{font-size:17px;font-weight:700;padding:8px 26px;
+ background:#2a3a4e;border-color:#4d9fff;color:#fff;letter-spacing:1px}
+#peek .peek-actions .pk-close:hover{background:#3a5b7d}
+/* 1.5 倍小窗：操作条贴底盖在卡片页脚上 */
+#peek .peek-actions.sm{position:absolute;left:0;right:0;bottom:0;height:34px;padding:0 8px;gap:6px;
+ align-items:center;background:#0d1319;border-top:1px solid rgba(60,74,89,.6)}
+#peek .peek-actions.sm button{font-size:12.5px;padding:3px 9px}
+#peek .peek-actions.sm .pk-close{font-size:13px;padding:4px 14px}
+/* 全屏：所属板块 / 持有该股的 ETF */
+#peek .peek-info{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;
+ max-width:min(1080px,94vw);pointer-events:auto}
+#peek .peek-info .pk-lb{font-size:13px;color:#7d8b9a}
+#peek .peek-info .pk-dim{font-size:13px;color:#67727e}
+#peek .pk-tag{font-size:13.5px;padding:3px 11px;border-radius:7px;cursor:pointer;font-family:inherit;
+ border:1px solid;background:#141d27}
+#peek .pk-tag.sector{color:#9cc4ef;border-color:#2d4a6b}
+#peek .pk-tag.etf{color:#7fd6c6;border-color:#1f5a52}
+#peek .pk-tag:hover{filter:brightness(1.3)}
 .wcard.sel{border-color:var(--accent);box-shadow:0 0 0 1px rgba(74,144,217,.45) inset}
 .wcard .wscore{border:1px solid #3c5680;background:#18212c;color:#9cc4ef;font-size:14px;
  padding:1px 7px;border-radius:6px;line-height:1.5;opacity:0;visibility:hidden;transition:opacity .12s}
@@ -2189,7 +2207,8 @@ function watchType(it) {
   return "stock";
 }
 /* ---------- hover 预览：先 1.5 倍小窗，悬停满 3 秒切全屏 ---------- */
-const PEEK = {showTimer: 0, hideTimer: 0, clearTimer: 0, fullTimer: 0, mode: "", card: null};
+const PEEK = {showTimer: 0, hideTimer: 0, clearTimer: 0, fullTimer: 0, mode: "", card: null,
+  pinned: false, info: null, infoFor: "", retry: 0};
 const PEEK_SMALL = 1.5;
 const PEEK_FULL_AFTER = 3000;
 
@@ -2198,6 +2217,7 @@ function hidePeek() {
   clearTimeout(PEEK.hideTimer);
   clearTimeout(PEEK.fullTimer);
   PEEK.mode = "";
+  PEEK.pinned = false;
   const p = $("#peek");
   if (!p) return;
   p.classList.remove("show");            // 走 160ms 淡出，淡完再清空内容
@@ -2212,6 +2232,7 @@ function hidePeek() {
 }
 /* 鼠标离开卡片时给 220ms 缓冲：足够移到预览的操作条上 */
 function schedulePeekHide() {
+  if (PEEK.pinned) return;          // 全屏后不跟随鼠标，只能点「关闭」
   clearTimeout(PEEK.showTimer);
   clearTimeout(PEEK.fullTimer);
   clearTimeout(PEEK.hideTimer);
@@ -2239,42 +2260,128 @@ function peekCard(card, s) {
   return {box, W, H, s};
 }
 
+function peekActions(it, full) {
+  const bar = document.createElement("div");
+  bar.className = "peek-actions" + (full ? "" : " sm");
+  const btns = [];
+  if (it && watchType(it) === "etf") btns.push(`<button data-act="hold">前10大持仓</button>`);
+  if (it && it.market === "cn" && watchType(it) === "sector") btns.push(`<button data-act="score">个股评分</button>`);
+  btns.push(`<button data-act="zoom">放大看单图</button>`);
+  btns.push(`<button data-act="close" class="pk-close">关闭</button>`);
+  bar.innerHTML = btns.join("");
+  bar.addEventListener("mouseenter", () => {
+    clearTimeout(PEEK.showTimer);
+    clearTimeout(PEEK.hideTimer);
+    clearTimeout(PEEK.fullTimer);
+  });
+  bar.addEventListener("mouseleave", () => { if (!PEEK.pinned) schedulePeekHide(); });
+  bar.querySelectorAll("button[data-act]").forEach(b => {
+    b.onclick = e => {
+      e.stopPropagation();
+      const act = b.dataset.act;
+      if (act === "close") { PEEK.pinned = false; hidePeek(); return; }
+      if (!it) return;
+      PEEK.pinned = false;
+      hidePeek();
+      if (act === "score") openScoreRanking(it);
+      else if (act === "hold") openHoldings(it);
+      else openSector(it, true);
+    };
+  });
+  return bar;
+}
+
+/* 标的上下文：所属板块 + 持有它的 ETF（小窗阶段就开始预取） */
+function peekInfo(it) {
+  const key = it ? it.market + ":" + it.code : "";
+  if (PEEK.infoFor === key && PEEK.info) return PEEK.info;
+  PEEK.infoFor = key;
+  PEEK.info = api(`/api/stock_context?market=${it.market === "us" ? "us" : "cn"}` +
+    `&code=${encodeURIComponent(it.code)}`).catch(() => null);
+  return PEEK.info;
+}
+async function fillPeekInfo(box, it) {
+  if (!it || !box) return;
+  const row = document.createElement("div");
+  row.className = "peek-info";
+  row.innerHTML = '<span class="pk-dim">关联信息加载中…</span>';
+  box.appendChild(row);
+  try {
+    const d = await peekInfo(it);
+    if (!row.isConnected) return;
+    if (!d) { row.innerHTML = '<span class="pk-dim">关联信息不可用</span>'; return; }
+    const parts = [];
+    const sec = d.sector;
+    if (sec && (sec.name || sec.code)) {
+      parts.push(`<span class="pk-lb">所属板块</span>` +
+        `<button class="pk-tag sector" data-market="${sec.market || it.market}" ` +
+        `data-kind="${sec.kind || "industry"}" data-code="${esc(sec.code || "")}" ` +
+        `data-name="${esc(sec.name || "")}">${esc(sec.name || sec.code || "—")}</button>`);
+    }
+    const etfs = (d.etfs || []).filter(x => Number(x.weight) > 0);
+    if (etfs.length) {
+      const tags = etfs.slice(0, 3).map(x =>
+        `<button class="pk-tag etf" data-market="${it.market === "us" ? "us" : "cn"}" ` +
+        `data-code="${esc(x.code)}" data-name="${esc(x.name || x.code)}" ` +
+        `title="权重 ${x.weight}%">${esc(x.name || x.code)} ${x.weight}%</button>`).join("");
+      parts.push(`<span class="pk-lb">持有最多</span>${tags}`);
+    }
+    row.innerHTML = parts.join("") || '<span class="pk-dim">暂无关联信息</span>';
+    row.querySelectorAll(".pk-tag").forEach(b => {
+      b.onclick = e => {
+        e.stopPropagation();
+        PEEK.pinned = false;
+        const code = b.dataset.code;
+        const nm = b.dataset.name;
+        const mkt = b.dataset.market === "us" ? "us" : "cn";
+        hidePeek();
+        if (b.classList.contains("sector")) {
+          openSector({market: mkt, kind: b.dataset.kind || "industry", code, name: nm}, false);
+        } else if (mkt === "us") {
+          openSector({market: "us", kind: "industry", code, name: nm}, false);
+        } else {
+          openSector({market: "cn", kind: "stock", code: scoreStockCode(code), name: nm}, false);
+        }
+      };
+    });
+  } catch (e) {
+    if (row.isConnected) row.innerHTML = '<span class="pk-dim">关联信息加载失败</span>';
+  }
+}
+
 function showPeekSmall(card) {
   const p = $("#peek");
   if (!p || !card || !card.isConnected) return;
   const r = card.getBoundingClientRect();
   if (!r.width || !r.height) return;
-  if (!card._bars) {   // 数据还没到，稍后再弹（避免弹出个空图）
-    PEEK.showTimer = setTimeout(() => showPeekSmall(card), 400);
-    return;
+  if (!card._bars) {   // 数据还没到，稍后再弹（最多等 3 次，避免个别标的永远不弹）
+    PEEK.retry = (PEEK.retry || 0) + 1;
+    if (PEEK.retry <= 3) {
+      PEEK.showTimer = setTimeout(() => showPeekSmall(card), 500);
+      return;
+    }
+    PEEK.retry = 0;
+    card._bars = card._bars || [];
   }
   clearTimeout(PEEK.hideTimer);
-  const s = PEEK_SMALL, W = r.width, H = r.height, pw = W * s, ph = H * s, gap = 10;
-  const vw = window.innerWidth, vh = window.innerHeight;
-  const clampX = v => Math.max(8, Math.min(v, vw - pw - 8));
-  const clampY = v => Math.max(8, Math.min(v, vh - ph - 8));
-  // 优先放在卡片下方/上方，保证不挡住卡片（卡片上的按钮还能点）
-  let left, top;
-  if (r.bottom + gap + ph <= vh - 8) {
-    left = clampX(r.left + W / 2 - pw / 2);
-    top = r.bottom + gap;
-  } else if (r.top - gap - ph >= 8) {
-    left = clampX(r.left + W / 2 - pw / 2);
-    top = r.top - gap - ph;
-  } else if (r.right + gap + pw <= vw - 8) {
-    left = r.right + gap;
-    top = clampY(r.top + H / 2 - ph / 2);
-  } else {
-    left = Math.max(8, r.left - gap - pw);
-    top = clampY(r.top + H / 2 - ph / 2);
-  }
+  const it = card._it || null;
+  const s = PEEK_SMALL, W = r.width, H = r.height, pw = W * s, ph = H * s;
+  // 原位放大：以卡片中心为锚点，盖住卡片本身
+  let left = r.left + W / 2 - pw / 2;
+  let top = r.top + H / 2 - ph / 2;
+  left = Math.max(8, Math.min(left, window.innerWidth - pw - 8));
+  top = Math.max(8, Math.min(top, window.innerHeight - ph - 8));
   p.className = "";
+  const barH = 34;   // 底部操作条单独占一条，不压住卡片内容
   p.style.cssText = `left:${Math.round(left)}px;top:${Math.round(top)}px;` +
-    `width:${Math.round(pw)}px;height:${Math.round(ph)}px`;
+    `width:${Math.round(pw)}px;height:${Math.round(ph + barH)}px`;
   p.classList.add("sm");
   peekCard(card, s);
+  p.appendChild(peekActions(it, false));
   p.classList.add("show");
   PEEK.mode = "sm";
+  PEEK.pinned = false;
+  if (it) peekInfo(it);
   clearTimeout(PEEK.fullTimer);
   PEEK.fullTimer = setTimeout(() => showPeekFull(card), PEEK_FULL_AFTER);
 }
@@ -2288,41 +2395,17 @@ function showPeekFull(card) {
   const it = card._it || null;
   const W = r.width, H = r.height;
   const availW = window.innerWidth - 64;
-  const availH = window.innerHeight - 150;
+  const availH = window.innerHeight - 190;
   const s = Math.max(2, Math.min(availW / W, availH / H));
   p.className = "";
   p.style.cssText = "";
   p.classList.add("full");
   peekCard(card, s);
-  // 操作条（唯一 pointer-events:auto 的区域）
-  const bar = document.createElement("div");
-  bar.className = "peek-actions";
-  const btns = [`<button data-act="close">关闭</button>`,
-    `<button data-act="zoom">放大看单图</button>`];
-  if (it && it.market === "cn" && watchType(it) === "sector") btns.unshift(`<button data-act="score">板块个股评分</button>`);
-  if (it && watchType(it) === "etf") btns.unshift(`<button data-act="hold">前10大持仓</button>`);
-  bar.innerHTML = btns.join("");
-  p.appendChild(bar);
+  p.appendChild(peekActions(it, true));
   p.classList.add("show");
   PEEK.mode = "full";
-  bar.addEventListener("mouseenter", () => {
-    clearTimeout(PEEK.showTimer);
-    clearTimeout(PEEK.hideTimer);
-    clearTimeout(PEEK.fullTimer);
-  });
-  bar.addEventListener("mouseleave", hidePeek);
-  bar.querySelectorAll("button[data-act]").forEach(b => {
-    b.onclick = e => {
-      e.stopPropagation();
-      const act = b.dataset.act;
-      if (act === "close") { hidePeek(); return; }
-      if (!it) return;
-      hidePeek();
-      if (act === "score") openScoreRanking(it);
-      else if (act === "hold") openHoldings(it);
-      else openSector(it, true);
-    };
-  });
+  PEEK.pinned = true;              // 全屏后不再跟随鼠标，必须点「关闭」
+  fillPeekInfo(p, it);
 }
 
 async function renderWatch() {

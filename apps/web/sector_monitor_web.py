@@ -2723,6 +2723,38 @@ def cache_put(key: str, obj) -> None:
 
 
 # ---------------- HTTP ----------------
+def _cn_sector_of_stock(code: str) -> dict | None:
+    """A股个股 → 所属行业板块（评分表里的「行业」→ 同花顺板块代码）。"""
+    try:
+        from core.scoring.company_score import load_scores
+
+        df = load_scores()
+        if df is None or df.empty or "行业" not in df.columns:
+            return None
+        c6 = re.sub(r"\D", "", str(code))[-6:]
+        hit = df[df["代码"].astype(str).str[-6:] == c6]
+        if hit.empty:
+            return None
+        ind = str(hit.iloc[0].get("行业") or "").strip()
+        if not ind:
+            return None
+        try:
+            from core.scoring.sector_relation import _ths_industry_names
+
+            names = _ths_industry_names()     # {T881xxx: 名称}
+        except Exception:
+            names = {}
+        norm = lambda s: str(s or "").replace("Ⅱ", "").replace("Ⅲ", "").strip()
+        target = norm(ind)
+        for sc, nm in names.items():
+            n2 = norm(nm)
+            if n2 == target or (target and (n2 in target or target in n2)):
+                return {"market": "cn", "kind": "industry", "code": sc, "name": nm}
+        return {"market": "cn", "kind": "industry", "code": "", "name": ind}
+    except Exception:
+        return None
+
+
 class Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"  # 复用连接，省掉每次重连
 
@@ -2854,6 +2886,50 @@ class Handler(BaseHTTPRequestHandler):
                 )
             except Exception as e:
                 self._json({"items": [], "error": str(e)[:120]})
+            return
+        if u.path == "/api/stock_context":
+            market = (q.get("market", ["us"])[0] or "us").strip().lower()
+            code = (q.get("code", [""])[0] or "").strip()
+            if not code:
+                self._json({"sector": None, "etfs": [], "note": "缺少 code"})
+                return
+            try:
+                from core.datasets.etf_holdings import (
+                    US_BROAD,
+                    etf_holders,
+                    warm_us_etfs,
+                )
+
+                # 美股：后台补齐 11 个宽基行业 ETF 的持仓缓存，供反查使用
+                if market == "us":
+                    _HOLD_POOL.submit(warm_us_etfs)
+
+                holders = etf_holders(code, market, limit=6)
+                if market == "us":
+                    names = dict(US_ALL)
+                    names.update({c: c for c in US_INDEX_CODES})
+                    for h in holders:
+                        h["name"] = names.get(h["code"], h["code"])
+                    broad = [h for h in holders if h["code"] in US_BROAD]
+                    sector = None
+                    if broad:
+                        top = broad[0]
+                        sector = {
+                            "market": "us",
+                            "kind": "industry",
+                            "code": top["code"],
+                            "name": US_BROAD[top["code"]],
+                            "weight": top["weight"],
+                        }
+                else:
+                    names = {str(w.get("code")): str(w.get("name") or w.get("code"))
+                             for w in load_watch_db()}
+                    for h in holders:
+                        h["name"] = names.get(h["code"], h["code"])
+                    sector = _cn_sector_of_stock(code)
+                self._json({"sector": sector, "etfs": holders, "code": code, "market": market})
+            except Exception as e:
+                self._json({"sector": None, "etfs": [], "error": str(e)[:160]})
             return
         if u.path == "/api/sector_relations":
             market = (q.get("market", ["cn"])[0] or "cn").strip()

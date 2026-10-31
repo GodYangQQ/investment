@@ -229,3 +229,61 @@ def etf_holdings(market: str, code: str, top: int = 10) -> list[dict]:
         cache[key] = {"ts": time.time(), "items": items}
         _cache_write(cache)
     return items
+
+
+# ---------------- 反查：哪些 ETF 持有这只股票 ----------------
+# 11 个 SPDR 宽基行业 ETF → GICS 行业名（用来判断美股个股“所属板块”）
+US_BROAD = {
+    "XLK": "科技", "XLF": "金融", "XLV": "医疗", "XLY": "可选消费",
+    "XLP": "必需消费", "XLE": "能源", "XLI": "工业", "XLB": "材料",
+    "XLU": "公用事业", "XLRE": "房地产", "XLC": "通信服务",
+}
+
+_WARM = {"running": False, "done": False}
+
+
+def warm_us_etfs() -> None:
+    """后台把 11 个宽基行业 ETF 的持仓补齐（只补缓存里没有的）。"""
+    if _WARM["running"]:
+        return
+    _WARM["running"] = True
+    try:
+        with _LOCK:
+            cache = _cache_read()
+        for sym in US_BROAD:
+            if f"us:{sym}" in cache:
+                continue
+            try:
+                etf_holdings("us", sym, top=20)
+            except Exception:
+                pass
+        _WARM["done"] = True
+    finally:
+        _WARM["running"] = False
+
+
+def etf_holders(code: str, market: str = "us", limit: int = 5) -> list[dict]:
+    """反查持有该股票的 ETF（读本地缓存，按权重降序）。"""
+    want = str(code or "").strip().upper()
+    if not want:
+        return []
+    market = "us" if str(market).lower() == "us" else "cn"
+    with _LOCK:
+        cache = _cache_read()
+    out = []
+    for key, node in cache.items():
+        if not key.startswith(market + ":"):
+            continue
+        etf = key.split(":", 1)[1]
+        items = (node or {}).get("items") or []
+        for it in items:
+            if str(it.get("code") or "").upper() != want:
+                continue
+            try:
+                w = float(it.get("weight") or 0)
+            except (TypeError, ValueError):
+                w = 0.0
+            out.append({"code": etf, "weight": round(w, 2)})
+            break
+    out.sort(key=lambda x: -x["weight"])
+    return out[: max(1, limit)]
