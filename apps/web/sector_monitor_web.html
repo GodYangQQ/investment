@@ -392,9 +392,9 @@ body.focus main{grid-template-columns:304px 1fr}
   · 图表操作：左键拖拽平移（X+Y）、滚轮缩放（自动适配 Y 轴）、中键平移、双击/「重置视图」恢复。<br>
   · <b>自选</b>：左侧点 ☆ 收藏，右侧「自选」抽屉看迷你图 + 已画线；卡片显示最近的下支撑 / 上压力，
     点卡片切换板块，「放大」看单图专注模式（<code>Esc</code> 退出）。<br>
-  · <b>自选卡片</b>：悬停先弹 <b>1.5 倍小窗</b>（不遮挡卡片，卡片上的按钮照常可点），
-    <b>悬停满 3 秒切全屏</b>（底部操作条：个股评分 / 前10大持仓 / 放大看单图 / 关闭）；
-    卡片尺寸不变，hover 命中区始终是原来那一小块。左上角标签标明 <b>A股 / 美股</b>。<br>
+  · <b>自选卡片</b>：悬停弹出 <b>2 倍小窗</b>（原位放大盖住卡片，带操作条）；<b>全屏只在点「全屏」后进入</b>，
+    退出也必须点「关闭」。全屏底部会显示<b>所属板块</b>和<b>持有该股最多的 ETF</b>（可点跳转）。
+    左上角标签标明 <b>A股 / 美股</b>。<br>
   · <b>自选板块</b>：鼠标悬停卡片会出现「个股评分」，点击查看该板块<b>评分前50</b>的个股，可按板块标签筛选；
     双击卡片空白处仍是原来的放大/画线逻辑。<br>
   · <b>板块明细</b>：标题栏「板块明细」按钮打开全量列表，点表头可按<b>成交额 / 主力净额 / 涨跌幅 / 量比 / 板块名</b>
@@ -2207,15 +2207,13 @@ function watchType(it) {
   return "stock";
 }
 /* ---------- hover 预览：先 1.5 倍小窗，悬停满 3 秒切全屏 ---------- */
-const PEEK = {showTimer: 0, hideTimer: 0, clearTimer: 0, fullTimer: 0, mode: "", card: null,
+const PEEK = {showTimer: 0, hideTimer: 0, clearTimer: 0, mode: "", card: null,
   pinned: false, info: null, infoFor: "", retry: 0};
-const PEEK_SMALL = 1.5;
-const PEEK_FULL_AFTER = 3000;
+const PEEK_SMALL = 2;      // hover 小窗倍数（只有小窗是 hover 触发的）
 
 function hidePeek() {
   clearTimeout(PEEK.showTimer);
   clearTimeout(PEEK.hideTimer);
-  clearTimeout(PEEK.fullTimer);
   PEEK.mode = "";
   PEEK.pinned = false;
   const p = $("#peek");
@@ -2234,7 +2232,6 @@ function hidePeek() {
 function schedulePeekHide() {
   if (PEEK.pinned) return;          // 全屏后不跟随鼠标，只能点「关闭」
   clearTimeout(PEEK.showTimer);
-  clearTimeout(PEEK.fullTimer);
   clearTimeout(PEEK.hideTimer);
   PEEK.hideTimer = setTimeout(hidePeek, 220);
 }
@@ -2260,19 +2257,19 @@ function peekCard(card, s) {
   return {box, W, H, s};
 }
 
-function peekActions(it, full) {
+function peekActions(it, full, card) {
   const bar = document.createElement("div");
   bar.className = "peek-actions" + (full ? "" : " sm");
   const btns = [];
   if (it && watchType(it) === "etf") btns.push(`<button data-act="hold">前10大持仓</button>`);
   if (it && it.market === "cn" && watchType(it) === "sector") btns.push(`<button data-act="score">个股评分</button>`);
+  if (!full) btns.push(`<button data-act="full">全屏</button>`);
   btns.push(`<button data-act="zoom">放大看单图</button>`);
   btns.push(`<button data-act="close" class="pk-close">关闭</button>`);
   bar.innerHTML = btns.join("");
   bar.addEventListener("mouseenter", () => {
     clearTimeout(PEEK.showTimer);
     clearTimeout(PEEK.hideTimer);
-    clearTimeout(PEEK.fullTimer);
   });
   bar.addEventListener("mouseleave", () => { if (!PEEK.pinned) schedulePeekHide(); });
   bar.querySelectorAll("button[data-act]").forEach(b => {
@@ -2280,6 +2277,7 @@ function peekActions(it, full) {
       e.stopPropagation();
       const act = b.dataset.act;
       if (act === "close") { PEEK.pinned = false; hidePeek(); return; }
+      if (act === "full") { if (card) { PEEK.pinned = true; showPeekFull(card); } return; }
       if (!it) return;
       PEEK.pinned = false;
       hidePeek();
@@ -2377,13 +2375,11 @@ function showPeekSmall(card) {
     `width:${Math.round(pw)}px;height:${Math.round(ph + barH)}px`;
   p.classList.add("sm");
   peekCard(card, s);
-  p.appendChild(peekActions(it, false));
+  p.appendChild(peekActions(it, false, card));
   p.classList.add("show");
   PEEK.mode = "sm";
   PEEK.pinned = false;
   if (it) peekInfo(it);
-  clearTimeout(PEEK.fullTimer);
-  PEEK.fullTimer = setTimeout(() => showPeekFull(card), PEEK_FULL_AFTER);
 }
 
 function showPeekFull(card) {
@@ -2401,7 +2397,7 @@ function showPeekFull(card) {
   p.style.cssText = "";
   p.classList.add("full");
   peekCard(card, s);
-  p.appendChild(peekActions(it, true));
+  p.appendChild(peekActions(it, true, card));
   p.classList.add("show");
   PEEK.mode = "full";
   PEEK.pinned = true;              // 全屏后不再跟随鼠标，必须点「关闭」
@@ -2432,7 +2428,6 @@ async function renderWatch() {
       // 卡片本身不变形（hover 命中区还是原来那一小块）：先弹 1.5 倍小窗，满 3 秒切全屏
       clearTimeout(PEEK.showTimer);
       clearTimeout(PEEK.hideTimer);
-      clearTimeout(PEEK.fullTimer);
       PEEK.card = el;
       PEEK.showTimer = setTimeout(() => showPeekSmall(el), 90);
     });
