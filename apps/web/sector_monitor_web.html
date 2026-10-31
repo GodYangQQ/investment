@@ -494,7 +494,7 @@ body.focus main{grid-template-columns:304px 1fr}
     <span class="muted" id="dSub"></span>
     <span class="sp"></span>
     <span class="dlegend" title="共振：和本板块同涨同跌（相关高） / 对手：超额收益反向（剔掉大盘后一个强一个弱）">
-      <i class="g"></i>共振 <i class="r"></i>对手</span>
+      <i class="g"></i>↑共振 <i class="r"></i>↓对手</span>
     <input id="dq" placeholder="过滤名称 / 代码" autocomplete="off">
     <button id="dClose">关闭</button>
   </div>
@@ -2859,10 +2859,10 @@ function renderDetail() {
         for (const x of (box.rivals || []).slice(0, 2))
           tags.push(`<span class="rtag red" data-c="${esc(x.code)}" data-n="${esc(x.name)}"` +
             ` title="对手：剔掉大盘后的超额收益相关 ${x.corr}（原始 ${x.raw_corr}）">` +
-            `${esc(short(x.name) || x.code)}</span>`);
+            `↓${esc(short(x.name) || x.code)}</span>`);
         for (const x of (box.peers || []).slice(0, 2))
           tags.push(`<span class="rtag green" data-c="${esc(x.code)}" data-n="${esc(x.name)}"` +
-            ` title="共振：日收益相关 ${x.corr}">${esc(short(x.name) || x.code)}</span>`);
+            ` title="共振：日收益相关 ${x.corr}">↑${esc(short(x.name) || x.code)}</span>`);
         return `<span class="relbox">${tags.join("") || '<span class="lk">—</span>'}</span>`;
       }
       case "gp":
