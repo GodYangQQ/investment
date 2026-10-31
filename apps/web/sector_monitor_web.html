@@ -2211,7 +2211,7 @@ function watchType(it) {
 const PEEK = {showTimer: 0, hideTimer: 0, clearTimer: 0, clickTimer: 0, mode: "", card: null,
   pinned: false, info: null, infoFor: "", retry: 0};
 const PEEK_SMALL = 2;         // hover 小窗倍数
-const PEEK_CLICK_DELAY = 1000; // 单击/双击判定窗口
+const PEEK_CLICK_DELAY = 500;  // 单击/双击判定窗口
 
 function hidePeek() {
   clearTimeout(PEEK.showTimer);
