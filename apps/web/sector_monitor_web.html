@@ -2968,12 +2968,17 @@ async function loadDetailRelations() {
   try {
     const d = await api(`/api/sector_relations?market=${S.market}&kind=${S.kind}&top=2`);
     if (DT.relKey !== key) return;
+    DT.relTry = 0;
     DT.rel = d.items || {};
     DT.relMeta = {asof: d.asof || "", window: d.window || 0, note: d.note || d.error || ""};
   } catch (e) {
     if (DT.relKey !== key) return;
-    DT.rel = {};
-    DT.relMeta = {note: e.message || String(e)};
+    // 失败不要缓存：清掉 key，下次打开/刷新还会重试（以前会把失败结果一直缓存到刷新页面）
+    DT.rel = null;
+    DT.relKey = "";
+    DT.relMeta = {note: "关联数据加载失败，稍后重试"};
+    DT.relTry = (DT.relTry || 0) + 1;
+    if (DT.relTry <= 3) setTimeout(() => { if (detailOpen()) loadDetailRelations(); }, 3000);
   }
   if (detailOpen()) renderDetail();
 }

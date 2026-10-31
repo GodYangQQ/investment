@@ -29,7 +29,7 @@ MIN_PERIODS = 120
 PEER_MIN = 0.45       # 共振门槛
 RIVAL_MAX = -0.12     # 对手门槛（超额收益相关）
 DUP_CORR = 0.98       # 视为“同一个板块”（东财/同花顺双代码、同主题 ETF）
-CACHE_TTL = 1800      # 30 分钟
+CACHE_TTL = 600       # 10 分钟（回补数据后更快生效）
 
 _CACHE: dict[tuple, tuple[float, dict]] = {}
 _LOCK = threading.Lock()
@@ -70,10 +70,14 @@ def _load_returns(market: str, codes: list[str]):
     """读日线 → 日收益 DataFrame（列 = 板块代码）。"""
     import pandas as pd
 
+    if not codes:
+        return None
     conn = _connect()
     try:
+        ph = ",".join("?" * len(codes))
         rows = conn.execute(
-            "SELECT code, ts, c FROM bars WHERE market=? AND tf='1d'", (market,)
+            f"SELECT code, ts, c FROM bars WHERE market=? AND tf='1d' AND code IN ({ph})",
+            (market, *codes),
         ).fetchall()
     finally:
         conn.close()
@@ -109,35 +113,38 @@ def _ths_industry_names() -> dict[str, str]:
     return out
 
 
+def _is_stock_code(code: str) -> bool:
+    """A股个股（SH600519 / SZ000001 / BJ430047），不是板块。"""
+    import re as _re
+
+    return bool(_re.match(r"^(SH|SZ|BJ)\d{6}$", str(code or "")))
+
+
 def _universe(conn: sqlite3.Connection, market: str, kind: str) -> dict[str, str]:
-    """有足够历史的板块：优先用快照列表，否则用库里所有非个股代码。"""
-    names, groups = _snapshot_meta(conn, market, kind)
+    """有足够历史的**板块**代码（不含个股）。"""
+    names, _groups = _snapshot_meta(conn, market, kind)
+    where = "market=? AND tf='1d'"
+    params = [market, MIN_PERIODS]
+    if market == "cn":
+        where += " AND code NOT LIKE 'SH%' AND code NOT LIKE 'SZ%' AND code NOT LIKE 'BJ%'"
     have = {
         str(r[0])
         for r in conn.execute(
-            "SELECT code FROM bars WHERE market=? AND tf='1d' GROUP BY code HAVING COUNT(*)>?",
-            (market, MIN_PERIODS),
+            f"SELECT code FROM bars WHERE {where} GROUP BY code HAVING COUNT(*)>?", params
         )
     }
-    if names:
-        out = {c: n for c, n in names.items() if c in have}
-        if market == "cn" and kind != "concept":
-            # 快照可能只有半页列表：用同花顺全量行业名补齐库里有历史的板块
-            extra = _ths_industry_names()
-            for c in have:
-                if c not in out and c in extra:
-                    out[c] = extra[c]
-        if len(out) >= 5:
-            return out
-    # 兜底：排除个股（6 位纯数字）与指数
-    out = {}
-    for c in have:
-        cc = str(c)
-        if market == "cn" and (cc.isdigit() and len(cc) == 6):
-            continue
-        if market == "cn" and cc in _MARKET_FACTOR.values():
-            continue
-        out[cc] = cc
+    if market == "cn":
+        have = {c for c in have if not _is_stock_code(c) and c not in _MARKET_FACTOR.values()}
+    out = {c: n for c, n in names.items() if c in have}
+    if market == "cn" and kind != "concept":
+        # 快照可能只有半页列表：用同花顺全量行业名补齐库里有历史的板块
+        extra = _ths_industry_names()
+        for c in have:
+            if c not in out and c in extra:
+                out[c] = extra[c]
+    if len(out) < 5:
+        # 兜底：库里所有（已排除个股的）板块代码，名字用代码
+        out = {c: out.get(c, c) for c in have}
     return out
 
 
