@@ -38,7 +38,7 @@ HEADERS = {
 }
 TIMEOUT = 12
 TTL = 600           # 10 分钟内不重复抓
-KEEP_DAYS = 90      # 库里保留 90 天
+KEEP_DAYS = 5       # 新闻只保留最近 5 天
 
 _LOCK = threading.Lock()
 _MEM = {"ts": 0.0, "items": [], "running": False}
@@ -103,7 +103,8 @@ def _clean(s: str) -> str:
 
 def _to_ts(v) -> float:
     if isinstance(v, (int, float)):
-        return float(v)
+        v = float(v)
+        return v / 1000.0 if v > 1e11 else v
     s = str(v or "").strip()
     if not s:
         return time.time()
@@ -141,6 +142,13 @@ def _get(url: str, **kw):
     import requests
 
     return requests.get(url, headers=HEADERS, timeout=TIMEOUT, **kw)
+
+
+# 便于测试替换
+def requests_get(url, **kw):
+    import requests
+
+    return requests.get(url, timeout=TIMEOUT, **kw)
 
 
 def fetch_em_kuaixun(limit: int = 60) -> list[dict]:
@@ -230,6 +238,102 @@ def fetch_usgs(min_mag: float = 4.5) -> list[dict]:
     return out
 
 
+def fetch_ths_flash(limit: int = 60) -> list[dict]:
+    """同花顺 7x24 快讯。"""
+    try:
+        r = _get("https://news.10jqka.com.cn/tapp/news/push/stock/",
+                 params={"page": 1, "pagesize": 60, "track": "website", "tag": ""})
+        lst = ((r.json() or {}).get("data") or {}).get("list") or []
+    except Exception:
+        return []
+    out = []
+    for it in lst[:limit]:
+        title = _clean(it.get("title") or it.get("digest") or "")
+        if not title:
+            continue
+        out.append({
+            "title": title[:180],
+            "url": it.get("url") or it.get("shareUrl") or "",
+            "source": "同花顺快讯",
+            "tier": "tier1",
+            "lang": "zh",
+            "ts": _to_ts(it.get("ctime") or it.get("rtime") or ""),
+        })
+    return out
+
+
+def fetch_jin10(limit: int = 60) -> list[dict]:
+    """金十数据快讯（VIP 条目用 vip_title 兜底）。"""
+    try:
+        r = requests_get(
+            "https://flash-api.jin10.com/get_flash_list",
+            headers={**HEADERS, "x-app-id": "bVBF4FyRTn5NJF5n", "x-version": "1.0.0"},
+            params={"channel": "-8200", "vip": "1"},
+        )
+        rows = (r.json() or {}).get("data") or []
+    except Exception:
+        return []
+    out = []
+    for it in rows[:limit]:
+        d = it.get("data") or {}
+        title = _clean(d.get("content") or d.get("vip_title") or "")
+        if not title:
+            continue
+        out.append({
+            "title": title[:180],
+            "url": "https://www.jin10.com/",
+            "source": "金十快讯",
+            "tier": "tier1",
+            "lang": "zh",
+            "ts": _to_ts(it.get("time") or ""),
+        })
+    return out
+
+
+def fetch_cninfo(limit: int = 60) -> list[dict]:
+    """巨潮资讯 A股公告（财报/重大事项）。"""
+    from datetime import datetime as _dt
+    from datetime import timedelta as _td
+
+    end = _dt.now()
+    start = end - _td(days=KEEP_DAYS + 1)
+    data = {
+        "pageNum": 1, "pageSize": limit, "column": "szse", "tabName": "fulltext",
+        "plate": "", "stock": "", "searchkey": "", "secid": "", "category": "",
+        "trade": "", "seDate": f"{start:%Y-%m-%d}~{end:%Y-%m-%d}",
+        "sortName": "", "sortType": "", "isHLtitle": "true",
+    }
+    try:
+        import requests
+
+        r = requests.post(
+            "http://www.cninfo.com.cn/new/hisAnnouncement/query",
+            data=data, headers=HEADERS, timeout=TIMEOUT,
+        )
+        rows = (r.json() or {}).get("announcements") or []
+    except Exception:
+        return []
+    out = []
+    for it in rows[:limit]:
+        title = _clean(it.get("announcementTitle") or "")
+        if not title:
+            continue
+        name = _clean(it.get("secName") or "")
+        code = str(it.get("secCode") or "").strip()
+        url = str(it.get("adjunctUrl") or "")
+        if url and not url.startswith("http"):
+            url = "http://static.cninfo.com.cn/" + url.lstrip("/")
+        out.append({
+            "title": f"{name} {title}".strip()[:180],
+            "url": url,
+            "source": "巨潮公告",
+            "tier": "official",
+            "lang": "zh",
+            "ts": _to_ts(it.get("announcementTime") or ""),
+        })
+    return out
+
+
 def fetch_eia() -> list[dict]:
     """EIA Today in Energy（能源政策/油价/库存评论）。"""
     return fetch_rss("https://www.eia.gov/rss/todayinenergy.xml", "EIA", tier="official", lang="en", limit=15)
@@ -280,13 +384,14 @@ def fetch_cma_alerts() -> list[dict]:
     return out
 
 
+# 说明：新浪国际/人民网/WSJ 的 RSS 内容是几年前的老条目（实测最新也有 500~2900 天前），
+# 在 5 天保留窗口下会被立刻清掉，只会白耗时间，所以不接。
 SOURCES = [
+    ("同花顺快讯", lambda: fetch_ths_flash()),
+    ("金十快讯", lambda: fetch_jin10()),
+    ("巨潮公告", lambda: fetch_cninfo()),
     ("EIA", fetch_eia),
     ("东财快讯", lambda: fetch_em_kuaixun()),
-    ("新浪财经", lambda: fetch_rss("https://rss.sina.com.cn/roll/finance/hot_roll.xml", "新浪财经")),
-    ("新浪国际", lambda: fetch_rss("https://rss.sina.com.cn/news/world/focus15.xml", "新浪国际")),
-    ("人民网", lambda: fetch_rss("http://www.people.com.cn/rss/world.xml", "人民网国际", limit=25)),
-    ("WSJ", lambda: fetch_rss("https://feeds.a.dj.com/rss/RSSWorldNews.xml", "WSJ World", lang="en", limit=25)),
     ("CNBC", lambda: fetch_rss("https://www.cnbc.com/id/100003114/device/rss/rss.html", "CNBC", lang="en", limit=25)),
     ("WHO", lambda: fetch_rss("https://www.who.int/rss-feeds/news-english.xml", "WHO", tier="official", lang="en", limit=15)),
     ("CDC", lambda: fetch_rss("https://tools.cdc.gov/api/v2/resources/media/132608.rss", "CDC", tier="official", lang="en", limit=15)),
@@ -437,6 +542,28 @@ _NATION_KW = ["全国", "国家", "national", "nationwide", "联邦"]
 _LONG_KW = ["持续", "长期", "多年", "season", "long-term", "蔓延", "escalat"]
 
 
+def _watch_codes() -> tuple[list[str], list[str]]:
+    """自选里的板块代码 + 个股代码（后 6 位）。"""
+    sectors: list[str] = []
+    stocks: list[str] = []
+    try:
+        with open(ROOT / "data" / "watch.json", encoding="utf-8") as f:
+            items = json.load(f)
+        for it in items or []:
+            code = str(it.get("code") or "").strip()
+            if not code:
+                continue
+            if it.get("market") == "us":
+                continue
+            if str(it.get("kind")) in ("industry", "concept"):
+                sectors.append(code)
+            else:
+                stocks.append(re.sub(r"\D", "", code)[-6:].zfill(6))
+    except Exception:
+        pass
+    return sectors, stocks
+
+
 def _cluster(items: list[dict]) -> None:
     """把同一事件的多条新闻归到一个 cluster（标题相似度 ≥0.82 且 12 小时内）。"""
     from difflib import SequenceMatcher
@@ -516,7 +643,7 @@ def _dedupe(items: list[dict]) -> list[dict]:
     out = []
     for it in items:
         fp = _fingerprint(it["title"])
-        url = (it.get("url") or "").split("?")[0]
+        url = (it.get("url") or "").strip().lower()
         if not fp:
             continue
         if url and url in seen_url:
@@ -693,7 +820,7 @@ def kick_refresh(force: bool = False) -> bool:
 
 
 def state(limit: int = 200, category: str = "", q: str = "", code: str = "",
-          stock: str = "", min_level: int = 0) -> dict:
+          stock: str = "", min_level: int = 0, watch: bool = False) -> dict:
     """给接口用：立即返回库里数据，同时判断是否需要后台刷新。"""
     kick_refresh(False)
     counts: dict[str, int] = {}
@@ -702,6 +829,24 @@ def state(limit: int = 200, category: str = "", q: str = "", code: str = "",
     rows = load_news(limit=limit, category=category, q=q, code=code, stock=stock)
     if min_level:
         rows = [r for r in rows if int(r.get("level") or 0) >= min_level]
+    if watch:   # 只看自选板块 / 自选个股相关
+        secs, stks = _watch_codes()
+        if secs or stks:
+            ids: set[str] = set()
+            try:
+                conn = _conn()
+                if secs:
+                    q1 = ",".join("?" * len(secs))
+                    ids |= {r[0] for r in conn.execute(
+                        f"SELECT DISTINCT news_id FROM news_sector WHERE code IN ({q1})", secs)}
+                if stks:
+                    q2 = ",".join("?" * len(stks))
+                    ids |= {r[0] for r in conn.execute(
+                        f"SELECT DISTINCT news_id FROM news_stock WHERE code IN ({q2})", stks)}
+                conn.close()
+            except Exception:
+                ids = set()
+            rows = [r for r in rows if r["id"] in ids]
     return {
         "items": rows,
         "counts": counts,

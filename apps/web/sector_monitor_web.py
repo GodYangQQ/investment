@@ -2977,8 +2977,9 @@ class Handler(BaseHTTPRequestHandler):
                 except Exception:
                     min_level = 0
                 stock = (q.get("stock", [""])[0] or "").strip()
+                watch = (q.get("watch", ["0"])[0] or "") == "1"
                 self._json(news_state(limit=limit, category=cat, q=kw, code=code,
-                                      stock=stock, min_level=min_level))
+                                      stock=stock, min_level=min_level, watch=watch))
             except Exception as e:
                 self._json({"items": [], "counts": {}, "error": str(e)[:160]})
             return

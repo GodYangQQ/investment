@@ -1,6 +1,16 @@
 [
  {
   "market": "cn",
+  "code": "SH511010",
+  "name": "国债ETF国泰",
+  "kind": "stock",
+  "tf": "1d",
+  "group": "semi",
+  "w": null,
+  "h": null
+ },
+ {
+  "market": "cn",
   "code": "SH600183",
   "name": "生益科技",
   "kind": "stock",

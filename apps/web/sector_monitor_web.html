@@ -265,6 +265,15 @@ padding:6px 12px;border-radius:8px;font-size:17px;cursor:pointer}
  max-width:min(1080px,94vw);pointer-events:auto}
 #peek .peek-info .pk-lb{font-size:13px;color:#7d8b9a}
 #peek .peek-info .pk-dim{font-size:13px;color:#67727e}
+#peek .peek-news{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;
+ max-width:min(1080px,94vw);pointer-events:auto}
+#peek .peek-news .pk-lb{font-size:13px;color:#7d8b9a}
+#peek .peek-news .pk-news-item{font-size:13.5px;color:#cfe0f2;cursor:pointer;max-width:340px;
+ overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-bottom:1px dashed #2f3b47}
+#peek .peek-news .pk-news-item:hover{color:#fff;border-bottom-color:#4d9fff}
+#peek .peek-news .pk-more{font-size:12.5px;padding:2px 10px;border-radius:6px;cursor:pointer;
+ background:#16202b;border:1px solid #33404f;color:#9cc4ef}
+#peek .peek-news .pk-more:hover{background:#20304a;color:#fff;border-color:#4d9fff}
 #peek .pk-code{font-size:13.5px;color:#9fb0c2;font-variant-numeric:tabular-nums;
  font-family:ui-monospace,Menlo,Consolas,monospace}
 #peek .pk-tag{font-size:13.5px;padding:3px 11px;border-radius:7px;cursor:pointer;font-family:inherit;
@@ -2344,7 +2353,8 @@ function renderNews() {
   const sub = $("#nSub");
   if (!box) return;
   const items = NEWS.items || [];
-  if (sub) sub.textContent = items.length ? `${items.length} 条${NEWS.pending ? " · 抓取中…" : ""}` : "";
+  const suffix = (NEWS.cat === "财报" ? " · 仅自选相关" : "") + (NEWS.pending ? " · 抓取中…" : "");
+  if (sub) sub.textContent = items.length ? `${items.length} 条${suffix}` : "";
   if (!items.length) {
     box.innerHTML = `<div class="nempty">${NEWS.pending ? "正在抓取新闻…" : "暂无新闻，点右上「刷新」"}</div>`;
     return;
@@ -2397,6 +2407,7 @@ async function loadNews(refresh) {
       (NEWS.cat ? `&category=${encodeURIComponent(NEWS.cat)}` : "") +
       (useCur ? (isStock ? `&stock=${encodeURIComponent(S.code)}` : `&code=${encodeURIComponent(S.code)}`) : "") +
       (NEWS.minLevel ? `&level=${NEWS.minLevel}` : "") +
+      (NEWS.cat === "财报" ? "&watch=1" : "") +
       (refresh ? "&refresh=1" : ""));
     NEWS.items = d.items || [];
     NEWS.pending = !!d.pending;
@@ -2785,6 +2796,42 @@ function showPeekSmall(card) {
   if (it) peekInfo(it);
 }
 
+async function fillPeekNews(p, it) {
+  if (!it) return;
+  const mkt = it.market === "us" ? "us" : "cn";
+  const isStock = mkt === "cn" && (it.kind === "stock" || /^(SH|SZ|BJ)\d{6}$/.test(String(it.code)));
+  const q = isStock ? `stock=${encodeURIComponent(it.code)}`
+    : (mkt === "cn" ? `code=${encodeURIComponent(it.code)}` : "");
+  if (!q) return;                       // 美股暂不关联新闻
+  const row = document.createElement("div");
+  row.className = "peek-news";
+  row.innerHTML = '<span class="pk-lb">相关新闻</span><span class="pk-dim">加载中…</span>';
+  p.appendChild(row);
+  try {
+    const d = await api(`/api/news?limit=3&${q}`);
+    if (!row.isConnected) return;
+    const items = d.items || [];
+    if (!items.length) { row.innerHTML = '<span class="pk-lb">相关新闻</span><span class="pk-dim">近 5 天没有相关报道</span>'; return; }
+    row.innerHTML = '<span class="pk-lb">相关新闻</span>' + items.map((n, i) =>
+      `<span class="pk-news-item" data-i="${i}" title="${esc(n.title)}">${esc(n.title)}</span>`).join("") +
+      `<button class="pk-more">全部 ${items.length > 3 ? "→" : ""}</button>`;
+    row.querySelectorAll(".pk-news-item").forEach(el => {
+      el.onclick = () => {
+        const n = items[+el.dataset.i];
+        if (n && n.url) window.open(n.url, "_blank", "noopener,noreferrer");
+      };
+    });
+    row.querySelector(".pk-more").onclick = () => {
+      PEEK.pinned = false;
+      hidePeek();
+      NEWS.onlyCur = true;
+      openNews();
+    };
+  } catch (e) {
+    if (row.isConnected) row.innerHTML = '<span class="pk-lb">相关新闻</span><span class="pk-dim">加载失败</span>';
+  }
+}
+
 function showPeekFull(card) {
   const p = $("#peek");
   if (!p || !card || !card.isConnected) return;
@@ -2805,6 +2852,7 @@ function showPeekFull(card) {
   PEEK.mode = "full";
   PEEK.pinned = true;              // 全屏后不再跟随鼠标，必须点「关闭」
   fillPeekInfo(p, it);
+  fillPeekNews(p, it);
 }
 
 async function renderWatch() {
