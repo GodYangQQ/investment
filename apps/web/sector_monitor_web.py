@@ -2064,7 +2064,13 @@ def _ak_stock_bars(code: str) -> list[dict]:
         import akshare as ak
 
         code = re.sub(r"^(SH|SZ|BJ)", "", str(code).strip().upper())
-        prefix = "sh" if code.startswith(("60", "68", "90")) else "sz"
+        # 北交所（43/83/87/92 开头）新浪也能取，别错当成深市
+        if code.startswith(("4", "8", "92")):
+            prefix = "bj"
+        elif code.startswith(("60", "68", "90")):
+            prefix = "sh"
+        else:
+            prefix = "sz"
         df = ak.stock_zh_a_daily(
             symbol=prefix + code,
             start_date="20100101",
