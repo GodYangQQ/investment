@@ -427,15 +427,27 @@ def _in_session(market: str) -> bool:
     return hm >= 2100 or hm <= 605
 
 
+def _last_weekday() -> str:
+    d = datetime.now()
+    for _ in range(10):
+        if d.weekday() < 5:
+            return d.strftime("%Y-%m-%d")
+        d -= timedelta(days=1)
+    return datetime.now().strftime("%Y-%m-%d")
+
+
 def _list_ttl(market: str) -> float:
     return 5.0 if _in_session(market) else 30.0
 
 
-def _bar_ttl(tf: str) -> float:
-    """缓存时间：分时（1m）盘中要跟得紧，其他分钟 15s，日线 5 分钟。"""
+def _bar_ttl(tf: str, market: str = "cn") -> float:
+    """缓存时间：盘中跟得紧；休市后数据不再变化，拉长 TTL 避免刷新风暴。"""
+    live = _in_session(market)
     if tf == "1m":
-        return 5.0
-    return 15.0 if tf.endswith("m") else 300.0
+        return 5.0 if live else 60.0
+    if tf.endswith("m"):
+        return 15.0 if live else 120.0
+    return 300.0 if live else 1800.0
 
 
 def _refresh_tail(tf: str) -> int:
@@ -2482,16 +2494,24 @@ def _append_today_bar(
     """A股个股/指数/板块：日线还没出今天时，用分钟数据合成一根当日 K。"""
     if not bars or market != "cn" or tf != "1d":
         return bars
-    today = datetime.now().strftime("%Y-%m-%d")
+    now = datetime.now()
+    today = now.strftime("%Y-%m-%d")
     if str(bars[-1].get("t") or "")[:10] >= today:
         return bars
-    # 合成当日K要抓分钟线（~300ms），同一个标的 30 秒内不重复抓
+    # 只在交易时段合成当日K：周末/盘前/收盘后都不可能拿到当日分钟线，
+    # 直接返回，否则每张图都要白等一次分钟请求（板块列表 90 张图会明显变慢）。
+    if now.weekday() >= 5 or not (9, 20) <= (now.hour, now.minute) <= (15, 40):
+        return bars
+    # 合成当日K要抓分钟线（~300ms），同一个标的 30 秒内不重复抓；
+    # 抓不到（盘前/非交易日）也要负缓存，避免每次都去请求。
     ck = (market, code, kind, today)
     hit = _TODAY_BAR_CACHE.get(ck)
-    if hit and time.time() - hit[0] < 30:
-        if hit[1]:
-            bars = bars + [dict(hit[1])]
-        return bars
+    if hit:
+        ttl = 30 if hit[1] else 120
+        if time.time() - hit[0] < ttl:
+            if hit[1]:
+                bars = bars + [dict(hit[1])]
+            return bars
     try:
         if kind in ("stock", "index"):
             sym = _cn_symbol(_idx_code_norm(code).lower()) if kind == "index" else _cn_symbol(code)
@@ -2531,10 +2551,11 @@ def _append_today_bar(
             )
     except Exception:
         pass
-    if len(bars) and str(bars[-1].get("t") or "")[:10] == today:
-        _TODAY_BAR_CACHE[ck] = (time.time(), dict(bars[-1]))
-        if len(_TODAY_BAR_CACHE) > 300:
-            _TODAY_BAR_CACHE.clear()
+    # 正/负都缓存：拿到当日K存 30s，没拿到存 120s（盘前或非交易日）
+    got = len(bars) and str(bars[-1].get("t") or "")[:10] == today
+    _TODAY_BAR_CACHE[ck] = (time.time(), dict(bars[-1]) if got else None)
+    if len(_TODAY_BAR_CACHE) > 300:
+        _TODAY_BAR_CACHE.clear()
     return bars
 
 
@@ -2639,7 +2660,11 @@ def bars_payload(
         bars = _append_today_bar(bars, market, read_code, kind, tf, name, retry)
     meta = db_meta_get(bkey)
     age = time.time() - meta["ts"] if meta else 0.0
-    fresh = bool(bars) and age < _bar_ttl(tf)
+    fresh = bool(bars) and age < _bar_ttl(tf, market)
+    # 休市日/周末：库里已是最近交易日的日线，就别报「同步中」再触发刷新
+    if not fresh and tf == "1d" and bars and not _in_session(market):
+        if str(bars[-1].get("t") or "")[:10] >= _last_weekday():
+            fresh = True
     if OFFLINE:
         return {
             "market": market,
@@ -3346,9 +3371,7 @@ def _background_ticker() -> None:
                     continue
                 _, market, code, tf = parts
                 meta = db_meta_get(bkey)
-                ttl = _bar_ttl(tf)
-                if tf.endswith("m") and not _in_session(market):
-                    ttl = max(ttl, 120)
+                ttl = _bar_ttl(tf, market)
                 if meta and now - meta["ts"] < ttl:
                     continue
                 name, kind = _BARS_ARGS.get(bkey, ("", "industry"))
@@ -3370,7 +3393,7 @@ def _background_ticker() -> None:
                 for tf in dict.fromkeys([it.get("tf") or "1d", "1d"]):
                     bkey = f"bars:{mkt}:{code}:{tf}"
                     meta = db_meta_get(bkey)
-                    ttl = 900 if tf == "1d" else _bar_ttl(tf)
+                    ttl = 900 if tf == "1d" else _bar_ttl(tf, mkt)
                     if meta and now - meta["ts"] < ttl:
                         continue
                     if _spawn_once(
