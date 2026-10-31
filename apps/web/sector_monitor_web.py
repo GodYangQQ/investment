@@ -2760,6 +2760,22 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as e:
                 self._json({"items": [], "error": str(e)[:120]})
             return
+        if u.path == "/api/sector_relations":
+            market = (q.get("market", ["cn"])[0] or "cn").strip()
+            kind = (q.get("kind", ["industry"])[0] or "industry").strip()
+            if kind not in ("industry", "concept"):
+                kind = "industry"
+            try:
+                top = int(q.get("top", ["3"])[0] or 3)
+            except Exception:
+                top = 3
+            try:
+                from core.scoring.sector_relation import sector_relations
+
+                self._json(sector_relations(market, kind, top=max(1, min(top, 5))))
+            except Exception as e:
+                self._json({"items": {}, "error": str(e)[:160]})
+            return
         if u.path == "/api/etf_holdings":
             market = (q.get("market", ["us"])[0] or "us").strip()
             code = (q.get("code", [""])[0] or "").strip()

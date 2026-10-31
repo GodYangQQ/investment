@@ -271,6 +271,17 @@ padding:6px 12px;border-radius:8px;font-size:17px;cursor:pointer}
 .drow.h .num{text-align:right}
 .drow .lk{color:#94a0ad;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .drow .gp{color:#7d8b9a;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 明细里的共振 / 对手标签 */
+.relbox{display:flex;gap:4px;overflow:hidden;white-space:nowrap}
+.rtag{font-size:12px;line-height:1.65;padding:0 5px;border-radius:4px;border:1px solid;
+ white-space:nowrap;cursor:pointer;flex:0 0 auto}
+.rtag.green{color:#4bc7b8;border-color:#1f5a52;background:#122524}
+.rtag.red{color:#ef6b6b;border-color:#6b2929;background:#2a1717}
+.rtag:hover{filter:brightness(1.3)}
+.dlegend{display:flex;align-items:center;gap:6px;font-size:13px;color:#7d8b9a}
+.dlegend i{display:inline-block;width:8px;height:8px;border-radius:2px}
+.dlegend i.g{background:#2f8f83}
+.dlegend i.r{background:#a33d3d}
 .wcard .wh{display:flex;align-items:baseline;gap:8px;flex-wrap:nowrap;overflow:hidden}
 .wcard .wh b{font-size:17.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .wcard .wh .muted{font-size:15px;white-space:nowrap}
@@ -342,7 +353,9 @@ body.focus main{grid-template-columns:304px 1fr}
   · <b>自选板块</b>：鼠标悬停卡片会出现「个股评分」，点击查看该板块<b>评分前50</b>的个股，可按板块标签筛选；
     双击卡片空白处仍是原来的放大/画线逻辑。<br>
   · <b>板块明细</b>：标题栏「板块明细」按钮打开全量列表，点表头可按<b>成交额 / 主力净额 / 涨跌幅 / 量比 / 板块名</b>
-    升降序排序，支持名称过滤；点任意一行跳到该板块K线（<code>#detail</code> 可直接打开）。<br><br>
+    升降序排序，支持名称过滤；点任意一行跳到该板块K线（<code>#detail</code> 可直接打开）。<br>
+  · <b>共振 / 对手</b>：明细每行有绿 tag（共振：日收益高度同向）和红 tag（对手：<b>剔掉上证指数后</b>
+    超额收益反向，即资金在两个方向之间轮动）；点 tag 直接跳到那个板块。口径为近 250 个交易日。<br><br>
   <b>板块口径：</b>A股用东财行业/概念板块，按<b>成交额</b>排序，可切量比、主力净额与涨幅；
   美股用 SPDR 11 大行业 + 半导体/科技 + 主题 ETF。列表每 10 秒刷新，分时/日线按周期自动更新。
 </div>
@@ -421,6 +434,8 @@ body.focus main{grid-template-columns:304px 1fr}
     <b>板块明细</b>
     <span class="muted" id="dSub"></span>
     <span class="sp"></span>
+    <span class="dlegend" title="共振：和本板块同涨同跌（相关高） / 对手：超额收益反向（剔掉大盘后一个强一个弱）">
+      <i class="g"></i>共振 <i class="r"></i>对手</span>
     <input id="dq" placeholder="过滤名称 / 代码" autocomplete="off">
     <button id="dClose">关闭</button>
   </div>
@@ -1866,7 +1881,7 @@ async function loadSectors(silent = false) {
     renderIdx();
     renderTabs();
     renderList();
-    if (detailOpen()) renderDetail();
+    if (detailOpen()) { renderDetail(); loadDetailRelations(); }
     updateHeader();
     if (!S.code && S.rows.length) {
       const saved = readSaved();
@@ -2446,7 +2461,7 @@ $("#holdModal").addEventListener("click", e => {
 });
 
 /* ---------- 板块明细：全量板块列表 + 点表头排序 ---------- */
-const DT = {key: "amount", dir: -1, q: ""};
+const DT = {key: "amount", dir: -1, q: "", rel: null, relKey: "", relMeta: null};
 const DT_COLS = [
   {k: "name", t: "板块", s: 1},
   {k: "pct", t: "涨跌幅", s: 1, num: 1},
@@ -2454,6 +2469,7 @@ const DT_COLS = [
   {k: "vr", t: "量比", s: 1, num: 1},
   {k: "main", t: "主力净额", s: 1, num: 1},
   {k: "updown", t: "涨/跌", num: 1},
+  {k: "rel", t: "共振 / 对手"},
   {k: "leader", t: "领涨"},
   {k: "gp", t: "分组 / 类型"},
 ];
@@ -2461,9 +2477,10 @@ const DT_MISSING = v => v === null || v === undefined || v === "" || (typeof v =
 /* 可选列：整列都没有数据时自动隐藏（比如数据源不提供量比时） */
 const DT_W = {
   name: "minmax(150px,1.8fr)", pct: "86px", amount: "104px", vr: "66px",
-  main: "104px", updown: "78px", leader: "minmax(90px,1.2fr)", gp: "96px",
+  main: "104px", updown: "78px", rel: "minmax(210px,2fr)", leader: "minmax(90px,1.2fr)",
+  gp: "96px",
 };
-const DT_OPT = new Set(["vr", "main", "updown", "leader", "gp"]);
+const DT_OPT = new Set(["vr", "main", "updown", "rel", "leader", "gp"]);
 
 function detailOpen() {
   const el = $("#detail");
@@ -2472,6 +2489,7 @@ function detailOpen() {
 function dtVal(r, k) {
   if (k === "updown") return (r.up || r.down) ? (r.up || 0) : undefined;
   if (k === "gp") return r.group || dtGroupName(r);
+  if (k === "rel") return (DT.rel && DT.rel[r.code]) ? 1 : undefined;
   return r[k];
 }
 function dtRows() {
@@ -2539,6 +2557,23 @@ function renderDetail() {
           `<span style="color:${DOWN}">${DT_MISSING(r.down) ? "—" : r.down}</span></span>`;
       case "leader":
         return `<span class="lk">${esc(r.leader || "—")}</span>`;
+      case "rel": {
+        const box = DT.rel && DT.rel[r.code];
+        if (!box) return `<span class="lk">—</span>`;
+        const short = n => String(n || "")
+          .replace(/SPDR\s*/g, "").replace(/\s*-?\s*iShares/g, "")
+          .replace(/\s*-?HOLDRs/g, "").replace(/\s*-?Market Vectors/g, "")
+          .replace(/\s*ETF/g, "").replace(/\s+/g, " ").trim();
+        const tags = [];
+        for (const x of (box.rivals || []).slice(0, 2))
+          tags.push(`<span class="rtag red" data-c="${esc(x.code)}" data-n="${esc(x.name)}"` +
+            ` title="对手：剔掉大盘后的超额收益相关 ${x.corr}（原始 ${x.raw_corr}）">` +
+            `${esc(short(x.name) || x.code)}</span>`);
+        for (const x of (box.peers || []).slice(0, 2))
+          tags.push(`<span class="rtag green" data-c="${esc(x.code)}" data-n="${esc(x.name)}"` +
+            ` title="共振：日收益相关 ${x.corr}">${esc(short(x.name) || x.code)}</span>`);
+        return `<span class="relbox">${tags.join("") || '<span class="lk">—</span>'}</span>`;
+      }
       case "gp":
         return `<span class="gp">${esc(dtGroupName(r))}</span>`;
       default:
@@ -2553,8 +2588,14 @@ function renderDetail() {
     `<div style="padding:26px 10px;text-align:center;color:#94a0ad">没有匹配的板块</div>`);
   box.scrollTop = keepTop;
   const sub = $("#dSub");
-  if (sub) sub.textContent = `${S.market === "cn" ? "A股" : "美股（美元）"} · ${rows.length} 个` +
-    (S.source ? ` · ${S.source}` : "");
+  if (sub) {
+    const meta = DT.relMeta;
+    let extra = "";
+    if (meta && meta.asof) extra = ` · 关联 ${meta.window || ""}日 @${meta.asof}`;
+    else if (meta && meta.note) extra = ` · 关联：${meta.note}`;
+    sub.textContent = `${S.market === "cn" ? "A股" : "美股（美元）"} · ${rows.length} 个` +
+      (S.source ? ` · ${S.source}` : "") + extra;
+  }
   box.querySelectorAll(".drow.h .s").forEach(el => {
     el.onclick = () => {
       const k = el.dataset.k;
@@ -2575,6 +2616,38 @@ function renderDetail() {
       }, false);
     };
   });
+  // 共振 / 对手标签：点一下直接跳到那个板块
+  box.querySelectorAll(".rtag[data-c]").forEach(el => {
+    el.onclick = ev => {
+      ev.stopPropagation();
+      const code = el.dataset.c;
+      const r = (S.rows || []).find(x => x.code === code) || {};
+      closeDetail();
+      openSector({
+        market: S.market,
+        kind: S.market === "us" ? "industry" : S.kind,
+        group: r.group, code, name: r.name || el.dataset.n || code,
+      }, false);
+    };
+  });
+}
+async function loadDetailRelations() {
+  const key = S.market + ":" + S.kind;
+  if (DT.relKey === key && DT.rel) return;
+  DT.relKey = key;
+  DT.rel = null;
+  DT.relMeta = null;
+  try {
+    const d = await api(`/api/sector_relations?market=${S.market}&kind=${S.kind}&top=2`);
+    if (DT.relKey !== key) return;
+    DT.rel = d.items || {};
+    DT.relMeta = {asof: d.asof || "", window: d.window || 0, note: d.note || d.error || ""};
+  } catch (e) {
+    if (DT.relKey !== key) return;
+    DT.rel = {};
+    DT.relMeta = {note: e.message || String(e)};
+  }
+  if (detailOpen()) renderDetail();
 }
 function openDetail() {
   const el = $("#detail");
@@ -2583,6 +2656,7 @@ function openDetail() {
   $("#dSub").textContent = "加载中…";
   $("#dTbl").innerHTML = "";
   renderDetail();
+  loadDetailRelations();
 }
 function closeDetail() {
   const el = $("#detail");
