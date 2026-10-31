@@ -1,5 +1,25 @@
 [
  {
+  "market": "cn",
+  "code": "T881121",
+  "name": "半导体",
+  "kind": "industry",
+  "tf": "1d",
+  "group": "broad",
+  "w": null,
+  "h": null
+ },
+ {
+  "market": "cn",
+  "code": "SH603986",
+  "name": "兆易创新",
+  "kind": "stock",
+  "tf": "1d",
+  "group": "broad",
+  "w": null,
+  "h": null
+ },
+ {
   "market": "us",
   "code": "AVGO",
   "name": "Broadcom",
