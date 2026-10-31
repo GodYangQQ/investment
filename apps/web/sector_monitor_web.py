@@ -418,6 +418,9 @@ def _list_ttl(market: str) -> float:
 
 
 def _bar_ttl(tf: str) -> float:
+    """缓存时间：分时（1m）盘中要跟得紧，其他分钟 15s，日线 5 分钟。"""
+    if tf == "1m":
+        return 5.0
     return 15.0 if tf.endswith("m") else 300.0
 
 
@@ -1677,6 +1680,8 @@ def cn_bars(
         klt = int(tf[:-1])
         df = _em_kline(secid, klt, tail or 800)
         if df is not None and not df.empty:
+            if tf == "1m":
+                df = _clip_last_day(df)
             return _rows(df.tail(700), True), "东财K线"
         df = _em_trends(secid, 5)
         if df is not None and not df.empty:
@@ -2157,6 +2162,17 @@ def _ak_index_bars(code: str) -> list[dict]:
         return []
 
 
+def _clip_last_day(df):
+    """分时只保留最后一个交易日（盘中就是今天，休市就是最近交易日）。"""
+    try:
+        if df is None or len(df) == 0:
+            return df
+        last = df.index.date.max()
+        return df[df.index.date == last]
+    except Exception:
+        return df
+
+
 def cn_stock_bars(code: str, tf: str, tail: int | None = None) -> tuple[list[dict], str]:
     """A股个股 / ETF 的K线：日线走腾讯前复权，分钟走新浪（1/5/15/30/60）。"""
     sym = _cn_symbol(code)
@@ -2169,6 +2185,8 @@ def cn_stock_bars(code: str, tf: str, tail: int | None = None) -> tuple[list[dic
             src = "腾讯分时"
         if df is None or df.empty:
             return [], ""
+        if tf == "1m":
+            df = _clip_last_day(df)
         if tail:
             df = df.tail(tail)
         return _rows(df.tail(700), True), src
@@ -2200,6 +2218,8 @@ def cn_index_bars(code: str, tf: str, tail: int | None = None) -> tuple[list[dic
             src = "腾讯指数分时"
         if df is None or df.empty:
             return [], ""
+        if tf == "1m":
+            df = _clip_last_day(df)
         if tail:
             df = df.tail(tail)
         return _rows(df.tail(700), True), src

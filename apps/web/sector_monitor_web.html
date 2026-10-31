@@ -3632,7 +3632,7 @@ setInterval(async () => {
 setInterval(() => {
   if (!S.auto || !S.code || S.loading || _barsAbort) return;
   const age = Date.now() - S.lastBarFetch;
-  const limit = String(S.tf).endsWith("m") ? 15000 : 30000;
+  const limit = S.tf === "1m" ? 5000 : (String(S.tf).endsWith("m") ? 15000 : 30000);
   if (age >= limit) loadBars({reset: false, silent: true});
 }, 5000);
 
