@@ -819,10 +819,37 @@ def kick_refresh(force: bool = False) -> bool:
     return True
 
 
+_POLLER = {"started": False, "interval": 300, "last": 0.0}
+
+
+def start_poller(interval: int = 300) -> None:
+    """常驻后台抓取线程：服务启动时调一次，之后每 interval 秒抓一轮。
+
+    前端只读库里的现成数据，不再因为“有人打开抽屉”才去抓。
+    """
+    if _POLLER["started"]:
+        return
+    _POLLER["started"] = True
+    _POLLER["interval"] = max(60, int(interval))
+
+    def loop() -> None:
+        time.sleep(2)
+        while True:
+            t0 = time.time()
+            try:
+                _collect()
+                _POLLER["last"] = time.time()
+                print(f"[news] 抓取完成 {len(_MEM['items'])} 条 · {time.time() - t0:.1f}s", flush=True)
+            except Exception as e:  # noqa: BLE001
+                print(f"[news] 抓取失败: {e}", flush=True)
+            time.sleep(_POLLER["interval"])
+
+    threading.Thread(target=loop, daemon=True, name="news-poller").start()
+
+
 def state(limit: int = 200, category: str = "", q: str = "", code: str = "",
           stock: str = "", min_level: int = 0, watch: bool = False) -> dict:
     """给接口用：立即返回库里数据，同时判断是否需要后台刷新。"""
-    kick_refresh(False)
     counts: dict[str, int] = {}
     for r in load_news(limit=800):
         counts[r["category"]] = counts.get(r["category"], 0) + 1
@@ -853,6 +880,7 @@ def state(limit: int = 200, category: str = "", q: str = "", code: str = "",
         "levels": {str(l): sum(1 for r in load_news(limit=800) if int(r.get("level") or 0) == l) for l in range(5)},
         "pending": _MEM["running"],
         "updated": _MEM["ts"],
+        "poller": {"on": _POLLER["started"], "interval": _POLLER["interval"], "last": _POLLER["last"]},
     }
 
 

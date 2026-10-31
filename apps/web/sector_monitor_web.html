@@ -2346,14 +2346,18 @@ function syncFab() {
   btn.style.display = watchOpen() ? "none" : "";
 }
 /* ---------- 事件 / 新闻 ---------- */
-const NEWS = {items: [], cat: "", onlyCur: false, minLevel: 0, loading: false, pending: false, timer: 0};
+const NEWS = {items: [], cat: "", onlyCur: false, minLevel: 0, loading: false, pending: false,
+  timer: 0, updated: 0};
 function newsOpen() { return $("#news").classList.contains("open"); }
 function renderNews() {
   const box = $("#nlist");
   const sub = $("#nSub");
   if (!box) return;
   const items = NEWS.items || [];
-  const suffix = (NEWS.cat === "财报" ? " · 仅自选相关" : "") + (NEWS.pending ? " · 抓取中…" : "");
+  const upd = NEWS.updated
+    ? " · 更新于 " + new Date(NEWS.updated * 1000).toLocaleTimeString("zh-CN", {hour12: false})
+    : "";
+  const suffix = (NEWS.cat === "财报" ? " · 仅自选相关" : "") + (NEWS.pending ? " · 抓取中…" : "") + upd;
   if (sub) sub.textContent = items.length ? `${items.length} 条${suffix}` : "";
   if (!items.length) {
     box.innerHTML = `<div class="nempty">${NEWS.pending ? "正在抓取新闻…" : "暂无新闻，点右上「刷新」"}</div>`;
@@ -2411,6 +2415,7 @@ async function loadNews(refresh) {
       (refresh ? "&refresh=1" : ""));
     NEWS.items = d.items || [];
     NEWS.pending = !!d.pending;
+    NEWS.updated = (d.poller && d.poller.last) || d.updated || 0;
     const badge = $("#newsBadge");
     if (badge) badge.textContent = NEWS.items.length ? String(NEWS.items.length) : "";
     renderNews();

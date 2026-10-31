@@ -3418,6 +3418,13 @@ def main():
     db_prune()
     _ensure_game_server()
     threading.Thread(target=_score_warmup, daemon=True, name="score-warmup").start()
+    # 新闻常驻抓取：每 5 分钟一轮，前端只读库
+    try:
+        from core.events.news_feed import start_poller
+
+        start_poller(300)
+    except Exception as e:
+        print(f"[news] 轮询启动失败: {e}", flush=True)
     if not args.no_warm:
         threading.Thread(target=_warmup, daemon=True, name="warmup").start()
         threading.Thread(target=_background_ticker, daemon=True, name="ticker").start()
