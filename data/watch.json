@@ -1,0 +1,112 @@
+[
+ {
+  "market": "us",
+  "code": "XOM",
+  "name": "EXXONMOBIL HOLDINGS CORP",
+  "kind": "stock",
+  "tf": "1d",
+  "group": "broad",
+  "w": null,
+  "h": null
+ },
+ {
+  "market": "us",
+  "code": "AMD",
+  "name": "AMD",
+  "kind": "stock",
+  "tf": "1d",
+  "group": "broad",
+  "w": null,
+  "h": null
+ },
+ {
+  "market": "cn",
+  "code": "T881270",
+  "name": "元件",
+  "kind": "industry",
+  "tf": "1d",
+  "group": "industry",
+  "w": null,
+  "h": null
+ },
+ {
+  "market": "us",
+  "code": "XLE",
+  "name": "SPDR能源ETF",
+  "kind": "industry",
+  "tf": "1d",
+  "group": "broad",
+  "w": null,
+  "h": null
+ },
+ {
+  "market": "us",
+  "code": "KRE",
+  "name": "区域银行指数ETF-SPDR KBW",
+  "kind": "industry",
+  "tf": "1d",
+  "group": "theme",
+  "w": null,
+  "h": null
+ },
+ {
+  "market": "us",
+  "code": "XBI",
+  "name": "生物科技股ETF",
+  "kind": "industry",
+  "tf": "1d",
+  "group": "theme",
+  "w": null,
+  "h": null
+ },
+ {
+  "market": "cn",
+  "code": "SZ301239",
+  "name": "普瑞眼科",
+  "kind": "stock",
+  "tf": "1d",
+  "group": "semi",
+  "w": null,
+  "h": null
+ },
+ {
+  "market": "cn",
+  "code": "T881175",
+  "name": "医疗服务",
+  "kind": "industry",
+  "tf": "1d",
+  "group": "semi",
+  "w": null,
+  "h": null
+ },
+ {
+  "market": "us",
+  "code": "QQQ",
+  "name": "纳百ETF",
+  "kind": "industry",
+  "tf": "1d",
+  "group": "semi",
+  "w": null,
+  "h": null
+ },
+ {
+  "market": "us",
+  "code": "WULF",
+  "name": "TeraWulf Inc.",
+  "kind": "stock",
+  "tf": "1d",
+  "group": "semi",
+  "w": null,
+  "h": null
+ },
+ {
+  "market": "us",
+  "code": "SOXX",
+  "name": "半导体板块ETF",
+  "kind": "industry",
+  "tf": "1d",
+  "group": "semi",
+  "w": null,
+  "h": null
+ }
+]

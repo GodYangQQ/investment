@@ -174,13 +174,37 @@ padding:6px 12px;border-radius:8px;font-size:17px;cursor:pointer}
  cursor:pointer;display:flex;flex-direction:column;
  transition:border-color .12s,box-shadow .12s,transform .2s linear;
  transform-origin:center center;will-change:transform}
-.wcard:hover{border-color:#3c4a59;background:#141c26;transform:scale(1.5);z-index:5;
- box-shadow:0 14px 34px rgba(0,0,0,.6)}
+/* hover：沿用原来的等比丝滑放大逻辑，尺寸放大到 2 倍（宽高各 2 倍） */
+.wcard:hover{border-color:#3c4a59;background:#141c26;transform:scale(3);z-index:6;
+ box-shadow:0 18px 40px rgba(0,0,0,.66)}
 .wcard.sel{border-color:var(--accent);box-shadow:0 0 0 1px rgba(74,144,217,.45) inset}
 .wcard .wscore{border:1px solid #3c5680;background:#18212c;color:#9cc4ef;font-size:14px;
  padding:1px 7px;border-radius:6px;line-height:1.5;opacity:0;visibility:hidden;transition:opacity .12s}
 .wcard:hover .wscore{opacity:1;visibility:visible}
 .wcard .wscore:hover{background:#20304a;color:#fff}
+/* 自选卡片：市场标签 + ETF 持仓按钮 */
+.wcard .mtag{flex:0 0 auto;font-size:11.5px;line-height:1.7;padding:0 5px;border-radius:4px;
+ border:1px solid;font-weight:600;letter-spacing:.2px}
+.wcard .mtag.cn{color:#ef6b6b;border-color:#6b2929;background:#2a1717}
+.wcard .mtag.us{color:#58a6ff;border-color:#24466b;background:#122132}
+.wcard .whold{border:1px solid #3c5680;background:#18212c;color:#9cc4ef;font-size:14px;
+ padding:1px 7px;border-radius:6px;line-height:1.5;opacity:0;visibility:hidden;transition:opacity .12s}
+.wcard:hover .whold{opacity:1;visibility:visible}
+.wcard .whold:hover{background:#20304a;color:#fff}
+/* ETF 持仓弹窗行 */
+.score-modal .hold-row{display:grid;grid-template-columns:34px minmax(150px,1.7fr) 100px 92px;
+ gap:8px;align-items:center;padding:6px 8px;border-radius:6px;font-size:14.5px;
+ font-variant-numeric:tabular-nums;cursor:pointer}
+.score-modal .hold-row:hover{background:#17212c}
+.score-modal .hold-row.h{color:#8290a0;font-size:13px;cursor:default;border-bottom:1px solid var(--line);
+ border-radius:0;padding-bottom:7px}
+.score-modal .hold-row.h:hover{background:transparent}
+.score-modal .hold-row .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.score-modal .hold-row .c{color:#687584;font-size:12.5px;margin-left:5px}
+.score-modal .hold-row .w{color:var(--accent);font-weight:600;text-align:right}
+.score-modal .hold-row .num{text-align:right}
+.score-modal .hold-bar{height:4px;border-radius:2px;background:#20304a;overflow:hidden}
+.score-modal .hold-bar i{display:block;height:100%;background:var(--accent)}
 .score-modal{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;
  background:rgba(4,7,10,.62);padding:20px}
 .score-modal.open{display:flex}
@@ -219,6 +243,34 @@ padding:6px 12px;border-radius:8px;font-size:17px;cursor:pointer}
 .score-modal .srow .sc{color:var(--accent);font-weight:700}
 .score-modal .srow .dim{color:#7c8896}
 .score-modal .stip{padding:22px 8px;text-align:center;color:#94a0ad;font-size:15px;line-height:1.8}
+/* ---------- 板块明细（全量列表 + 表头排序） ---------- */
+.detail{position:fixed;inset:0;z-index:46;background:#0b0f14;display:none;flex-direction:column}
+.detail.open{display:flex}
+.detail .dh{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--line);
+ background:#0e141b;flex-wrap:wrap}
+.detail .dh b{font-size:19px}
+.detail .dh .muted{font-size:15.5px}
+.detail .dh #dq{width:190px;background:var(--card);border:1px solid var(--line);color:var(--txt);
+ border-radius:7px;padding:5px 10px;font-size:16px}
+.detail .dh #dq:focus{outline:none;border-color:var(--accent)}
+.dtbl{flex:1;min-height:0;overflow:auto;padding:8px 14px 20px}
+.drow{display:grid;grid-template-columns:var(--dtgrid,42px minmax(150px,1.8fr) 86px 104px 66px 104px 78px
+ minmax(90px,1.2fr) 96px);gap:8px;align-items:center;padding:6px 8px;border-radius:6px;font-size:14.5px;
+ font-variant-numeric:tabular-nums;cursor:pointer}
+.drow:not(.h):nth-child(even){background:#101720}
+.drow:not(.h):hover{background:#17212c}
+.drow.h{position:sticky;top:-8px;z-index:2;background:#0e141b;color:#8290a0;font-size:13.5px;
+ cursor:default;border-bottom:1px solid var(--line);padding-top:8px;padding-bottom:8px}
+.drow.h .s{cursor:pointer;user-select:none;white-space:nowrap}
+.drow.h .s:hover{color:#fff}
+.drow.h .s.on{color:var(--accent);font-weight:600}
+.drow.h .ar{opacity:.75;margin-left:2px;font-size:12px}
+.drow .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.drow .c{color:#687584;font-size:12.5px;margin-left:5px}
+.drow .num{text-align:right}
+.drow.h .num{text-align:right}
+.drow .lk{color:#94a0ad;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.drow .gp{color:#7d8b9a;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .wcard .wh{display:flex;align-items:baseline;gap:8px;flex-wrap:nowrap;overflow:hidden}
 .wcard .wh b{font-size:17.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .wcard .wh .muted{font-size:15px;white-space:nowrap}
@@ -268,6 +320,7 @@ body.focus main{grid-template-columns:304px 1fr}
   <span class="sp"></span>
   <span id="ts" class="muted"></span>
   <button id="helpBtn">画线说明 ?</button>
+  <button id="detailBtn" title="所有板块明细：可按成交额 / 主力净额 / 涨跌幅 / 量比 排序">板块明细</button>
   <button id="gameBtn">回测游戏</button>
 </header>
 
@@ -284,8 +337,12 @@ body.focus main{grid-template-columns:304px 1fr}
   · 图表操作：左键拖拽平移（X+Y）、滚轮缩放（自动适配 Y 轴）、中键平移、双击/「重置视图」恢复。<br>
   · <b>自选</b>：左侧点 ☆ 收藏，右侧「自选」抽屉看迷你图 + 已画线；卡片显示最近的下支撑 / 上压力，
     点卡片切换板块，「放大」看单图专注模式（<code>Esc</code> 退出）。<br>
+  · <b>自选卡片</b>：悬停时卡片<b>等比放大 3 倍</b>（宽高各 3x，贴边自动朝内侧展开）；
+    左上角标签标明 <b>A股 / 美股</b>；ETF 卡片悬停出现「持仓」按钮，看前 10 大成分股。<br>
   · <b>自选板块</b>：鼠标悬停卡片会出现「个股评分」，点击查看该板块<b>评分前50</b>的个股，可按板块标签筛选；
-    双击卡片空白处仍是原来的放大/画线逻辑。<br><br>
+    双击卡片空白处仍是原来的放大/画线逻辑。<br>
+  · <b>板块明细</b>：标题栏「板块明细」按钮打开全量列表，点表头可按<b>成交额 / 主力净额 / 涨跌幅 / 量比 / 板块名</b>
+    升降序排序，支持名称过滤；点任意一行跳到该板块K线（<code>#detail</code> 可直接打开）。<br><br>
   <b>板块口径：</b>A股用东财行业/概念板块，按<b>成交额</b>排序，可切量比、主力净额与涨幅；
   美股用 SPDR 11 大行业 + 半导体/科技 + 主题 ETF。列表每 10 秒刷新，分时/日线按周期自动更新。
 </div>
@@ -349,6 +406,25 @@ body.focus main{grid-template-columns:304px 1fr}
     </div>
     <span class="sp"></span><button id="wclose">关闭</button></div>
   <div class="wlist" id="wlist"></div>
+</aside>
+
+<div id="holdModal" class="score-modal">
+  <div class="sbox" style="width:min(660px,94vw)">
+    <div class="shead"><b id="hmTitle">ETF 前10大持仓</b><span class="muted" id="hmSub"></span>
+      <span class="sp"></span><button id="hmClose">关闭</button></div>
+    <div class="sbody" id="hmBody"></div>
+  </div>
+</div>
+
+<aside id="detail" class="detail">
+  <div class="dh">
+    <b>板块明细</b>
+    <span class="muted" id="dSub"></span>
+    <span class="sp"></span>
+    <input id="dq" placeholder="过滤名称 / 代码" autocomplete="off">
+    <button id="dClose">关闭</button>
+  </div>
+  <div class="dtbl" id="dTbl"></div>
 </aside>
 
 <div id="scoreModal" class="score-modal">
@@ -1362,6 +1438,13 @@ document.addEventListener("keydown", e => {
     if (e.key === "Escape") closeScoreRanking();
     return;
   }
+  if ($("#holdModal").classList.contains("open")) {
+    if (e.key === "Escape") closeHoldings();
+    return;
+  }
+  if (detailOpen()) {
+    if (e.key === "Escape") { closeDetail(); return; }
+  }
   if (e.key === "Escape") {
     if (S.p1) { S.p1 = null; setStatus("已取消起点"); draw(); return; }
     if (S.mode) { setMode(null); return; }
@@ -1783,6 +1866,7 @@ async function loadSectors(silent = false) {
     renderIdx();
     renderTabs();
     renderList();
+    if (detailOpen()) renderDetail();
     updateHeader();
     if (!S.code && S.rows.length) {
       const saved = readSaved();
@@ -2078,6 +2162,7 @@ async function renderWatch() {
     el.dataset.key = it.market + ":" + it.code;
     el.addEventListener("mouseenter", () => {
       const br = box.getBoundingClientRect(), r = el.getBoundingClientRect();
+      // 放大到 2 倍时，用 transform-origin 让卡片朝“空间更大”的方向长，避免被裁掉
       const mx = Math.max(16, r.width * 0.26), my = Math.max(16, r.height * 0.26);
       let ox = "center", oy = "center";
       if (r.left - br.left <= mx) ox = "left";
@@ -2091,18 +2176,22 @@ async function renderWatch() {
       if (el._bars) drawSpark(el.querySelector(".wspark"), el._bars, el._lines, el._price, 1);
     });
     el.innerHTML =
-      `<div class="wh"><b>${esc(it.name)}</b><span class="muted">${esc(it.code)}</span>` +
+      `<div class="wh"><span class="mtag ${it.market === "us" ? "us" : "cn"}">` +
+      `${it.market === "us" ? "美股" : "A股"}</span>` +
+      `<b>${esc(it.name)}</b><span class="muted">${esc(it.code)}</span>` +
       `<span class="wpx" data-px>—</span></div>` +
       `<canvas class="wspark"></canvas>` +
       `<div class="wl"><span>支撑 <b data-sup>—</b></span>` +
       `<span>压力 <b data-res>—</b></span>` +
       `<span class="wtag" data-tag>加载中…</span>` +
       (canScore ? `<button class="wscore" title="查看该板块个股评分前50">个股评分</button>` : "") +
+      (watchType(it) === "etf" ? `<button class="whold" title="查看该 ETF 前10大持仓">持仓</button>` : "") +
       `<button class="wzoom" title="放大这个板块">放大</button>` +
       `<button class="wdel" title="移出自选（删除）">✕</button></div>`;
     el.addEventListener("click", e => {
       if (Date.now() - (box._suppress || 0) < 320) return;   // 刚拖拽滚动过，别误触
       if (e.target.closest(".wscore")) { openScoreRanking(it); return; }
+      if (e.target.closest(".whold")) { openHoldings(it); return; }
       if (e.target.closest(".wdel")) { toggleWatch(it); return; }
       if (e.target.closest(".wzoom")) { openSector(it, true); return; }
       if (e.target.closest(".wres")) return;
@@ -2111,7 +2200,7 @@ async function renderWatch() {
       setStatus(`已选中 ${it.name} · 双击放大 · 右下角拖动改大小`);
     });
     el.addEventListener("dblclick", e => {
-      if (e.target.closest(".wdel,.wzoom,.wscore,.wres")) return;
+      if (e.target.closest(".wdel,.wzoom,.wscore,.whold,.wres")) return;
       openSector(it, true);
     });
     box.appendChild(el);
@@ -2302,6 +2391,207 @@ $("#smClose").addEventListener("click", closeScoreRanking);
 $("#scoreModal").addEventListener("click", e => {
   if (e.target === $("#scoreModal")) closeScoreRanking();
 });
+
+/* ---------- ETF 前10大持仓弹窗 ---------- */
+function closeHoldings() {
+  const m = $("#holdModal");
+  if (m) m.classList.remove("open");
+}
+function holdStockTarget(market, code, name) {
+  if (market === "us") return {market: "us", kind: "stock", code, name};
+  return {market: "cn", kind: "stock", code: scoreStockCode(code), name};
+}
+async function openHoldings(it) {
+  const modal = $("#holdModal"), body = $("#hmBody");
+  if (!modal || !body) return;
+  const mkt = it.market === "us" ? "us" : "cn";
+  $("#hmTitle").textContent = (it.name || it.code) + " · 前10大持仓";
+  $("#hmSub").textContent = "";
+  body.innerHTML = '<div class="stip">持仓加载中…</div>';
+  modal.classList.add("open");
+  body.scrollTop = 0;
+  try {
+    const d = await api(`/api/etf_holdings?market=${mkt}&code=${encodeURIComponent(it.code)}&top=10`);
+    if (!modal.classList.contains("open")) return;
+    const items = d.items || [];
+    if (!items.length) {
+      body.innerHTML = `<div class="stip">${esc(d.note || d.error || "暂无持仓数据")}</div>`;
+      return;
+    }
+    const maxW = Math.max(...items.map(x => Number(x.weight) || 0), 1);
+    $("#hmSub").textContent = `${items.length} 只 · ${mkt === "us" ? "美股" : "A股"}`;
+    const head = `<div class="hold-row h"><span>#</span><span>成分</span>` +
+      `<span class="num">权重</span><span class="num">占比</span></div>`;
+    body.innerHTML = head + items.map((x, i) =>
+      `<div class="hold-row" data-code="${esc(x.code)}" data-name="${esc(x.name)}">` +
+      `<span class="num">${i + 1}</span>` +
+      `<span class="nm">${esc(x.name || x.code)}<span class="c">${esc(x.code)}</span></span>` +
+      `<span class="w">${(Number(x.weight) || 0).toFixed(2)}%</span>` +
+      `<span class="hold-bar"><i style="width:${Math.max(2, (Number(x.weight) || 0) / maxW * 100)}%"></i></span>` +
+      `</div>`).join("");
+    body.querySelectorAll(".hold-row[data-code]").forEach(el => {
+      el.onclick = () => {
+        const t = holdStockTarget(mkt, el.dataset.code, el.dataset.name);
+        closeHoldings();
+        openSector(t, false);
+      };
+    });
+  } catch (e) {
+    body.innerHTML = `<div class="stip">加载失败：${esc(e.message || e)}</div>`;
+  }
+}
+$("#hmClose").addEventListener("click", closeHoldings);
+$("#holdModal").addEventListener("click", e => {
+  if (e.target === $("#holdModal")) closeHoldings();
+});
+
+/* ---------- 板块明细：全量板块列表 + 点表头排序 ---------- */
+const DT = {key: "amount", dir: -1, q: ""};
+const DT_COLS = [
+  {k: "name", t: "板块", s: 1},
+  {k: "pct", t: "涨跌幅", s: 1, num: 1},
+  {k: "amount", t: "成交额", s: 1, num: 1},
+  {k: "vr", t: "量比", s: 1, num: 1},
+  {k: "main", t: "主力净额", s: 1, num: 1},
+  {k: "updown", t: "涨/跌", num: 1},
+  {k: "leader", t: "领涨"},
+  {k: "gp", t: "分组 / 类型"},
+];
+const DT_MISSING = v => v === null || v === undefined || v === "" || (typeof v === "number" && isNaN(v));
+/* 可选列：整列都没有数据时自动隐藏（比如数据源不提供量比时） */
+const DT_W = {
+  name: "minmax(150px,1.8fr)", pct: "86px", amount: "104px", vr: "66px",
+  main: "104px", updown: "78px", leader: "minmax(90px,1.2fr)", gp: "96px",
+};
+const DT_OPT = new Set(["vr", "main", "updown", "leader", "gp"]);
+
+function detailOpen() {
+  const el = $("#detail");
+  return !!el && el.classList.contains("open");
+}
+function dtVal(r, k) {
+  if (k === "updown") return (r.up || r.down) ? (r.up || 0) : undefined;
+  if (k === "gp") return r.group || dtGroupName(r);
+  return r[k];
+}
+function dtRows() {
+  const q = (DT.q || "").trim().toLowerCase();
+  const rows = (S.rows || []).filter(r => {
+    if (S.market === "cn" && r.group && r.group !== S.kind) return false;
+    if (!q) return true;
+    return (r.name || "").toLowerCase().includes(q) || (r.code || "").toLowerCase().includes(q);
+  });
+  const k = DT.key, dir = DT.dir;
+  rows.sort((a, b) => {
+    if (k === "name") {
+      return dir * String(a.name || "").localeCompare(String(b.name || ""), "zh-CN");
+    }
+    const va = dtVal(a, k), vb = dtVal(b, k);
+    const na = DT_MISSING(va), nb = DT_MISSING(vb);
+    if (na && nb) return 0;
+    if (na) return 1;           // 缺失值永远沉底
+    if (nb) return -1;
+    return dir * (Number(va) - Number(vb));
+  });
+  return rows;
+}
+function dtGroupName(r) {
+  if (S.market === "us") {
+    const g = (S.groups || []).find(x => x.id === r.group);
+    return g ? g.name : "美股ETF";
+  }
+  return S.kind === "concept" ? "概念" : "行业";
+}
+function renderDetail() {
+  const box = $("#dTbl");
+  if (!box || !detailOpen()) return;
+  const rows = dtRows();
+  const keepTop = box.scrollTop;
+  const cols = DT_COLS.filter(c => !DT_OPT.has(c.k) ||
+    rows.some(r => !DT_MISSING(dtVal(r, c.k))));
+  box.style.setProperty("--dtgrid",
+    ["42px"].concat(cols.map(c => DT_W[c.k])).join(" "));
+  const head = `<div class="drow h"><span>#</span>` + cols.map(c => {
+    const cls = (c.num ? " num" : "") + (c.s ? " s" : "");
+    if (!c.s) return `<span class="${cls.trim()}">${c.t}</span>`;
+    const on = DT.key === c.k ? " on" : "";
+    const ar = DT.key === c.k ? (DT.dir < 0 ? "▼" : "▲") : "";
+    return `<span class="${cls.trim()}${on}" data-k="${c.k}">${c.t}<i class="ar">${ar}</i></span>`;
+  }).join("") + `</div>`;
+  const cell = (r, k) => {
+    switch (k) {
+      case "name":
+        return `<span class="nm">${esc(r.name || r.code)}` +
+          `<span class="c">${esc(r.code || "")}</span></span>`;
+      case "pct":
+        return `<span class="num" style="color:${pctColor(r.pct)}">${fmtPct(r.pct)}</span>`;
+      case "amount":
+        return `<span class="num">${fmtAmt(r.amount)}</span>`;
+      case "vr":
+        return `<span class="num">${DT_MISSING(r.vr) ? "—" : Number(r.vr).toFixed(2)}</span>`;
+      case "main": {
+        const m = r.main;
+        return `<span class="num" style="color:${DT_MISSING(m) ? "" : pctColor(m)}">` +
+          `${DT_MISSING(m) ? "—" : fmtAmt(m)}</span>`;
+      }
+      case "updown":
+        return `<span class="num"><span style="color:${UP}">${DT_MISSING(r.up) ? "—" : r.up}</span>/` +
+          `<span style="color:${DOWN}">${DT_MISSING(r.down) ? "—" : r.down}</span></span>`;
+      case "leader":
+        return `<span class="lk">${esc(r.leader || "—")}</span>`;
+      case "gp":
+        return `<span class="gp">${esc(dtGroupName(r))}</span>`;
+      default:
+        return "<span></span>";
+    }
+  };
+  const body = rows.map((r, i) =>
+    `<div class="drow" data-code="${esc(r.code)}" data-name="${esc(r.name)}">` +
+    `<span class="np">${i + 1}</span>` +
+    cols.map(c => cell(r, c.k)).join("") + `</div>`).join("");
+  box.innerHTML = head + (body ||
+    `<div style="padding:26px 10px;text-align:center;color:#94a0ad">没有匹配的板块</div>`);
+  box.scrollTop = keepTop;
+  const sub = $("#dSub");
+  if (sub) sub.textContent = `${S.market === "cn" ? "A股" : "美股（美元）"} · ${rows.length} 个` +
+    (S.source ? ` · ${S.source}` : "");
+  box.querySelectorAll(".drow.h .s").forEach(el => {
+    el.onclick = () => {
+      const k = el.dataset.k;
+      if (DT.key === k) DT.dir = -DT.dir;
+      else { DT.key = k; DT.dir = -1; }
+      renderDetail();
+    };
+  });
+  box.querySelectorAll(".drow[data-code]").forEach(el => {
+    el.onclick = () => {
+      const code = el.dataset.code;
+      const r = (S.rows || []).find(x => x.code === code) || {};
+      closeDetail();
+      openSector({
+        market: S.market,
+        kind: S.market === "us" ? "industry" : S.kind,
+        group: r.group, code, name: el.dataset.name,
+      }, false);
+    };
+  });
+}
+function openDetail() {
+  const el = $("#detail");
+  if (!el) return;
+  el.classList.add("open");
+  $("#dSub").textContent = "加载中…";
+  $("#dTbl").innerHTML = "";
+  renderDetail();
+}
+function closeDetail() {
+  const el = $("#detail");
+  if (el) el.classList.remove("open");
+}
+$("#detailBtn").onclick = openDetail;
+$("#dClose").onclick = closeDetail;
+$("#dq").addEventListener("input", e => { DT.q = e.target.value; renderDetail(); });
+
 
 /* 卡片右下角改宽高（存进自选，下次打开保持） */
 /* 自选网格：使用原生纵向滚动（不再横向拖动/手动改大小） */
@@ -2816,6 +3106,7 @@ setInterval(() => { if (watchOpen()) refreshWatchValues(); }, 10000);
   renderTfTabs();
   resize();
   await loadSectors();
+  if (location.hash === "#detail") openDetail();
   if (restored && cacheKey(S.market, S.code, S.tf) === restored) {
     setStatus("已恢复上次视图，正在同步最新数据…");
     loadBars({reset: false, silent: false});

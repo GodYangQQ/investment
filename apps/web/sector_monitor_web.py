@@ -42,6 +42,7 @@ import sys
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FuturesTimeoutError
 from datetime import datetime, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
@@ -51,6 +52,7 @@ ROOT_DIR = os.path.dirname(os.path.dirname(RUN_DIR))
 DATA_DIR = os.path.join(ROOT_DIR, "data")
 DB_FILE = os.path.join(DATA_DIR, "sector_monitor.db")
 LINES_FILE = os.path.join(DATA_DIR, "sector_lines.json")
+WATCH_FILE = os.path.join(DATA_DIR, "watch.json")
 UI_FILE = os.path.join(RUN_DIR, "sector_monitor_web.html")
 GAME_PORT = 8123
 OFFLINE = os.environ.get("SECTOR_OFFLINE", "").strip().lower() in ("1", "true", "yes")
@@ -223,6 +225,7 @@ _DB: sqlite3.Connection | None = None
 _DB_LOCK = threading.RLock()
 
 _POOL = ThreadPoolExecutor(max_workers=4, thread_name_prefix="smw")
+_HOLD_POOL = ThreadPoolExecutor(max_workers=2, thread_name_prefix="hold")
 _INFLIGHT: set[str] = set()
 _INFLIGHT_LOCK = threading.Lock()
 _BARS_LOCKS: dict[str, threading.Lock] = {}
@@ -1312,7 +1315,9 @@ def _ths_daily_cached(name: str, kind: str, retry: bool = False):
         return node[1], node[2]
     if not retry and _THS_FAIL.get(k, 0) > now:
         return None, name
-    df, used = _ths_daily_guarded(name, kind)
+    # 预取路径（retry=True）给足时间：整段日线要按年逐段抓，实测 ~10s+，
+    # 用 9s 超时会把每次都判死；前端交互路径仍保留 9s 快速失败。
+    df, used = _ths_daily_guarded(name, kind, timeout=40.0 if retry else 9.0)
     if df is None or df.empty:
         _THS_FAIL[k] = now + _THS_FAIL_TTL
         return None, name
@@ -2515,64 +2520,77 @@ def bars_payload(
     }
 
 
-# ---------------- 画线 / 自选 / 通用缓存（全部落 SQLite） ----------------
+# ---------------- 画线 / 自选（JSON 文件，便于 git 跟踪） ----------------
+# 行情数据留在 SQLite（大、可重抓）；画线和自选是人手产出的小数据，
+# 存成 data/sector_lines.json / data/watch.json，可以直接提交到仓库。
 _MIGRATED = [False]
 
 
+def _read_json_file(path: str, default):
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return default
+
+
+def _write_json_file(path: str, data) -> None:
+    tmp = path + ".tmp"
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=1)
+    os.replace(tmp, path)
+
+
 def _migrate_lines_once() -> None:
-    """把旧的 data/sector_lines.json 一次性导入 DB。"""
+    """老版本把画线存在 SQLite：首次启动时搬到 data/sector_lines.json。"""
     if _MIGRATED[0]:
         return
     _MIGRATED[0] = True
+    if os.path.exists(LINES_FILE):
+        return
     try:
         with _DB_LOCK:
-            n = db().execute("SELECT COUNT(*) FROM lines").fetchone()[0]
-        if n or not os.path.exists(LINES_FILE):
-            return
-        with open(LINES_FILE, encoding="utf-8") as f:
-            d = json.load(f)
-        if not isinstance(d, dict):
-            return
-        with _DB_LOCK:
-            conn = db()
-            for k, v in d.items():
-                conn.execute(
-                    "INSERT OR REPLACE INTO lines(key,ts,payload) VALUES(?,?,?)",
-                    (str(k), time.time(), json.dumps(v, ensure_ascii=False)),
-                )
-            conn.commit()
+            rows = db().execute("SELECT key,payload FROM lines").fetchall()
+        if rows:
+            _write_json_file(LINES_FILE, {k: json.loads(v) for k, v in rows})
     except Exception:
         pass
 
 
 def load_lines() -> dict:
     _migrate_lines_once()
-    try:
-        with _DB_LOCK:
-            rows = db().execute("SELECT key,payload FROM lines").fetchall()
-        return {k: json.loads(v) for k, v in rows}
-    except Exception:
-        return {}
+    d = _read_json_file(LINES_FILE, {})
+    return d if isinstance(d, dict) else {}
 
 
 def save_key_lines(key: str, lines: list) -> None:
     try:
         with _DB_LOCK:
-            conn = db()
-            conn.execute(
-                "INSERT OR REPLACE INTO lines(key,ts,payload) VALUES(?,?,?)",
-                (str(key), time.time(), json.dumps(lines, ensure_ascii=False)),
-            )
-            conn.commit()
+            d = _read_json_file(LINES_FILE, {})
+            if not isinstance(d, dict):
+                d = {}
+            if lines:
+                d[str(key)] = lines
+            else:
+                d.pop(str(key), None)
+            _write_json_file(LINES_FILE, d)
     except Exception:
         pass
 
 
 def load_watch_db() -> list:
+    d = _read_json_file(WATCH_FILE, None)
+    if isinstance(d, list):
+        return d
+    # 老版本存在 SQLite：搬迁一次
     try:
         with _DB_LOCK:
             row = db().execute("SELECT payload FROM watch WHERE id='default'").fetchone()
-        return json.loads(row[0]) if row else []
+        items = json.loads(row[0]) if row else []
+        if items:
+            _write_json_file(WATCH_FILE, items)
+        return items
     except Exception:
         return []
 
@@ -2580,12 +2598,7 @@ def load_watch_db() -> list:
 def save_watch_db(items: list) -> None:
     try:
         with _DB_LOCK:
-            conn = db()
-            conn.execute(
-                "INSERT OR REPLACE INTO watch(id,ts,payload) VALUES('default',?,?)",
-                (time.time(), json.dumps(items, ensure_ascii=False)),
-            )
-            conn.commit()
+            _write_json_file(WATCH_FILE, list(items or []))
     except Exception:
         pass
 
@@ -2747,6 +2760,34 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as e:
                 self._json({"items": [], "error": str(e)[:120]})
             return
+        if u.path == "/api/etf_holdings":
+            market = (q.get("market", ["us"])[0] or "us").strip()
+            code = (q.get("code", [""])[0] or "").strip()
+            try:
+                top = int(q.get("top", ["10"])[0] or 10)
+            except Exception:
+                top = 10
+            top = max(1, min(top, 20))
+            if not code:
+                self._json({"items": [], "note": "缺少 code"})
+                return
+            try:
+                from core.datasets.etf_holdings import etf_holdings
+
+                # 网络源可能慢：限时 12s，超时先返回 pending，后台继续算并写缓存
+                fut = _HOLD_POOL.submit(etf_holdings, market, code, top)
+                try:
+                    items = fut.result(timeout=12)
+                except FuturesTimeoutError:
+                    self._json({"items": [], "pending": True, "note": "持仓数据抓取中，稍后再试"})
+                    return
+                self._json({
+                    "items": items,
+                    "note": "" if items else "暂无持仓数据（数据源暂不可用）",
+                })
+            except Exception as e:
+                self._json({"items": [], "error": str(e)[:120]})
+            return
         if u.path == "/api/search":
             q = (q.get("q", [""])[0] or "").strip()
             try:
@@ -2781,8 +2822,8 @@ class Handler(BaseHTTPRequestHandler):
                     conn = db()
                     nb = conn.execute("SELECT COUNT(*) FROM bars").fetchone()[0]
                     ns = conn.execute("SELECT COUNT(*) FROM snapshots").fetchone()[0]
-                    nl = conn.execute("SELECT COUNT(*) FROM lines").fetchone()[0]
                     nc = conn.execute("SELECT COUNT(*) FROM cache").fetchone()[0]
+                nl = len(load_lines())
                 size = os.path.getsize(DB_FILE) if os.path.exists(DB_FILE) else 0
                 self._json(
                     {

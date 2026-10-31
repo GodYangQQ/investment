@@ -136,8 +136,15 @@ python apps/web/sector_monitor_web.py --offline       # 只读本地库
 - K 线：收盘折线、成交量、MA5/17/21/45 单独开关、对数坐标、十字光标、OHLC 浮窗、
   滚轮缩放、拖拽平移。
 - 排序：成交额 / 涨跌幅 / 量比 / 主力净额；支持搜索板块 / 个股 / 指数。
+- 板块明细：标题栏「板块明细」打开**全量板块表**（不受左侧“前15/中15/后15”截断），
+  点表头可按 成交额 / 主力净额 / 涨跌幅 / 量比 / 板块名 升降序切换；支持名称过滤，
+  点任意行跳到该板块 K 线；空数据列（如数据源没有量比）自动隐藏。直达链接 `/#detail`。
 - 画线：水平线 / 趋势线 / 纵向线；拖线体平移、拖端点调整、Delete 删除、Ctrl+Z/Y 撤销重做。
-- 自选：自选板块卡片网格，支持滚轮滚动、单击选中、双击放大/画线。
+- 自选：自选板块卡片网格，支持滚轮滚动、单击选中、双击放大/画线；
+  鼠标悬停时卡片**等比放大 3 倍**（宽高各 3x，带过渡动画，贴边时自动朝内侧展开）。
+- 自选卡片标签：每张卡片左上角标 **A股 / 美股**；ETF 卡片 hover 出现「持仓」按钮，
+  打开前 10 大成分股（A股走基金持仓季度数据，美股走 SPDR 官方 xlsx / iShares 快照 / yfinance），
+  点成分行可直接打开该股 K 线。
 - 板块评分：自选板块卡片 hover 出现「个股评分」按钮，打开独立窗口：
   - 最多展示评分前 **50** 只；
   - 每只股票显示日线折线简图、评分、成长、盈利、质量、回购、ROE；
@@ -160,6 +167,7 @@ python apps/web/sector_monitor_web.py --offline       # 只读本地库
 | `/api/sectors` | 板块/ETF 列表与实时快照 |
 | `/api/bars` | K 线（板块/个股/指数/ETF） |
 | `/api/board_scores` | 板块个股评分，支持 `top` 参数 |
+| `/api/etf_holdings` | ETF 前 N 大持仓（美股 SPDR/SSGA、A股基金持仓） |
 | `/api/watch` | 自选列表读写 |
 | `/api/lines` | 画线读写 |
 | `/api/sectors_ma` | MA21 斜率筛选 |
@@ -167,16 +175,24 @@ python apps/web/sector_monitor_web.py --offline       # 只读本地库
 
 ### 本地存储
 
-`data/sector_monitor.db`（SQLite / WAL）
+`data/sector_monitor.db`（SQLite / WAL，**不入库**，行情可重抓）
 
 | 表 | 内容 |
 |---|---|
 | `bars` | K 线，按 `market + code + tf` 存储 |
 | `meta` | 每份 K 线的抓取时间与来源 |
 | `snapshots` | 板块列表 / 行情快照 |
-| `lines` | 画线，key = `MARKET:code\|tf` |
-| `watch` | 自选列表 |
 | `cache` | 其他通用缓存 |
+
+**画线和自选存成 JSON（可以提交到 git）**：
+
+| 文件 | 内容 | 体量 |
+|---|---|---|
+| `data/sector_lines.json` | 画线，key = `MARKET:code\|tf` | 约 8 KB |
+| `data/watch.json` | 自选列表 | 约 1 KB |
+
+两者是手工产出的小数据，`.gitignore` 已放行，可随仓库备份/同步；
+老版本存在 SQLite 里的 `lines` / `watch` 会在首次启动时自动迁移成 JSON。
 
 画线 schema：
 

@@ -45,7 +45,8 @@ data/gui_night.json
 data/moneyflow_watch.json
 
 # 板块划线看盘（Web）运行时状态
-data/sector_lines.json
+# 注意：画线（sector_lines.json）和自选（watch.json）是手工产出的小数据，
+# 故意不忽略，可随仓库一起备份/同步；行情库仍然忽略。
 data/sector_monitor.db
 data/sector_monitor.db-wal
 data/sector_monitor.db-shm
@@ -65,8 +66,7 @@ experiments_ma/output/
 experiments/output/
 apps/research/experiments/output/
 
-# 回测游戏运行时状态
-data/backtest_game_lines.json
+# 回测游戏运行时状态（交易记录忽略，画线保留）
 data/backtest_game_trades.json
 
 # 外部克隆的开源仓库（本地参考，不入库）
@@ -76,5 +76,7 @@ external/*
 
 # 公司评分缓存（可重算）
 data/company_scores.json
+# ETF 持仓缓存（可重抓）
+data/etf_holdings.json
 
 
