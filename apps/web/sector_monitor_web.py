@@ -2893,6 +2893,27 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as e:
                 self._json({"items": [], "error": str(e)[:120]})
             return
+        if u.path == "/api/stock_industry":
+            raw = (q.get("codes", [""])[0] or "").strip()
+            codes = [c for c in raw.split(",") if c.strip()][:200]
+            out = {}
+            try:
+                from core.scoring.company_score import load_scores
+
+                df = load_scores()
+                if df is not None and not df.empty and "行业" in df.columns:
+                    idx = {}
+                    for _, r in df.iterrows():
+                        idx[str(r.get("代码")).zfill(6)] = str(r.get("行业") or "")
+                    for c in codes:
+                        c6 = re.sub(r"\D", "", c)[-6:].zfill(6)
+                        ind = idx.get(c6)
+                        if ind:
+                            out[c] = ind
+            except Exception:
+                pass
+            self._json({"items": out})
+            return
         if u.path == "/api/stock_context":
             market = (q.get("market", ["us"])[0] or "us").strip().lower()
             code = (q.get("code", [""])[0] or "").strip()

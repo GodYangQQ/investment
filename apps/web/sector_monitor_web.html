@@ -238,6 +238,22 @@ padding:6px 12px;border-radius:8px;font-size:17px;cursor:pointer}
  padding:1px 7px;border-radius:6px;line-height:1.5;opacity:0;visibility:hidden;transition:opacity .12s}
 .wcard:hover .wscore{opacity:1;visibility:visible}
 .wcard .wscore:hover{background:#20304a;color:#fff}
+/* 自选卡片：风格标签 */
+.wcard .wh{flex:0 0 auto}
+.wcard .wstyle{display:flex;gap:4px;margin:2px 0 0;overflow:hidden;white-space:nowrap;flex:0 0 auto}
+.wcard .stag{font-size:11.5px;line-height:1.6;padding:0 5px;border-radius:4px;border:1px solid #2f3b47;
+ background:#151d26;color:#93a3b4;flex:0 0 auto}
+.wcard .stag.科技{color:#7fb6ff;border-color:#27476b;background:#111e2c}
+.wcard .stag.红利{color:#e8c66a;border-color:#5f4f22;background:#221d10}
+.wcard .stag.消费{color:#f0a072;border-color:#6b3f24;background:#251810}
+.wcard .stag.医药{color:#7fd6a8;border-color:#265741;background:#10201a}
+.wcard .stag.周期{color:#c9a37c;border-color:#5c4529;background:#211a12}
+.wcard .stag.金融{color:#77d2d2;border-color:#245050;background:#101f1f}
+.wcard .stag.新能源{color:#8fe08a;border-color:#2f5727;background:#14200f}
+.wcard .stag.军工{color:#b9a3ff;border-color:#42356b;background:#191430}
+.wcard .stag.地产{color:#a9b6c4;border-color:#3a4550;background:#161c22}
+.wcard .stag.农业{color:#c3de7a;border-color:#4a5626;background:#1b2110}
+.wcard .stag.传媒{color:#f09ac6;border-color:#63304a;background:#24131c}
 /* 自选卡片：市场标签 + ETF 持仓按钮 */
 .wcard .mtag{flex:0 0 auto;font-size:11.5px;line-height:1.7;padding:0 5px;border-radius:4px;
  border:1px solid;font-weight:600;letter-spacing:.2px}
@@ -345,7 +361,7 @@ padding:6px 12px;border-radius:8px;font-size:17px;cursor:pointer}
 .wcard .wzoom,.wcard .wdel{border:0;background:transparent;color:var(--muted);font-size:15.5px;
 padding:1px 5px;line-height:1.4;opacity:.6}
 .wcard .wzoom:hover,.wcard .wdel:hover{opacity:1;color:var(--txt)}
-.wcard .wspark{display:block;width:100%;flex:1 1 0;height:auto;min-height:50px;margin:6px 0 4px}
+.wcard .wspark{display:block;width:100%;flex:1 1 0;height:auto;min-height:34px;margin:4px 0 3px}
 .wcard .wl{display:flex;gap:14px;font-size:15.5px;color:var(--muted);align-items:center;flex-wrap:wrap}
 .wcard .wl b{font-variant-numeric:tabular-nums;font-weight:700}
 .wcard .wtag{margin-left:auto;font-size:15px;color:#66717e;white-space:nowrap}
@@ -2251,6 +2267,72 @@ function levelsFor(lines, price, tLast) {
 
 const SPARK_DAYS = 180;   // 自选卡片迷你图 / hover 预览只取最近 180 根日线
 
+/* ---------- 自选卡片风格标签（红利/白马/科技/消费/周期…） ---------- */
+const STYLE_ORDER = ["科技", "红利", "消费", "医药", "周期", "金融", "新能源", "军工", "地产", "农业", "传媒", "其他"];
+/* 关键词只放 2 字以上、不易误伤的词；英文代码单独用 tickers 精确匹配 */
+const STYLE_KEYWORDS = [
+  ["医药", ["医药", "医疗", "生物制品", "中药", "化学制药", "创新药", "疫苗", "生物科技", "医疗器械", "医药商业"],
+          ["XLV", "XBI", "IBB", "UNH", "JNJ", "PFE"]],
+  ["科技", ["半导体", "芯片", "电子", "元件", "计算机", "软件", "通信设备", "光模块", "算力", "人工智能",
+           "光学", "消费电子", "科技", "机器人", "云计算", "IT服务", "通信服务"],
+          ["SMH", "SOXX", "XLK", "VGT", "IGV", "QQQ", "MAGS", "PSI", "XSD", "AMD", "WULF", "PL", "AVGO", "MU", "NVDA", "TSM", "MSFT", "AAPL"]],
+  ["红利", ["银行", "煤炭", "电力", "公用事业", "公路铁路", "水务", "燃气", "钢铁", "保险", "高速公路"],
+          ["XLU", "TLT", "SCHD", "VYM", "KRE", "KBE", "XLP"]],
+  ["消费", ["白酒", "饮料", "食品", "家电", "零售", "旅游", "酒店", "美容", "纺织", "服装", "养殖", "消费"],
+          ["XLP", "XLY", "XRT", "KO", "PEP", "MCD", "SBUX"]],
+  ["周期", ["化工", "化学", "有色", "金属", "石油", "油气", "煤炭", "钢铁", "建材", "水泥", "航运", "港口",
+           "工程机械", "能源", "材料", "小金属", "贵金属"],
+          ["XLE", "XOP", "XME", "GDX", "GLD", "SLV", "LIT", "URA", "XOM", "CVX", "FCX"]],
+  ["金融", ["证券", "多元金融", "保险", "银行"],
+          ["XLF", "KRE", "KBE", "JPM", "BAC", "GS"]],
+  ["新能源", ["电池", "光伏", "储能", "锂", "风电", "新能源", "氢能", "充电桩"],
+          ["TAN", "ICLN", "FAN", "LIT", "URA"]],
+  ["军工", ["军工", "航天", "航空装备", "兵装", "国防"],
+          ["ITA", "PPA", "XAR"]],
+  ["地产", ["房地产", "建筑", "装饰", "家居", "物业"],
+          ["XLRE", "ITB", "XHB"]],
+  ["农业", ["农业", "种业", "养殖", "农产品", "饲料", "化肥"]],
+  ["传媒", ["传媒", "游戏", "影视", "出版", "广告", "元宇宙"],
+          ["XLC", "META", "GOOGL", "NFLX"]],
+];
+const IND_CACHE = new Map();   // A股个股代码 → 行业（来自评分表）
+
+function styleTags(it) {
+  const name = String(it.name || "");
+  const ind = IND_CACHE.get(it.code) || "";
+  const text = name + " " + ind;
+  const tk = it.market === "us" ? String(it.code || "").toUpperCase() : "";
+  const hit = [];
+  for (const [tag, kws, tickers] of STYLE_KEYWORDS) {
+    const byName = kws.some(k => text.includes(k));
+    const byTicker = tk && (tickers || []).includes(tk);
+    if (byName || byTicker) hit.push(tag);
+    if (hit.length >= 2) break;
+  }
+  if (!hit.length) hit.push("其他");
+  return hit;
+}
+/* A股个股的行业要问后端（评分表），拿到后重渲染一次 */
+async function ensureIndustries(items) {
+  const need = items
+    .filter(it => it.market !== "us" && watchType(it) === "stock" && !IND_CACHE.has(it.code))
+    .map(it => it.code);
+  if (!need.length) return false;
+  try {
+    const d = await api(`/api/stock_industry?codes=${encodeURIComponent(need.join(","))}`);
+    let changed = false;
+    for (const [k, v] of Object.entries(d.items || {})) {
+      if (v) { IND_CACHE.set(k, v); changed = true; }
+    }
+    return changed;
+  } catch (e) { return false; }
+}
+function styleRank(it) {
+  const t = styleTags(it)[0];
+  const i = STYLE_ORDER.indexOf(t);
+  return i < 0 ? STYLE_ORDER.length : i;
+}
+
 function watchType(it) {
   const c = String(it.code || "").toUpperCase();
   if (it.kind === "index") return "index";
@@ -2467,9 +2549,17 @@ async function renderWatch() {
     if (S.watchFilter !== "all" && watchType(it) !== S.watchFilter) return false;
     const mk = it.market === "us" ? "us" : "cn";
     return S.watchMarket === "all" || mk === S.watchMarket;
+  }).slice().sort((a, b) => {
+    // 同风格排在一起，其次按市场、代码，保证刷新后顺序稳定
+    const d = styleRank(a) - styleRank(b);
+    if (d) return d;
+    const m = (a.market === "us" ? 1 : 0) - (b.market === "us" ? 1 : 0);
+    if (m) return m;
+    return String(a.code).localeCompare(String(b.code));
   });
   const c2 = $("#wcount2");
   if (c2) c2.textContent = items.length + " 个";
+  ensureIndustries(items).then(changed => { if (changed) renderWatch(); });
   if (!items.length) {
     box.innerHTML = '<div class="wempty">该分类下还没有自选。</div>';
     return;
@@ -2504,6 +2594,7 @@ async function renderWatch() {
       `${it.market === "us" ? "美股" : "A股"}</span>` +
       `<b>${esc(it.name)}</b><span class="muted">${esc(it.code)}</span>` +
       `<span class="wpx" data-px>—</span></div>` +
+      `<div class="wstyle">${styleTags(it).map(t => `<span class="stag ${esc(t)}">${esc(t)}</span>`).join("")}</div>` +
       `<canvas class="wspark"></canvas>` +
       `<div class="wl"><span>支撑 <b data-sup>—</b></span>` +
       `<span>压力 <b data-res>—</b></span>` +
