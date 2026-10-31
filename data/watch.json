@@ -11,6 +11,16 @@
  },
  {
   "market": "cn",
+  "code": "QQQ",
+  "name": "纳百ETF",
+  "kind": "index",
+  "tf": "1d",
+  "group": "semi",
+  "w": null,
+  "h": null
+ },
+ {
+  "market": "cn",
   "code": "T881121",
   "name": "半导体",
   "kind": "industry",
