@@ -2467,6 +2467,9 @@ def search_symbols(q: str) -> list[dict]:
 
 
 # ---------------- 汇总接口 ----------------
+_TODAY_BAR_CACHE: dict[tuple, tuple[float, dict]] = {}
+
+
 def _append_today_bar(
     bars: list,
     market: str,
@@ -2481,6 +2484,13 @@ def _append_today_bar(
         return bars
     today = datetime.now().strftime("%Y-%m-%d")
     if str(bars[-1].get("t") or "")[:10] >= today:
+        return bars
+    # 合成当日K要抓分钟线（~300ms），同一个标的 30 秒内不重复抓
+    ck = (market, code, kind, today)
+    hit = _TODAY_BAR_CACHE.get(ck)
+    if hit and time.time() - hit[0] < 30:
+        if hit[1]:
+            bars = bars + [dict(hit[1])]
         return bars
     try:
         if kind in ("stock", "index"):
@@ -2521,6 +2531,10 @@ def _append_today_bar(
             )
     except Exception:
         pass
+    if len(bars) and str(bars[-1].get("t") or "")[:10] == today:
+        _TODAY_BAR_CACHE[ck] = (time.time(), dict(bars[-1]))
+        if len(_TODAY_BAR_CACHE) > 300:
+            _TODAY_BAR_CACHE.clear()
     return bars
 
 
@@ -3106,11 +3120,21 @@ class Handler(BaseHTTPRequestHandler):
             tf = (q.get("tf", ["1d"])[0] or "1d").strip()
             kind = (q.get("kind", ["industry"])[0] or "industry").strip()
             retry = (q.get("retry", ["0"])[0] or "0") in ("1", "true", "yes")
+            try:
+                tail = int(q.get("tail", ["0"])[0] or 0)
+            except Exception:
+                tail = 0
             if not code:
                 self._json({"error": "code required"}, 400)
                 return
             try:
-                self._json(bars_payload(market, code, tf, name, kind, retry))
+                payload = bars_payload(market, code, tf, name, kind, retry)
+                if tail > 0:                      # 卡片迷你图只要最近 N 根，别传整段历史
+                    payload = dict(payload)
+                    payload["bars"] = payload["bars"][-tail:]
+                    payload["count"] = len(payload["bars"])
+                    payload["tail"] = tail
+                self._json(payload)
             except Exception as e:
                 self._json({"error": str(e)[:120], "bars": []}, 500)
             return

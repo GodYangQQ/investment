@@ -2178,9 +2178,10 @@ function cachePut(key, entry) {
 function mapBars(list) {
   return (list || []).map(r => ({t: parseT(r.t), o: +r.o, h: +r.h, l: +r.l, c: +r.c, v: +r.v * 1 || 0}));
 }
-function barsUrl(market, kind, code, name, tf, retry) {
+function barsUrl(market, kind, code, name, tf, retry, tail) {
   return `/api/bars?market=${market}&kind=${kind}&code=${encodeURIComponent(code)}` +
-         `&name=${encodeURIComponent(name || "")}&tf=${tf}` + (retry ? "&retry=1" : "");
+         `&name=${encodeURIComponent(name || "")}&tf=${tf}` + (retry ? "&retry=1" : "") +
+         (tail ? `&tail=${tail}` : "");
 }
 function saveSession() {
   try {
@@ -3463,7 +3464,7 @@ async function fillWatchCard(it, el, force) {
     bars = hit.bars;
   } else {
     try {
-      const d = await api(barsUrl(it.market, it.kind || "industry", it.code, it.name, tf));
+      const d = await api(barsUrl(it.market, it.kind || "industry", it.code, it.name, tf, 0, SPARK_DAYS));
       bars = mapBars(d.bars);
       if (bars.length) {
         cachePut(key, {bars, src: d.src || "", time: d.time || "", at: Date.now()});
@@ -3528,7 +3529,7 @@ function ensureSpark(o, r) {
   queueSpark(async () => {
     try {
       const d = await api(`/api/bars?market=${S.market}&kind=${encodeURIComponent(kind)}` +
-        `&code=${encodeURIComponent(r.code)}&name=${encodeURIComponent(r.name || "")}&tf=1d`);
+        `&code=${encodeURIComponent(r.code)}&name=${encodeURIComponent(r.name || "")}&tf=1d&tail=${SPARK_DAYS}`);
       let bars = (d.bars || []).map(x => ({ t: parseT(x.t), o: +x.o, h: +x.h, l: +x.l, c: +x.c, v: +x.v || 0 }));
       if (bars.length > SPARK_DAYS) bars = bars.slice(-SPARK_DAYS);
       SPARK.set(key, { bars, at: Date.now(), pending: false });

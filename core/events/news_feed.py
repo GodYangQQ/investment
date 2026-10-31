@@ -133,7 +133,7 @@ def _score(item: dict) -> float:
     title = (item.get("title") or "").lower()
     hits = sum(1 for _n, kws in CATEGORY_RULES if any(k.lower() in title for k in kws))
     age_h = max(0.0, (time.time() - float(item.get("ts") or time.time())) / 3600)
-    decay = max(0.15, 1.0 - age_h / 72.0)          # 3 天线性衰减
+    decay = max(0.30, 1.0 - age_h / 168.0)         # 与 7 天保留窗口对齐
     return round(base * (1 + 0.25 * hits) * decay, 3)
 
 
@@ -377,8 +377,10 @@ def fetch_cninfo_stock(code: str, days: int = 7, limit: int = 20) -> list[dict]:
 
 def refresh_watch_stocks(days: int = 7) -> int:
     """给自选里的 A股个股补抓最近公告（新增订阅时触发，也可定时跑）。"""
-    _secs, stocks = _watch_codes()
-    if not stocks:
+    w = _watch_codes()
+    _secs, stocks = w[0], w[1]
+    us_tk = w[2] if len(w) > 2 else []
+    if not stocks and not us_tk:
         return 0
     index = _stock_index()
     idx_map = {it["code"]: it for it in index}
@@ -389,6 +391,11 @@ def refresh_watch_stocks(days: int = 7) -> int:
         except Exception:
             continue
         time.sleep(0.25)
+    if us_tk:
+        try:
+            items += fetch_sec_filings(us_tk, per=5)
+        except Exception:
+            pass
     if not items:
         return 0
     items = _dedupe(items)
@@ -400,12 +407,110 @@ def refresh_watch_stocks(days: int = 7) -> int:
         it["importance"] = _score(it)
         it["ts"] = float(it.get("ts") or now)
         it["sectors"] = _match_sectors(it["title"], sector_index)
-        it["stocks"] = _match_stocks(it["title"], index)
+        if it.get("_ticker"):
+            it["stocks"] = [{"code": it["_ticker"], "name": it["_ticker"]}]
+            it["category"] = "财报"
+        else:
+            it["stocks"] = _match_stocks(it["title"], index)
         it["level"] = _level(it)
         it.setdefault("cluster", it["id"])
         it.setdefault("sources_n", 1)
     _save(items)
     return len(items)
+
+
+# SEC 要求带联系方式的 UA，浏览器 UA 会被 403
+SEC_HEADERS = {
+    "User-Agent": "godyang-investment-research godyang666@qq.com",
+    "Accept-Encoding": "gzip, deflate",
+}
+_US_TICKERS: dict[str, dict] = {"ts": 0.0, "map": {}}
+
+
+def _sec_ticker_map() -> dict[str, dict]:
+    """ticker → {cik, name}（SEC 官方清单，缓存 7 天）。"""
+    now = time.time()
+    if _US_TICKERS["map"] and now - _US_TICKERS["ts"] < 7 * 86400:
+        return _US_TICKERS["map"]
+    out: dict[str, dict] = {}
+    try:
+        cache = ROOT / "data" / "us_sec_tickers.json"
+        if cache.exists() and now - cache.stat().st_mtime < 7 * 86400:
+            raw = json.loads(cache.read_text(encoding="utf-8"))
+        else:
+            import requests as _rq
+
+            r = _rq.get("https://www.sec.gov/files/company_tickers.json",
+                        headers=SEC_HEADERS, timeout=TIMEOUT)
+            raw = r.json()
+            try:
+                cache.write_text(json.dumps(raw), encoding="utf-8")
+            except Exception:
+                pass
+        for _, v in (raw or {}).items():
+            tk = str(v.get("ticker") or "").upper()
+            if tk:
+                out[tk] = {"cik": str(v.get("cik_str") or "").zfill(10),
+                           "name": str(v.get("title") or tk)}
+    except Exception:
+        out = {}
+    if out:
+        _US_TICKERS["map"] = out
+        _US_TICKERS["ts"] = now
+    return out
+
+
+def fetch_sec_filings(tickers: list[str], per: int = 5) -> list[dict]:
+    """自选美股的 SEC 财报/重大事项（8-K / 10-Q / 10-K）。"""
+    tmap = _sec_ticker_map()
+    if not tmap:
+        return []
+    out: list[dict] = []
+    for tk in tickers[:15]:
+        info = tmap.get(tk.upper())
+        if not info:
+            continue
+        try:
+            r = requests_get(
+                f"https://data.sec.gov/submissions/CIK{info['cik']}.json",
+                headers=SEC_HEADERS,
+            )
+            d = r.json() or {}
+        except Exception:
+            continue
+        rec = ((d.get("filings") or {}).get("recent") or {})
+        forms = rec.get("form") or []
+        dates = rec.get("filingDate") or []
+        docs = rec.get("primaryDocument") or []
+        accs = rec.get("accessionNumber") or []
+        desc = rec.get("primaryDocDescription") or []
+        cik = str(d.get("cik") or info["cik"]).lstrip("0")
+        n = 0
+        for i, form in enumerate(forms):
+            if form not in ("8-K", "10-Q", "10-K", "6-K", "20-F"):
+                continue
+            try:
+                url = (f"https://www.sec.gov/Archives/edgar/data/{cik}/"
+                       f"{str(accs[i]).replace('-', '')}/{docs[i]}")
+            except Exception:
+                url = f"https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={info['cik']}"
+            name = info["name"]
+            label = {"8-K": "重大事项(8-K)", "10-Q": "季报(10-Q)", "10-K": "年报(10-K)",
+                     "6-K": "境外报告(6-K)", "20-F": "年报(20-F)"}.get(form, form)
+            out.append({
+                "title": f"{tk.upper()} · {name} {label} {dates[i] if i < len(dates) else ''}".strip(),
+                "url": url,
+                "source": "SEC公告",
+                "tier": "official",
+                "lang": "en",
+                "ts": _to_ts((dates[i] if i < len(dates) else "") or ""),
+                "_ticker": tk.upper(),
+            })
+            n += 1
+            if n >= per:
+                break
+        time.sleep(0.15)
+    return out
 
 
 def fetch_eia() -> list[dict]:
@@ -589,6 +694,16 @@ def _match_stocks(title: str, index: list[dict]) -> list[dict]:
     return out
 
 
+def _match_us_tickers(title: str, tickers: list[str]) -> list[dict]:
+    """英文标题里的 ticker（整词，避免 AI/EV 之类误伤）。"""
+    t = str(title or "")
+    out: list[dict] = []
+    for tk in tickers:
+        if re.search(rf"(?<![A-Za-z0-9]){re.escape(tk)}(?![A-Za-z0-9])", t):
+            out.append({"code": tk.upper(), "name": tk.upper()})
+    return out[:5]
+
+
 def _match_sectors(title: str, index: list[dict]) -> list[dict]:
     """标题里出现板块名（含同义词）就关联，最多 4 个。"""
     t = str(title or "").lower()
@@ -616,10 +731,11 @@ _NATION_KW = ["全国", "国家", "national", "nationwide", "联邦"]
 _LONG_KW = ["持续", "长期", "多年", "season", "long-term", "蔓延", "escalat"]
 
 
-def _watch_codes() -> tuple[list[str], list[str]]:
-    """自选里的板块代码 + 个股代码（后 6 位）。"""
+def _watch_codes() -> tuple[list[str], list[str], list[str]]:
+    """自选里的 → (A股板块, A股个股(6位), 美股 ticker)。"""
     sectors: list[str] = []
     stocks: list[str] = []
+    us: list[str] = []
     try:
         with open(ROOT / "data" / "watch.json", encoding="utf-8") as f:
             items = json.load(f)
@@ -628,6 +744,7 @@ def _watch_codes() -> tuple[list[str], list[str]]:
             if not code:
                 continue
             if it.get("market") == "us":
+                us.append(code.upper())
                 continue
             if str(it.get("kind")) in ("industry", "concept"):
                 sectors.append(code)
@@ -635,7 +752,7 @@ def _watch_codes() -> tuple[list[str], list[str]]:
                 stocks.append(re.sub(r"\D", "", code)[-6:].zfill(6))
     except Exception:
         pass
-    return sectors, stocks
+    return sectors, stocks, us
 
 
 def _cluster(items: list[dict]) -> None:
@@ -700,6 +817,10 @@ def _level(it: dict) -> int:
     for kws, floor in gates:
         if any(k in t for k in kws):
             lv = max(lv, floor)
+
+    # 自选美股财报：定期报告保底 L2，8-K 等重大事项保底 L1
+    if it.get("source") == "SEC公告":
+        lv = max(lv, 2 if any(k in title for k in ("10-Q", "10-K", "20-F", "6-K")) else 1)
 
     if int(it.get("sources_n") or 1) >= 3:
         lv = max(lv, 2)
@@ -795,7 +916,10 @@ def load_news(limit: int = 200, category: str = "", q: str = "", hours: int = 0,
         if stock:
             import re as _re2
 
-            sc = _re2.sub(r"\D", "", str(stock))[-6:].zfill(6)
+            raw = str(stock).strip()
+            sc = raw.upper() if not _re2.fullmatch(r"[A-Za-z]{1,6}", raw) else raw.upper()
+            if _re2.fullmatch(r"\d{6}", _re2.sub(r"\D", "", raw)) and len(_re2.sub(r"\D", "", raw)) >= 6:
+                sc = _re2.sub(r"\D", "", raw)[-6:].zfill(6)
             sql = ("SELECT n.id,n.ts,n.source,n.tier,n.category,n.title,n.url,n.lang,n.importance,"
                    "ifnull(n.level,0),ifnull(n.cluster,n.id),ifnull(n.sources_n,1) "
                    "FROM news n JOIN news_stock t ON t.news_id=n.id WHERE t.code=?")
@@ -855,6 +979,14 @@ def _collect() -> None:
             collected += fn() or []
         except Exception:
             continue
+    try:
+        w = _watch_codes()
+        us_tk = w[2] if len(w) > 2 else []
+        if us_tk:
+            collected += fetch_sec_filings(us_tk)
+    except Exception:
+        pass
+
     items = _dedupe(collected)
     now = time.time()
     index = _sector_index()
@@ -864,10 +996,22 @@ def _collect() -> None:
         it["importance"] = _score(it)
         it["ts"] = float(it.get("ts") or now)
         it["sectors"] = _match_sectors(it["title"], index) if index else []
-        it["stocks"] = _match_stocks(it["title"], _stock_index())
+        if it.get("_ticker"):
+            it["stocks"] = [{"code": it["_ticker"], "name": it["_ticker"]}]
+            it["category"] = "财报"
+        else:
+            it["stocks"] = _match_stocks(it["title"], _stock_index())
+        # 自选美股 ticker 也参与关联（CNBC 等英文新闻里的 AMD/AVGO…）
+        if us_tk and not it.get("_ticker"):
+            have = {x["code"] for x in it.get("stocks") or []}
+            it["stocks"] = (it.get("stocks") or []) + [
+                x for x in _match_us_tickers(it["title"], us_tk) if x["code"] not in have
+            ]
     # 财报 / 公司公告：只保留与自选（板块或个股）相关的
-    secs, stks = _watch_codes()
-    watch_sec, watch_stk = set(secs), set(stks)
+    wsecs = _watch_codes()
+    secs, stks = wsecs[0], wsecs[1]
+    us_tk = wsecs[2] if len(wsecs) > 2 else []
+    watch_sec, watch_stk = set(secs), set(stks) | set(t.upper() for t in us_tk)
     if watch_sec or watch_stk:
         kept = []
         for it in items:
@@ -952,7 +1096,10 @@ def state(limit: int = 200, category: str = "", q: str = "", code: str = "",
     if min_level:
         rows = [r for r in rows if int(r.get("level") or 0) >= min_level]
     if watch:   # 只看自选板块 / 自选个股相关
-        secs, stks = _watch_codes()
+        w = _watch_codes()
+        secs, stks = w[0], w[1]
+        us_tk = [t.upper() for t in (w[2] if len(w) > 2 else [])]
+        stks = list(stks) + us_tk
         if secs or stks:
             ids: set[str] = set()
             try:
