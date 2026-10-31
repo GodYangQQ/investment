@@ -1,6 +1,26 @@
 [
  {
   "market": "cn",
+  "code": "T881140",
+  "name": "化学制药",
+  "kind": "industry",
+  "tf": "1d",
+  "group": "industry",
+  "w": null,
+  "h": null
+ },
+ {
+  "market": "cn",
+  "code": "SZ300502",
+  "name": "新易盛",
+  "kind": "stock",
+  "tf": "1d",
+  "group": "broad",
+  "w": null,
+  "h": null
+ },
+ {
+  "market": "cn",
   "code": "SH515880",
   "name": "通信ETF国泰",
   "kind": "stock",
