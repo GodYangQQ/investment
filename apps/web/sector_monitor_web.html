@@ -350,7 +350,10 @@ border-right:2px solid #4a5a6c;border-bottom:2px solid #4a5a6c;border-radius:0 0
 .wempty{padding:40px 16px;text-align:center;color:var(--muted);font-size:17px;line-height:1.9}
 
 /* 放大模式：保留左侧看盘面板与「自选」悬浮按钮；抽屉由自身的 open 类控制显隐 */
+body.side-hidden main{grid-template-columns:1fr}
+body.side-hidden aside{display:none}
 body.focus main{grid-template-columns:304px 1fr}
+body.focus.side-hidden main{grid-template-columns:1fr}
 @media (max-width:860px){ body.focus main{grid-template-columns:1fr;grid-template-rows:44% 56%} }
 @media (max-width:860px){
   main{grid-template-columns:1fr;grid-template-rows:44% 56%}
@@ -381,6 +384,7 @@ body.focus main{grid-template-columns:304px 1fr}
   <span class="sp"></span>
   <span id="ts" class="muted"></span>
   <button id="helpBtn">画线说明 ?</button>
+  <button id="sideBtn" title="收起 / 展开左侧板块列表（给 K 线腾地方）">◀ 板块</button>
   <button id="detailBtn" title="所有板块明细：可按成交额 / 主力净额 / 涨跌幅 / 量比 排序">板块明细</button>
   <button id="gameBtn">回测游戏</button>
 </header>
@@ -3405,6 +3409,21 @@ setInterval(() => { if (watchOpen()) refreshWatchValues(); }, 10000);
   await loadWatch();
   updateWatchUI();
   updateWatchBtn();
+  function setSideHidden(on) {
+    const hid = !!on;
+    document.body.classList.toggle("side-hidden", hid);
+    const b = $("#sideBtn");
+    if (b) {
+      b.textContent = hid ? "▶ 板块" : "◀ 板块";
+      b.classList.toggle("on", hid);
+      b.title = hid ? "展开左侧板块列表" : "收起左侧板块列表（给 K 线腾地方）";
+    }
+    try { localStorage.setItem("sm_side_hidden", hid ? "1" : "0"); } catch (e) {}
+    setTimeout(() => { resize(); requestDraw(); }, 60);
+  }
+  $("#sideBtn").onclick = () => setSideHidden(!document.body.classList.contains("side-hidden"));
+  if (localStorage.getItem("sm_side_hidden") === "1") setSideHidden(true);
+
   $("#watchBtn").onclick = () => (watchOpen() ? closeWatch() : openWatch());
   $("#wclose").onclick = closeWatch;
   $("#wback").onclick = () => { closeWatch(); setFocus(false); };
