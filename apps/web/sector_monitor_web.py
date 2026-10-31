@@ -3362,7 +3362,7 @@ def _background_ticker() -> None:
 
 def _relations_warm() -> None:
     """后台维持共振/对手矩阵的热缓存（前端打开明细直接命中）。"""
-    time.sleep(5)
+    time.sleep(1.5)
     while True:
         for market in ("cn", "us"):
             try:
@@ -3374,6 +3374,25 @@ def _relations_warm() -> None:
             except Exception as e:  # noqa: BLE001
                 print(f"[rel] {market} 预计算失败: {e}", flush=True)
         time.sleep(480)
+
+
+def _warmup_lists(sync: bool = True) -> None:
+    """启动时把列表快照补齐，首屏请求直接命中快照。
+
+    行业/美股快照同步抓（1~2 秒）；概念（805 个）太慢，交给后台线程。
+    """
+    kinds = [("cn", "industry"), ("us", "industry")] if sync else [("cn", "concept")]
+    for m, k in kinds:
+        key = f"list:{m}:{k}"
+        snap = db_snapshot_get(key)
+        if snap and time.time() - snap["ts"] < max(60, _list_ttl(m)):
+            continue
+        t0 = time.time()
+        try:
+            _sector_fetch(m, k)
+            print(f"[warm] 列表 {m}:{k} 预热完成 · {time.time() - t0:.1f}s", flush=True)
+        except Exception as e:  # noqa: BLE001
+            print(f"[warm] 列表 {m}:{k} 预热失败: {e}", flush=True)
 
 
 def _warmup() -> None:
@@ -3389,6 +3408,26 @@ def _warmup() -> None:
             _sector_fetch(m, k)
         except Exception:
             pass
+    # 自选里的标的先预热（点开就是现成的）
+    try:
+        for it in (load_watch_db() or [])[:24]:
+            mkt = "us" if it.get("market") == "us" else "cn"
+            code = str(it.get("code") or "")
+            if not code:
+                continue
+            bkey = f"bars:{mkt}:{code}:1d"
+            meta = db_meta_get(bkey)
+            if meta and time.time() - meta["ts"] < 1800:
+                continue
+            _BARS_ARGS[bkey] = (it.get("name", ""), it.get("kind") or "industry")
+            _spawn_once(
+                bkey,
+                lambda m=mkt, c=code, n=it.get("name", ""), k=it.get("kind") or "industry": _bars_fetch(
+                    m, c, "1d", n, k
+                ),
+            )
+    except Exception:
+        pass
     try:
         snap = db_snapshot_get("list:cn:industry")
         rows = ((snap or {}).get("payload") or {}).get("rows") or []
@@ -3465,8 +3504,12 @@ def main():
         print(f"[news] 轮询启动失败: {e}", flush=True)
     # 共振/对手预计算：每 8 分钟算一次，前端打开明细零等待
     threading.Thread(target=_relations_warm, daemon=True, name="relations-warm").start()
+    if not args.no_warm and not OFFLINE:
+        _warmup_lists(True)
     if not args.no_warm:
         threading.Thread(target=_warmup, daemon=True, name="warmup").start()
+        if not OFFLINE:
+            threading.Thread(target=_warmup_lists, args=(False,), daemon=True, name="warmup-concept").start()
         threading.Thread(target=_background_ticker, daemon=True, name="ticker").start()
     srv = _Server((args.host, args.port), Handler)
     print(f"板块划线看盘已启动: http://{args.host}:{args.port}   (Ctrl+C 退出)")
