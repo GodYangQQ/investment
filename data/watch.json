@@ -1,5 +1,15 @@
 [
  {
+  "market": "cn",
+  "code": "T881155",
+  "name": "银行",
+  "kind": "industry",
+  "tf": "1d",
+  "group": "industry",
+  "w": null,
+  "h": null
+ },
+ {
   "market": "us",
   "code": "XOM",
   "name": "EXXONMOBIL HOLDINGS CORP",

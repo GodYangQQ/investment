@@ -172,11 +172,17 @@ padding:6px 12px;border-radius:8px;font-size:17px;cursor:pointer}
 .wcard{position:relative;box-sizing:border-box;height:100%;
  border:1px solid var(--line);border-radius:10px;padding:8px 10px 7px;background:#111821;
  cursor:pointer;display:flex;flex-direction:column;
- transition:border-color .12s,box-shadow .12s,transform .2s linear;
- transform-origin:center center;will-change:transform}
-/* hover：沿用原来的等比丝滑放大逻辑，尺寸放大到 2 倍（宽高各 2 倍） */
-.wcard:hover{border-color:#3c4a59;background:#141c26;transform:scale(3);z-index:6;
- box-shadow:0 18px 40px rgba(0,0,0,.66)}
+ transition:border-color .12s,background .12s,box-shadow .12s}
+/* hover：卡片本身大小不变（hover 命中区不变），另外弹出一个 3 倍的清晰预览 */
+.wcard:hover{border-color:#3c4a59;background:#141c26;box-shadow:0 0 0 1px rgba(74,144,217,.25) inset}
+#peek{position:fixed;z-index:70;pointer-events:none;display:none;border-radius:12px;overflow:hidden;
+ border:1px solid #3c4a59;background:#0f151d;box-shadow:0 26px 64px rgba(0,0,0,.78)}
+#peek.show{display:block}
+#peek .wcard{border:0;border-radius:0;width:100%;height:100%;cursor:default}
+#peek .wcard .wscore,#peek .wcard .whold,#peek .wcard .wzoom,#peek .wcard .wdel{display:none}
+/* 预览里把代码让给名称，避免名字被截断（代码在下面原卡片上也能看到） */
+#peek .wcard .wh .muted{display:none}
+#peek .wcard .wh b{flex:1 1 auto;min-width:0}
 .wcard.sel{border-color:var(--accent);box-shadow:0 0 0 1px rgba(74,144,217,.45) inset}
 .wcard .wscore{border:1px solid #3c5680;background:#18212c;color:#9cc4ef;font-size:14px;
  padding:1px 7px;border-radius:6px;line-height:1.5;opacity:0;visibility:hidden;transition:opacity .12s}
@@ -348,8 +354,9 @@ body.focus main{grid-template-columns:304px 1fr}
   · 图表操作：左键拖拽平移（X+Y）、滚轮缩放（自动适配 Y 轴）、中键平移、双击/「重置视图」恢复。<br>
   · <b>自选</b>：左侧点 ☆ 收藏，右侧「自选」抽屉看迷你图 + 已画线；卡片显示最近的下支撑 / 上压力，
     点卡片切换板块，「放大」看单图专注模式（<code>Esc</code> 退出）。<br>
-  · <b>自选卡片</b>：悬停时卡片<b>等比放大 3 倍</b>（宽高各 3x，贴边自动朝内侧展开）；
-    左上角标签标明 <b>A股 / 美股</b>；ETF 卡片悬停出现「持仓」按钮，看前 10 大成分股。<br>
+  · <b>自选卡片</b>：悬停时弹出 <b>3 倍大小的清晰预览</b>（矢量重排 + K 线按 3 倍像素重绘，
+    卡片本身不变形，鼠标命中区仍是原来那一小块）；左上角标签标明 <b>A股 / 美股</b>；
+    ETF 卡片悬停出现「持仓」按钮，看前 10 大成分股。<br>
   · <b>自选板块</b>：鼠标悬停卡片会出现「个股评分」，点击查看该板块<b>评分前50</b>的个股，可按板块标签筛选；
     双击卡片空白处仍是原来的放大/画线逻辑。<br>
   · <b>板块明细</b>：标题栏「板块明细」按钮打开全量列表，点表头可按<b>成交额 / 主力净额 / 涨跌幅 / 量比 / 板块名</b>
@@ -420,6 +427,8 @@ body.focus main{grid-template-columns:304px 1fr}
     <span class="sp"></span><button id="wclose">关闭</button></div>
   <div class="wlist" id="wlist"></div>
 </aside>
+
+<div id="peek"></div>
 
 <div id="holdModal" class="score-modal">
   <div class="sbox" style="width:min(660px,94vw)">
@@ -2120,6 +2129,7 @@ function openWatch() {
   syncFab();
 }
 function closeWatch() {
+  hidePeek();
   $("#watch").classList.remove("open");
   $("#watchBtn").classList.remove("on");
   syncFab();
@@ -2158,7 +2168,45 @@ function watchType(it) {
   if (/^(15|16|50|51|52|56|58)/.test(c)) return "etf";
   return "stock";
 }
+/* ---------- hover 预览：3 倍尺寸、按真实分辨率重绘（清晰）+ 不接管鼠标 ---------- */
+const PEEK = {timer: 0, scale: 3};
+function hidePeek() {
+  clearTimeout(PEEK.timer);
+  const p = $("#peek");
+  if (p) { p.classList.remove("show"); p.innerHTML = ""; }
+}
+function showPeek(card) {
+  const p = $("#peek");
+  if (!p || !card || !card.isConnected) return;
+  const r = card.getBoundingClientRect();
+  if (!r.width || !r.height) return;
+  const s = PEEK.scale, W = r.width, H = r.height;
+  p.innerHTML = "";
+  p.style.width = Math.round(W * s) + "px";
+  p.style.height = Math.round(H * s) + "px";
+  let left = r.left + W / 2 - W * s / 2;
+  let top = r.top + H / 2 - H * s / 2;
+  left = Math.max(8, Math.min(left, window.innerWidth - W * s - 8));
+  top = Math.max(8, Math.min(top, window.innerHeight - H * s - 8));
+  p.style.left = Math.round(left) + "px";
+  p.style.top = Math.round(top) + "px";
+  const holder = document.createElement("div");
+  // zoom 让内容按 3 倍重新排版（文字是矢量放大，不是位图拉伸）；
+  // 画布再用 drawSpark 的 scale 参数把后备像素按 3 倍重画。
+  holder.style.cssText = `width:${W}px;height:${H}px;zoom:${s}`;
+  const clone = card.cloneNode(true);
+  clone.classList.remove("sel");
+  holder.appendChild(clone);
+  p.appendChild(holder);
+  p.classList.add("show");
+  const cv = clone.querySelector(".wspark");
+  if (cv && card._bars) {
+    try { drawSpark(cv, card._bars, card._lines, card._price, s); } catch (e) { /* ignore */ }
+  }
+}
+
 async function renderWatch() {
+  hidePeek();
   const box = $("#wlist");
   const keepL = box.scrollLeft, keepT = box.scrollTop;
   box.innerHTML = "";
@@ -2176,20 +2224,12 @@ async function renderWatch() {
     el.className = "wcard";
     el.dataset.key = it.market + ":" + it.code;
     el.addEventListener("mouseenter", () => {
-      const br = box.getBoundingClientRect(), r = el.getBoundingClientRect();
-      // 放大到 2 倍时，用 transform-origin 让卡片朝“空间更大”的方向长，避免被裁掉
-      const mx = Math.max(16, r.width * 0.26), my = Math.max(16, r.height * 0.26);
-      let ox = "center", oy = "center";
-      if (r.left - br.left <= mx) ox = "left";
-      else if (br.right - r.right <= mx) ox = "right";
-      if (r.top - br.top <= my) oy = "top";
-      else if (br.bottom - r.bottom <= my) oy = "bottom";
-      el.style.transformOrigin = ox + " " + oy;
-      if (el._bars) drawSpark(el.querySelector(".wspark"), el._bars, el._lines, el._price, 1.5);
+      // 卡片本身不变形（hover 命中区还是原来那一小块），只弹出 3 倍清晰预览
+      clearTimeout(PEEK.timer);
+      PEEK.timer = setTimeout(() => showPeek(el), 90);
     });
-    el.addEventListener("mouseleave", () => {
-      if (el._bars) drawSpark(el.querySelector(".wspark"), el._bars, el._lines, el._price, 1);
-    });
+    el.addEventListener("mouseleave", hidePeek);
+    el.addEventListener("click", () => hidePeek());
     el.innerHTML =
       `<div class="wh"><span class="mtag ${it.market === "us" ? "us" : "cn"}">` +
       `${it.market === "us" ? "美股" : "A股"}</span>` +
@@ -3062,7 +3102,9 @@ document.addEventListener("pointerdown", e => {
 }, true);
 window.addEventListener("resize", () => {
   if ($("#qsug").classList.contains("show")) sugPos();
+  hidePeek();
 });
+$("#wlist").addEventListener("scroll", hidePeek, {passive: true});
 $("#sort").addEventListener("change", renderList);
 $("#auto").addEventListener("change", e => { S.auto = e.target.checked; });
 $("#bWatch").onclick = () => {
