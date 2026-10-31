@@ -175,14 +175,19 @@ padding:6px 12px;border-radius:8px;font-size:17px;cursor:pointer}
  transition:border-color .12s,background .12s,box-shadow .12s}
 /* hover：卡片本身大小不变（hover 命中区不变），另外弹出一个 3 倍的清晰预览 */
 .wcard:hover{border-color:#3c4a59;background:#141c26;box-shadow:0 0 0 1px rgba(74,144,217,.25) inset}
-#peek{position:fixed;z-index:70;pointer-events:none;display:none;border-radius:12px;overflow:hidden;
- border:1px solid #3c4a59;background:#0f151d;box-shadow:0 26px 64px rgba(0,0,0,.78)}
-#peek.show{display:block}
+#peek{position:fixed;z-index:70;pointer-events:none;border-radius:12px;overflow:hidden;
+ border:1px solid #3c4a59;background:#0f151d;box-shadow:0 26px 64px rgba(0,0,0,.78);
+ opacity:0;visibility:hidden;transform:scale(.94);transform-origin:center center;
+ transition:opacity .16s ease,transform .18s cubic-bezier(.2,.8,.3,1),visibility 0s linear .18s}
+#peek.show{opacity:1;visibility:visible;transform:scale(1);
+ transition:opacity .16s ease,transform .2s cubic-bezier(.2,.8,.3,1),visibility 0s}
 #peek .wcard{border:0;border-radius:0;width:100%;height:100%;cursor:default}
 #peek .wcard .wscore,#peek .wcard .whold,#peek .wcard .wzoom,#peek .wcard .wdel{display:none}
 /* 预览里把代码让给名称，避免名字被截断（代码在下面原卡片上也能看到） */
+#peek .wcard .wh{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;
+ align-items:baseline;overflow:visible}
 #peek .wcard .wh .muted{display:none}
-#peek .wcard .wh b{flex:1 1 auto;min-width:0}
+#peek .wcard .wh b{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.3}
 .wcard.sel{border-color:var(--accent);box-shadow:0 0 0 1px rgba(74,144,217,.45) inset}
 .wcard .wscore{border:1px solid #3c5680;background:#18212c;color:#9cc4ef;font-size:14px;
  padding:1px 7px;border-radius:6px;line-height:1.5;opacity:0;visibility:hidden;transition:opacity .12s}
@@ -2169,17 +2174,23 @@ function watchType(it) {
   return "stock";
 }
 /* ---------- hover 预览：3 倍尺寸、按真实分辨率重绘（清晰）+ 不接管鼠标 ---------- */
-const PEEK = {timer: 0, scale: 3};
+const PEEK = {timer: 0, scale: 3, hideTimer: 0};
 function hidePeek() {
   clearTimeout(PEEK.timer);
   const p = $("#peek");
-  if (p) { p.classList.remove("show"); p.innerHTML = ""; }
+  if (!p) return;
+  p.classList.remove("show");            // 走 160ms 淡出，淡完再清空内容
+  clearTimeout(PEEK.hideTimer);
+  PEEK.hideTimer = setTimeout(() => {
+    if (!p.classList.contains("show")) p.innerHTML = "";
+  }, 220);
 }
 function showPeek(card) {
   const p = $("#peek");
   if (!p || !card || !card.isConnected) return;
   const r = card.getBoundingClientRect();
   if (!r.width || !r.height) return;
+  clearTimeout(PEEK.hideTimer);
   const s = PEEK.scale, W = r.width, H = r.height;
   p.innerHTML = "";
   p.style.width = Math.round(W * s) + "px";
