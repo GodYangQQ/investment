@@ -2556,6 +2556,20 @@ def _bars_fetch(
     return bars, src
 
 
+def _prev_close(market: str, code: str, alt: str, day: str) -> float | None:
+    """分时的参考价：该交易日之前的最后一个日线收盘（= 昨收）。"""
+    try:
+        for c in (code, alt):
+            if not c:
+                continue
+            for b in reversed(db_bars_get(market, c, "1d") or []):
+                if str(b.get("t"))[:10] < day:
+                    return float(b["c"])
+    except Exception:
+        pass
+    return None
+
+
 def _tail_day(bars: list[dict]) -> list[dict]:
     """分时只保留最后一个交易日。"""
     if not bars:
@@ -2650,12 +2664,17 @@ def bars_payload(
         age = time.time() - meta["ts"] if meta else 0.0
         fresh = bool(bars)
         pending = not bars
+    shown = _tail_day(bars) if tf == "1m" else bars
+    prev_close = None
+    if tf == "1m" and shown:
+        prev_close = _prev_close(market, code, read_code, str(shown[0]["t"])[:10])
     return {
         "market": market,
         "code": code,
         "name": name,
         "tf": tf,
-        "bars": _tail_day(bars) if tf == "1m" else bars,
+        "prev_close": prev_close,
+        "bars": shown,
         "src": (meta or {}).get("src", ""),
         "count": len(bars),
         "time": datetime.now().strftime("%H:%M:%S"),

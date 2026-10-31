@@ -574,7 +574,7 @@ body.focus.side-hidden .side-handle{left:0}
 const S = {
   market: "cn", kind: "industry", akind: "industry", group: "broad", tf: "1d",
   rows: [], indices: [], groups: [],
-  code: "", name: "", bars: [], src: "", barsTime: "",
+  code: "", name: "", bars: [], src: "", barsTime: "", prevClose: null,
   allLines: {}, selected: null, mode: null, p1: null,
   view: {l: -1, r: 1}, ylim: null, vmax: 1, userView: false,
   auto: true, hover: null, drag: null, pan: null,
@@ -803,6 +803,10 @@ function autoscale(l = S.view.l, r = S.view.r) {
     if (b.h > hi) hi = b.h;
     if (b.v > vm) vm = b.v;
   }
+  if (S.tf === "1m" && S.prevClose) {
+    lo = Math.min(lo, S.prevClose);
+    hi = Math.max(hi, S.prevClose);
+  }
   if (!isFinite(lo) || !isFinite(hi)) { S.ylim = {lo: 0, hi: 1}; S.vmax = 1; return; }
   if (S.log && lo > 0 && hi > 0) {
     const a = Math.log(lo), b = Math.log(hi);
@@ -839,6 +843,8 @@ function classify(y) { return livePrice() >= y ? DOWN : UP; }
 
 /* 当日最新涨幅：优先用实时报价 pct，否则用「现价 / 昨收」现算 */
 function livePct() {
+  // 分时：当日涨跌 = 现价 / 昨收 - 1（不是和上一分钟比）
+  if (S.tf === "1m" && S.prevClose) return (livePrice() / S.prevClose - 1) * 100;
   if (S.live && Number.isFinite(S.live.pct)) return S.live.pct;
   const n = nBars();
   if (n >= 2) return (livePrice() / S.bars[n - 2].c - 1) * 100;
@@ -997,6 +1003,19 @@ function drawSeries() {
   }
   ctx.stroke();
   ctx.shadowBlur = 0;
+  // 分时：昨收参考线（当日涨跌的基准）
+  if (S.tf === "1m" && S.prevClose) {
+    const y0 = Math.round(p2y(S.prevClose)) + 0.5;
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = "rgba(150,162,178,.6)";
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(G.pad.l, y0); ctx.lineTo(G.w - G.pad.r, y0); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.font = "600 13px -apple-system,Segoe UI,Roboto,sans-serif";
+    ctx.fillStyle = "#8a97a6";
+    ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    ctx.fillText(fmtNum(S.prevClose, 2), G.w - G.pad.r + 6, y0);
+  }
   // 最新价虚线
   const lp = livePrice();
   if (lp) {
@@ -2129,7 +2148,8 @@ function scheduleRevalidate(key, tries = 0) {
       S.barsTime = d.time || S.barsTime;
       S.lastBarFetch = Date.now();
       if (S.live && S.live.price) applyLiveToLastBar(S.live.price);
-      cachePut(key, {bars: S.bars.map(b => ({...b})), src: S.src, time: S.barsTime, at: Date.now()});
+      cachePut(key, {bars: S.bars.map(b => ({...b})), src: S.src, time: S.barsTime, at: Date.now(),
+                   prevClose: S.prevClose});
       saveSession();
       updateHeader();
       requestDraw();
@@ -2147,6 +2167,7 @@ async function loadBars(opts = {}) {
 
   if (cached && cached.bars && cached.bars.length) {
     S.bars = cached.bars.map(b => ({...b}));
+    S.prevClose = S.tf === "1m" ? (cached.prevClose ?? null) : null;
     S.src = cached.src || "";
     S.barsTime = cached.time || "";
     S.loading = false;
@@ -2206,6 +2227,7 @@ async function loadBars(opts = {}) {
       return;
     }
     S.bars = bars;
+    S.prevClose = (S.tf === "1m" && Number.isFinite(d.prev_close)) ? d.prev_close : null;
     S.src = d.src || "";
     S.barsTime = d.time || "";
     S.lastBarFetch = Date.now();
@@ -2215,7 +2237,8 @@ async function loadBars(opts = {}) {
       S.live = {price: last.c, pct: prev.c ? (last.c / prev.c - 1) * 100 : 0};
     }
     if (reset) { S.selected = null; resetView(); } else requestDraw();
-    cachePut(key, {bars: S.bars.map(b => ({...b})), src: S.src, time: S.barsTime, at: Date.now()});
+    cachePut(key, {bars: S.bars.map(b => ({...b})), src: S.src, time: S.barsTime, at: Date.now(),
+                   prevClose: S.prevClose});
     saveSession();
     if (!silent) {
       setStatus(`${S.name} · ${S.tf} · ${S.bars.length} 根K · 来源 ${S.src} · ${S.barsTime}` +
