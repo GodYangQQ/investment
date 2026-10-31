@@ -38,7 +38,7 @@ HEADERS = {
 }
 TIMEOUT = 12
 TTL = 600           # 10 分钟内不重复抓
-KEEP_DAYS = 5       # 新闻只保留最近 5 天
+KEEP_DAYS = 7       # 新闻只保留最近 7 天
 
 _LOCK = threading.Lock()
 _MEM = {"ts": 0.0, "items": [], "running": False}
