@@ -2480,6 +2480,7 @@ def search_symbols(q: str) -> list[dict]:
 
 # ---------------- 汇总接口 ----------------
 _TODAY_BAR_CACHE: dict[tuple, tuple[float, dict]] = {}
+_US_EARN_CACHE: dict[str, tuple[float, dict]] = {}
 
 
 def _append_today_bar(
@@ -3021,6 +3022,28 @@ class Handler(BaseHTTPRequestHandler):
                                       stock=stock, min_level=min_level, watch=watch))
             except Exception as e:
                 self._json({"items": [], "counts": {}, "error": str(e)[:160]})
+            return
+        if u.path == "/api/us_earnings":
+            tk = (q.get("code", [""])[0] or "").strip().upper()
+            try:
+                nq = int(q.get("quarters", ["8"])[0] or 8)
+            except Exception:
+                nq = 8
+            if not tk:
+                self._json({"error": "code required", "quarters": []}, 400)
+                return
+            try:
+                hit = _US_EARN_CACHE.get(tk)
+                if hit and time.time() - hit[0] < 3600:
+                    data = hit[1]
+                else:
+                    from core.datasets.us_fundamentals import us_earnings
+
+                    data = us_earnings(tk, quarters=max(1, min(nq, 20)))
+                    _US_EARN_CACHE[tk] = (time.time(), data)
+                self._json(data)
+            except Exception as e:  # noqa: BLE001
+                self._json({"ticker": tk, "quarters": [], "error": str(e)[:160]}, 404)
             return
         if u.path == "/api/stock_industry":
             raw = (q.get("codes", [""])[0] or "").strip()

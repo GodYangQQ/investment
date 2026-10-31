@@ -274,6 +274,12 @@ padding:6px 12px;border-radius:8px;font-size:17px;cursor:pointer}
 #peek .peek-news .pk-more{font-size:12.5px;padding:2px 10px;border-radius:6px;cursor:pointer;
  background:#16202b;border:1px solid #33404f;color:#9cc4ef}
 #peek .peek-news .pk-more:hover{background:#20304a;color:#fff;border-color:#4d9fff}
+#peek .pk-fin{border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums;
+ color:#cfe0f2;margin-left:6px}
+#peek .pk-fin th{font-weight:500;color:#7d8b9a;padding:1px 9px;text-align:right}
+#peek .pk-fin th:first-child,#peek .pk-fin td:first-child{text-align:left;color:#9fb0c2}
+#peek .pk-fin td{padding:1px 9px;text-align:right;white-space:nowrap}
+#peek .pk-fin tr+tr td{border-top:1px solid #1d2833}
 #peek .pk-code{font-size:13.5px;color:#9fb0c2;font-variant-numeric:tabular-nums;
  font-family:ui-monospace,Menlo,Consolas,monospace}
 #peek .pk-tag{font-size:13.5px;padding:3px 11px;border-radius:7px;cursor:pointer;font-family:inherit;
@@ -2805,10 +2811,10 @@ function showPeekSmall(card) {
 async function fillPeekNews(p, it) {
   if (!it) return;
   const mkt = it.market === "us" ? "us" : "cn";
-  const isStock = mkt === "cn" && (it.kind === "stock" || /^(SH|SZ|BJ)\d{6}$/.test(String(it.code)));
+  const isStock = it.kind === "stock" || /^(SH|SZ|BJ)\d{6}$/.test(String(it.code));
   const q = isStock ? `stock=${encodeURIComponent(it.code)}`
     : (mkt === "cn" ? `code=${encodeURIComponent(it.code)}` : "");
-  if (!q) return;                       // 美股暂不关联新闻
+  if (!q) return;                       // ETF/指数暂不关联新闻
   const row = document.createElement("div");
   row.className = "peek-news";
   row.innerHTML = '<span class="pk-lb">相关新闻</span><span class="pk-dim">加载中…</span>';
@@ -2838,6 +2844,29 @@ async function fillPeekNews(p, it) {
   }
 }
 
+async function fillPeekEarnings(p, it) {
+  if (!it || it.market !== "us" || it.kind !== "stock") return;
+  const row = document.createElement("div");
+  row.className = "peek-news";
+  row.innerHTML = '<span class="pk-lb">美股财报</span><span class="pk-dim">加载中…</span>';
+  p.appendChild(row);
+  try {
+    const d = await api(`/api/us_earnings?code=${encodeURIComponent(it.code)}&quarters=4`);
+    if (!row.isConnected) return;
+    const qs = d.quarters || [];
+    if (!qs.length) { row.innerHTML = '<span class="pk-lb">美股财报</span><span class="pk-dim">暂无数据</span>'; return; }
+    const money = v => v == null ? "-" : (Math.abs(v) >= 1e9 ? `$${(v / 1e9).toFixed(2)}B` : `$${(v / 1e6).toFixed(1)}M`);
+    const pct = v => v == null ? "-" : `${v > 0 ? "+" : ""}${Number(v).toFixed(1)}%`;
+    row.innerHTML = '<span class="pk-lb">美股财报</span>' +
+      '<table class="pk-fin"><tr><th>季度</th><th>营收</th><th>同比</th><th>EPS</th></tr>' +
+      qs.map(q => `<tr><td>${esc(q.period)} ${esc(q.fp || "")}</td><td>${money(q.revenue)}</td>` +
+        `<td>${pct(q.revenue_yoy_pct)}</td><td>${q.eps == null ? "-" : Number(q.eps).toFixed(2)}</td></tr>`).join("") +
+      '</table>';
+  } catch (e) {
+    if (row.isConnected) row.innerHTML = '<span class="pk-lb">美股财报</span><span class="pk-dim">加载失败</span>';
+  }
+}
+
 function showPeekFull(card) {
   const p = $("#peek");
   if (!p || !card || !card.isConnected) return;
@@ -2858,6 +2887,7 @@ function showPeekFull(card) {
   PEEK.mode = "full";
   PEEK.pinned = true;              // 全屏后不再跟随鼠标，必须点「关闭」
   fillPeekInfo(p, it);
+  fillPeekEarnings(p, it);
   fillPeekNews(p, it);
 }
 

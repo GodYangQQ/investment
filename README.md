@@ -185,6 +185,7 @@ python apps/web/sector_monitor_web.py --offline       # 只读本地库
 | `/api/board_scores` | 板块个股评分，支持 `top` 参数 |
 | `/api/sector_relations` | 板块共振 / 对手榜（近 N 日收益相关） |
 | `/api/news` | 事件/新闻流（多源抓取、分类、重要度，落 SQLite） |
+| `/api/us_earnings?code=AMD` | 美股个股财报（SEC XBRL：近 8 季营收/净利润/EPS/同比） |
 | `/api/etf_holdings` | ETF 前 N 大持仓（美股 SPDR/SSGA、A股基金持仓） |
 | `/api/watch` | 自选列表读写 |
 | `/api/lines` | 画线读写 |
@@ -292,6 +293,8 @@ python apps/web/backtest_game.py --port 8123
 | `python apps/cli/rank.py --top 10` | SOXX 前20 多因子量化排名 |
 | `python apps/cli/flow.py --days 5` | 美股资金流（成交额 × 涨跌方向代理） |
 | `python apps/cli/soxl_strategy.py` | SOXL 双均线趋势策略 + 回测 |
+| `python apps/cli/us_earnings.py AMD AVGO` | 美股个股财报（SEC XBRL，近 8 季营收/净利/EPS） |
+| `python apps/cli/us_earnings.py --watch` | 自选里的美股财报 |
 | `python apps/cli/us_smartmoney.py insider NVDA` | SEC 内部人 Form 4 |
 | `python apps/cli/us_smartmoney.py fund --name "Berkshire"` | 机构 13F 持仓 |
 | `python apps/cli/serenity_chain.py` | 供应链卡点强度排序 |
