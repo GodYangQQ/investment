@@ -889,6 +889,28 @@ def _save(items: list[dict]) -> None:
                 "DELETE FROM news WHERE ts < ?",
                 (now_ts - KEEP_DAYS_FIN * 86400,),
             )
+            # 「仅限自选」：取消订阅后，旧的财报/公告也不再保留
+            try:
+                _ws, _wt, _wu = _watch_codes()
+                _codes = list(_wt) + [t.upper() for t in _wu]
+                if _ws or _codes:
+                    keep_sql = []
+                    args_fin: list = [now_ts - KEEP_DAYS * 86400]
+                    if _codes:
+                        q = ",".join("?" * len(_codes))
+                        keep_sql.append(f"news_id IN (SELECT news_id FROM news_stock WHERE code IN ({q}))")
+                        args_fin += _codes
+                    if _ws:
+                        q = ",".join("?" * len(_ws))
+                        keep_sql.append(f"news_id IN (SELECT news_id FROM news_sector WHERE code IN ({q}))")
+                        args_fin += list(_ws)
+                    conn.execute(
+                        "DELETE FROM news WHERE ts < ? AND (category='财报' OR source IN ('巨潮公告','SEC公告'))"
+                        " AND id NOT IN (" + " OR ".join(keep_sql) + ")",
+                        args_fin,
+                    )
+            except Exception:
+                pass
             conn.execute("DELETE FROM news_stock WHERE news_id NOT IN (SELECT id FROM news)")
             conn.execute("DELETE FROM news_sector WHERE news_id NOT IN (SELECT id FROM news)")
             # 关联板块
