@@ -2379,12 +2379,10 @@ function hidePeek() {
   }, 220);
 }
 /* 鼠标离开卡片时给 220ms 缓冲：足够移到预览的操作条上 */
-const PEEK_STILL_MS = 500;   // 鼠标静止满 0.5 秒才弹预览
-const PEEK_JITTER = 6;       // 6px 内的手抖不算“移动”，否则永远等不到静止
-function schedulePeekShow(card, x, y) {
+const PEEK_STILL_MS = 500;   // 进入卡片后停留 0.5s 才弹预览
+function schedulePeekShow(card) {
   clearTimeout(PEEK.showTimer);
   clearTimeout(PEEK.hideTimer);
-  PEEK.stillAt = {x: x ?? 0, y: y ?? 0};
   PEEK.showTimer = setTimeout(() => showPeekSmall(card), PEEK_STILL_MS);
 }
 
@@ -2530,7 +2528,10 @@ function showPeekSmall(card) {
   if (del && PEEK.xy) {
     const d = del.getBoundingClientRect();
     if (PEEK.xy.x >= d.left - 4 && PEEK.xy.x <= d.right + 4 &&
-        PEEK.xy.y >= d.top - 4 && PEEK.xy.y <= d.bottom + 4) return;
+        PEEK.xy.y >= d.top - 4 && PEEK.xy.y <= d.bottom + 4) {
+      if (card.matches(":hover")) schedulePeekShow(card);   // 在删除区：不弹，但离开后还会弹
+      return;
+    }
   }
   if (!card._bars) {   // 数据还没到，稍后再弹（最多等 3 次，避免个别标的永远不弹）
     PEEK.retry = (PEEK.retry || 0) + 1;
@@ -2618,16 +2619,10 @@ async function renderWatch() {
       PEEK.xy = {x: e.clientX, y: e.clientY};
       if (PEEK.pinned) return;      // 全屏预览已打开：底下卡片不再响应 hover
       PEEK.card = el;
-      schedulePeekShow(el, e.clientX, e.clientY);
+      schedulePeekShow(el);
     });
-    el.addEventListener("mousemove", e => {
-      PEEK.xy = {x: e.clientX, y: e.clientY};
-      if (PEEK.pinned || PEEK.mode === "sm") return;
-      const a = PEEK.stillAt;
-      if (!a || Math.abs(e.clientX - a.x) + Math.abs(e.clientY - a.y) > PEEK_JITTER) {
-        schedulePeekShow(el, e.clientX, e.clientY);   // 真的在动 -> 重新计时
-      }
-    });
+    // 只记录位置：触发瞬间如果在右上角删除区就不弹（其他情况都照常弹）
+    el.addEventListener("mousemove", e => { PEEK.xy = {x: e.clientX, y: e.clientY}; });
     el.addEventListener("mouseleave", () => { if (!PEEK.pinned) schedulePeekHide(); });
     // 按下就立刻压暗（不等 click 触发），松开 70ms 后恢复，手感更实
     el.addEventListener("mousedown", () => {
