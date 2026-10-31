@@ -2957,6 +2957,24 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as e:
                 self._json({"items": [], "error": str(e)[:120]})
             return
+        if u.path == "/api/news":
+            try:
+                limit = int(q.get("limit", ["300"])[0] or 300)
+            except Exception:
+                limit = 300
+            cat = (q.get("category", [""])[0] or "").strip()
+            kw = (q.get("q", [""])[0] or "").strip()
+            try:
+                from core.events.news_feed import state as news_state
+
+                if (q.get("refresh", ["0"])[0] or "") == "1":
+                    from core.events.news_feed import kick_refresh
+
+                    kick_refresh(True)
+                self._json(news_state(limit=limit, category=cat, q=kw))
+            except Exception as e:
+                self._json({"items": [], "counts": {}, "error": str(e)[:160]})
+            return
         if u.path == "/api/stock_industry":
             raw = (q.get("codes", [""])[0] or "").strip()
             codes = [c for c in raw.split(",") if c.strip()][:200]

@@ -155,6 +155,29 @@ border-right:0;padding:12px 7px;writing-mode:vertical-rl;letter-spacing:3px;font
 background:#18212c;box-shadow:-4px 0 14px rgba(0,0,0,.35)}
 .fab b{writing-mode:horizontal-tb;display:block;margin-top:6px;font-size:15px;color:#ffd54f}
 .fab.on{background:#20304a;border-color:#3c5680}
+/* 第二个悬浮按钮（新闻）排在自选上方 */
+.fab.fab2{top:calc(50% - 132px)}
+/* 新闻列表 */
+.nlist{flex:1;min-height:0;overflow-y:auto;padding:10px 16px 24px;
+ scrollbar-width:none;-ms-overflow-style:none}
+.nlist::-webkit-scrollbar{width:0;height:0;display:none}
+.nrow{display:grid;grid-template-columns:76px 92px 1fr;gap:10px;align-items:baseline;
+ padding:9px 10px;border-radius:8px;cursor:pointer;border:1px solid transparent;
+ transition:background .12s,border-color .12s}
+.nrow:hover{background:#141d27;border-color:#28323d}
+.nrow .nt{color:#7d8b9a;font-size:13.5px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.nrow .ns{font-size:12.5px;color:#8fa6bd;background:#16222f;border-radius:5px;padding:1px 6px;
+ justify-self:start;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:92px}
+.nrow .nti{font-size:15.5px;color:#dbe6f1;line-height:1.5}
+.nrow .nti .cat{font-size:12px;padding:0 5px;border-radius:4px;margin-right:6px;
+ border:1px solid #33404f;color:#8fa6bd}
+.nrow .nti .cat.宏观{color:#ffd479;border-color:#5f4f22;background:#221d10}
+.nrow .nti .cat.地缘{color:#ff9a9a;border-color:#5a2b2b;background:#241414}
+.nrow .nti .cat.产业{color:#8fc7ff;border-color:#27476b;background:#111e2c}
+.nrow .nti .cat.市场{color:#7fd6c6;border-color:#1f5a52;background:#10201f}
+.nrow .nti .cat.灾害{color:#ffb37a;border-color:#5c4029;background:#221a12}
+.nrow .nti .imp{color:#ffb84d;font-size:12px;margin-left:6px}
+.nempty{padding:40px;text-align:center;color:#7d8b9a;font-size:15px}
 /* 自选：全屏面板（一行卡片 · 横向拖动 · 独立改宽高 · 双击放大） */
 .drawer{position:fixed;inset:0;z-index:40;background:#0b0f14;display:none;flex-direction:column}
 .drawer.open{display:flex}
@@ -436,6 +459,7 @@ body.focus.side-hidden .side-handle{left:0}
   <span id="ts" class="muted"></span>
   <button id="helpBtn">画线说明 ?</button>
   <button id="detailBtn" title="所有板块明细：可按成交额 / 主力净额 / 涨跌幅 / 量比 排序">板块明细</button>
+  <button id="newsTopBtn" title="世界事件 / 财经快讯">新闻</button>
   <button id="gameBtn">回测游戏</button>
 </header>
 
@@ -514,6 +538,7 @@ body.focus.side-hidden .side-handle{left:0}
   </section>
 </main>
 
+<button id="newsBtn" class="fab fab2" title="世界事件 / 财经快讯">新闻<b id="newsBadge"></b></button>
 <button id="watchBtn" class="fab" title="我的自选">自选<b id="watchCount">0</b></button>
 <aside id="watch" class="drawer">
   <div class="dh"><button id="wback" class="wback" title="回到看盘（Esc）">← 返回看盘</button>
@@ -531,6 +556,25 @@ body.focus.side-hidden .side-handle{left:0}
     </div>
     <span class="sp"></span><button id="wclose">关闭</button></div>
   <div class="wlist" id="wlist"></div>
+</aside>
+
+<aside id="news" class="drawer">
+  <div class="dh">
+    <button id="nback" class="wback" title="回到看盘（Esc）">← 返回看盘</button>
+    <b>事件 · 新闻</b><span class="muted" id="nSub"></span>
+    <div class="wtabs" id="ntabs">
+      <button data-nc="" class="on">全部</button>
+      <button data-nc="宏观">宏观</button>
+      <button data-nc="地缘">地缘</button>
+      <button data-nc="产业">产业</button>
+      <button data-nc="市场">市场</button>
+      <button data-nc="灾害">灾害</button>
+    </div>
+    <span class="sp"></span>
+    <button id="nRefresh" title="立即刷新">刷新</button>
+    <button id="nClose">关闭</button>
+  </div>
+  <div class="nlist" id="nlist"></div>
 </aside>
 
 <div id="peek"></div>
@@ -1621,6 +1665,7 @@ document.addEventListener("keydown", e => {
     if (e.key === "Escape") { closeDetail(); return; }
   }
   if (e.key === "Escape") {
+    if (newsOpen()) { closeNews(); return; }
     if (S.p1) { S.p1 = null; setStatus("已取消起点"); draw(); return; }
     if (S.mode) { setMode(null); return; }
     if (watchOpen()) { closeWatch(); return; }
@@ -2277,6 +2322,73 @@ function syncFab() {
   if (!btn) return;
   btn.style.display = watchOpen() ? "none" : "";
 }
+/* ---------- 事件 / 新闻 ---------- */
+const NEWS = {items: [], cat: "", loading: false, pending: false, timer: 0};
+function newsOpen() { return $("#news").classList.contains("open"); }
+function renderNews() {
+  const box = $("#nlist");
+  const sub = $("#nSub");
+  if (!box) return;
+  const items = NEWS.items || [];
+  if (sub) sub.textContent = items.length ? `${items.length} 条${NEWS.pending ? " · 抓取中…" : ""}` : "";
+  if (!items.length) {
+    box.innerHTML = `<div class="nempty">${NEWS.pending ? "正在抓取新闻…" : "暂无新闻，点右上「刷新」"}</div>`;
+    return;
+  }
+  const pad = n => String(n).padStart(2, "0");
+  box.innerHTML = items.map(it => {
+    const t = new Date(it.ts * 1000);
+    const when = `${t.getMonth() + 1}-${pad(t.getDate())} ${pad(t.getHours())}:${pad(t.getMinutes())}`;
+    const imp = it.importance >= 2.8 ? "★★" : (it.importance >= 2.2 ? "★" : "");
+    return `<div class="nrow" data-url="${esc(it.url || "")}" title="${esc(it.source)}">` +
+      `<span class="nt">${when}</span>` +
+      `<span class="ns">${esc(it.source)}</span>` +
+      `<span class="nti"><span class="cat ${esc(it.category)}">${esc(it.category)}</span>${esc(it.title)}` +
+      (imp ? `<span class="imp">${imp}</span>` : "") + `</span></div>`;
+  }).join("");
+  box.querySelectorAll(".nrow").forEach(el => {
+    el.onclick = () => {
+      const u = el.dataset.url;
+      if (u) window.open(u, "_blank", "noopener,noreferrer");
+      else setStatus("该条没有可用链接");
+    };
+  });
+}
+async function loadNews(refresh) {
+  if (NEWS.loading) return;
+  NEWS.loading = true;
+  try {
+    const d = await api(`/api/news?limit=300` +
+      (NEWS.cat ? `&category=${encodeURIComponent(NEWS.cat)}` : "") +
+      (refresh ? "&refresh=1" : ""));
+    NEWS.items = d.items || [];
+    NEWS.pending = !!d.pending;
+    const badge = $("#newsBadge");
+    if (badge) badge.textContent = NEWS.items.length ? String(NEWS.items.length) : "";
+    renderNews();
+    if (NEWS.pending) setTimeout(() => { if (newsOpen()) loadNews(); }, 3000);
+  } catch (e) {
+    const box = $("#nlist");
+    if (box) box.innerHTML = `<div class="nempty">加载失败：${esc(e.message || e)}</div>`;
+  } finally {
+    NEWS.loading = false;
+  }
+}
+function openNews() {
+  hidePeek();
+  $("#news").classList.add("open");
+  $("#newsBtn").classList.add("on");
+  renderNews();
+  loadNews();
+  clearInterval(NEWS.timer);
+  NEWS.timer = setInterval(() => { if (newsOpen()) loadNews(); }, 60000);
+}
+function closeNews() {
+  $("#news").classList.remove("open");
+  $("#newsBtn").classList.remove("on");
+  clearInterval(NEWS.timer);
+}
+
 function openWatch() {
   $("#watch").classList.add("open");
   $("#watchBtn").classList.add("on");
@@ -3697,6 +3809,18 @@ setInterval(() => { if (watchOpen()) refreshWatchValues(); }, 10000);
   if (localStorage.getItem("sm_side_hidden") === "1") setSideHidden(true);
 
   $("#watchBtn").onclick = () => (watchOpen() ? closeWatch() : openWatch());
+  $("#newsBtn").onclick = () => (newsOpen() ? closeNews() : openNews());
+  $("#newsTopBtn").onclick = () => (newsOpen() ? closeNews() : openNews());
+  $("#nClose").onclick = closeNews;
+  $("#nback").onclick = () => { closeNews(); setFocus(false); };
+  $("#nRefresh").onclick = () => loadNews(true);
+  $("#ntabs").addEventListener("click", e => {
+    const b = e.target.closest("button[data-nc]");
+    if (!b) return;
+    NEWS.cat = b.dataset.nc || "";
+    [...$("#ntabs").children].forEach(x => x.classList.toggle("on", x === b));
+    loadNews();
+  });
   $("#wclose").onclick = closeWatch;
   $("#wback").onclick = () => { closeWatch(); setFocus(false); };
   $("#wtabs").addEventListener("click", e => {
