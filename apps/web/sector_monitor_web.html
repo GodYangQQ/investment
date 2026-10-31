@@ -2645,12 +2645,12 @@ async function renderWatch() {
       schedulePeekShow(el, e.clientX, e.clientY);
     });
     // 只要在动就不放大：位移超过 10px 就重新计时（停住 0.5s 才放大）
+    // 注意：已经放大后不再因为移动而取消，否则移向右上角叉叉时卡片会缩回去、点不中
     el.addEventListener("mousemove", e => {
       PEEK.xy = {x: e.clientX, y: e.clientY};
-      if (PEEK.pinned) return;
+      if (PEEK.pinned || el.classList.contains("zoomed")) return;
       const a = PEEK.stillAt;
       if (!a || Math.abs(e.clientX - a.x) + Math.abs(e.clientY - a.y) > PEEK_MOVE_PX) {
-        el.classList.remove("zoomed");
         schedulePeekShow(el, e.clientX, e.clientY);
       }
     });
