@@ -73,6 +73,12 @@ def _conn() -> sqlite3.Connection:
                title TEXT, url TEXT, lang TEXT, importance REAL, fetched REAL)"""
     )
     conn.execute("CREATE INDEX IF NOT EXISTS idx_news_ts ON news(ts DESC)")
+    conn.execute(
+        """CREATE TABLE IF NOT EXISTS news_sector(
+               news_id TEXT, market TEXT, code TEXT, name TEXT,
+               PRIMARY KEY(news_id, market, code))"""
+    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_news_sector_code ON news_sector(code)")
     return conn
 
 
@@ -224,6 +230,100 @@ SOURCES = [
 ]
 
 
+# ---------------- 新闻 → 板块 ----------------
+# 板块名以外的常用同义词（命中后映射到该板块）
+SECTOR_ALIAS = {
+    "半导体": ["半导体", "芯片", "晶圆", "光刻", "存储芯片", "先进制程", "台积电", "nvidia", "英伟达", "tsmc"],
+    "元件": ["pcb", "覆铜板", "被动元件", "电容", "电阻"],
+    "消费电子": ["消费电子", "手机", "苹果", "iphone", "可穿戴"],
+    "软件开发": ["软件", "saas", "操作系统", "信创"],
+    "IT服务": ["it服务", "云计算", "数据中心", "算力"],
+    "通信设备": ["通信设备", "光模块", "5g", "基站", "卫星互联网"],
+    "白酒": ["白酒", "茅台", "五粮液", "泸州老窖"],
+    "饮料制造": ["饮料", "乳品", "啤酒"],
+    "食品加工制造": ["食品", "预制菜", "调味品"],
+    "银行": ["银行", "信贷", "存款", "息差"],
+    "证券": ["券商", "证券", "投行"],
+    "保险": ["保险", "保费", "寿险"],
+    "房地产开发": ["房地产", "楼市", "地产", "房贷"],
+    "电力": ["电力", "电价", "核电", "水电", "火电"],
+    "煤炭开采加工": ["煤炭", "动力煤", "焦煤"],
+    "石油加工贸易": ["原油", "油价", "炼化"],
+    "油气开采及服务": ["油气", "石油开采", "页岩油", "opec"],
+    "化学制品": ["化工", "化学品", "农药", "化肥"],
+    "有色金属": ["有色", "铜", "铝", "锌", "镍"],
+    "贵金属": ["黄金", "金价", "白银", "金矿"],
+    "小金属": ["稀土", "锂", "钴", "钨"],
+    "钢铁": ["钢铁", "铁矿", "螺纹钢"],
+    "电池": ["电池", "锂电", "储能", "固态电池"],
+    "光伏设备": ["光伏", "太阳能", "硅片", "组件"],
+    "风电设备": ["风电", "风机", "海上风电"],
+    "汽车整车": ["汽车", "整车", "新能源车", "电动车", "车企"],
+    "汽车零部件": ["汽车零部件", "零部件", "tier1"],
+    "军工装备": ["军工", "国防", "导弹", "战机", "军演"],
+    "医疗器械": ["医疗器械", "影像设备", "耗材"],
+    "化学制药": ["制药", "创新药", "集采", "医保", "fda"],
+    "中药": ["中药", "中医药"],
+    "生物制品": ["疫苗", "生物制品", "抗体"],
+    "医疗服务": ["医疗服务", "医院", "cxo", "cro"],
+    "航运": ["航运", "集运", "干散货", "运价"],
+    "港口": ["港口", "码头"],
+    "航空机场": ["航空", "机场", "航班"],
+    "物流": ["物流", "快递", "供应链"],
+    "旅游及景区": ["旅游", "景区", "出行"],
+    "酒店餐饮": ["酒店", "餐饮"],
+    "零售": ["零售", "超市", "电商"],
+    "游戏": ["游戏", "版号"],
+    "文化传媒": ["传媒", "影视", "广告", "出版"],
+    "农牧饲渔": ["农业", "种业", "养殖", "生猪", "粮食"],
+    "工程建设": ["基建", "工程", "建筑"],
+    "水泥建材": ["水泥", "建材", "玻璃"],
+    "家用电器": ["家电", "空调", "冰箱"],
+}
+
+
+def _sector_index() -> list[dict]:
+    """从快照里取板块列表（code/name），用于新闻标题匹配。"""
+    import sqlite3 as _s
+
+    out: list[dict] = []
+    try:
+        conn = _s.connect(f"file:{DB_FILE}?mode=ro", uri=True)
+        conn.row_factory = _s.Row
+        for key, market in (("list:cn:industry", "cn"), ("list:cn:concept", "cn")):
+            row = conn.execute("SELECT payload FROM snapshots WHERE key=?", (key,)).fetchone()
+            if not row:
+                continue
+            for r in json.loads(row["payload"]).get("rows") or []:
+                if r.get("code"):
+                    out.append({"market": market, "code": str(r["code"]), "name": str(r.get("name") or "")})
+        conn.close()
+    except Exception:
+        pass
+    return out
+
+
+def _match_sectors(title: str, index: list[dict]) -> list[dict]:
+    """标题里出现板块名（含同义词）就关联，最多 4 个。"""
+    t = str(title or "").lower()
+    if not t:
+        return []
+    hits: list[dict] = []
+    seen: set[str] = set()
+    for sec in index:
+        code = sec["code"]
+        if code in seen:
+            continue
+        name = sec["name"]
+        kws = [name] + SECTOR_ALIAS.get(name, [])
+        if any(k and k.lower() in t for k in kws):
+            hits.append(sec)
+            seen.add(code)
+            if len(hits) >= 4:
+                break
+    return hits
+
+
 def _fingerprint(title: str) -> str:
     key = re.sub(r"[^a-z0-9\u4e00-\u9fff]", "", str(title or "").lower())[:80]
     return hashlib.md5(key.encode("utf-8")).hexdigest()[:16]
@@ -268,13 +368,24 @@ def _save(items: list[dict]) -> None:
                 ],
             )
             conn.execute("DELETE FROM news WHERE ts < ?", (time.time() - KEEP_DAYS * 86400,))
+            # 关联板块
+            links = []
+            for it in items:
+                for sec in it.get("sectors") or []:
+                    links.append((it["id"], sec["market"], sec["code"], sec["name"]))
+            if links:
+                conn.executemany(
+                    "INSERT OR REPLACE INTO news_sector(news_id,market,code,name) VALUES(?,?,?,?)",
+                    links,
+                )
             conn.commit()
             conn.close()
     except Exception:
         pass
 
 
-def load_news(limit: int = 200, category: str = "", q: str = "", hours: int = 0) -> list[dict]:
+def load_news(limit: int = 200, category: str = "", q: str = "", hours: int = 0,
+              code: str = "") -> list[dict]:
     try:
         conn = _conn()
         sql = "SELECT id,ts,source,tier,category,title,url,lang,importance FROM news"
@@ -289,6 +400,22 @@ def load_news(limit: int = 200, category: str = "", q: str = "", hours: int = 0)
         if hours:
             where.append("ts > ?")
             args.append(time.time() - hours * 3600)
+        if code:
+            sql = ("SELECT n.id,n.ts,n.source,n.tier,n.category,n.title,n.url,n.lang,n.importance "
+                   "FROM news n JOIN news_sector s ON s.news_id=n.id WHERE s.code=?")
+            args = [str(code)]
+            if category:
+                sql += " AND n.category=?"
+                args.append(category)
+            sql += " ORDER BY n.ts DESC LIMIT ?"
+            args.append(max(1, min(int(limit), 500)))
+            rows = conn.execute(sql, args).fetchall()
+            conn.close()
+            return [
+                {"id": r[0], "ts": r[1], "source": r[2], "tier": r[3], "category": r[4],
+                 "title": r[5], "url": r[6], "lang": r[7], "importance": r[8]}
+                for r in rows
+            ]
         if where:
             sql += " WHERE " + " AND ".join(where)
         sql += " ORDER BY ts DESC LIMIT ?"
@@ -314,11 +441,13 @@ def _collect() -> None:
             continue
     items = _dedupe(collected)
     now = time.time()
+    index = _sector_index()
     for it in items:
         it["id"] = _fingerprint(it["title"])
         it["category"] = _categorize(it["title"])
         it["importance"] = _score(it)
         it["ts"] = float(it.get("ts") or now)
+        it["sectors"] = _match_sectors(it["title"], index) if index else []
     _save(items)
     _MEM["ts"] = now
     _MEM["items"] = items
@@ -344,14 +473,14 @@ def kick_refresh(force: bool = False) -> bool:
     return True
 
 
-def state(limit: int = 200, category: str = "", q: str = "") -> dict:
+def state(limit: int = 200, category: str = "", q: str = "", code: str = "") -> dict:
     """给接口用：立即返回库里数据，同时判断是否需要后台刷新。"""
     kick_refresh(False)
     counts: dict[str, int] = {}
     for r in load_news(limit=800):
         counts[r["category"]] = counts.get(r["category"], 0) + 1
     return {
-        "items": load_news(limit=limit, category=category, q=q),
+        "items": load_news(limit=limit, category=category, q=q, code=code),
         "counts": counts,
         "pending": _MEM["running"],
         "updated": _MEM["ts"],

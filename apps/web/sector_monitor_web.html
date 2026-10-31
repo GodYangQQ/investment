@@ -570,6 +570,7 @@ body.focus.side-hidden .side-handle{left:0}
       <button data-nc="市场">市场</button>
       <button data-nc="灾害">灾害</button>
     </div>
+    <button id="nCur" title="只看与当前板块相关的新闻">当前板块</button>
     <span class="sp"></span>
     <button id="nRefresh" title="立即刷新">刷新</button>
     <button id="nClose">关闭</button>
@@ -2323,7 +2324,7 @@ function syncFab() {
   btn.style.display = watchOpen() ? "none" : "";
 }
 /* ---------- 事件 / 新闻 ---------- */
-const NEWS = {items: [], cat: "", loading: false, pending: false, timer: 0};
+const NEWS = {items: [], cat: "", onlyCur: false, loading: false, pending: false, timer: 0};
 function newsOpen() { return $("#news").classList.contains("open"); }
 function renderNews() {
   const box = $("#nlist");
@@ -2358,8 +2359,10 @@ async function loadNews(refresh) {
   if (NEWS.loading) return;
   NEWS.loading = true;
   try {
+    const useCur = NEWS.onlyCur && S.code;
     const d = await api(`/api/news?limit=300` +
       (NEWS.cat ? `&category=${encodeURIComponent(NEWS.cat)}` : "") +
+      (useCur ? `&code=${encodeURIComponent(S.code)}` : "") +
       (refresh ? "&refresh=1" : ""));
     NEWS.items = d.items || [];
     NEWS.pending = !!d.pending;
@@ -2367,6 +2370,7 @@ async function loadNews(refresh) {
     if (badge) badge.textContent = NEWS.items.length ? String(NEWS.items.length) : "";
     renderNews();
     if (NEWS.pending) setTimeout(() => { if (newsOpen()) loadNews(); }, 3000);
+    else if (!NEWS.items.length && !refresh) setTimeout(() => { if (newsOpen()) loadNews(true); }, 500);
   } catch (e) {
     const box = $("#nlist");
     if (box) box.innerHTML = `<div class="nempty">加载失败：${esc(e.message || e)}</div>`;
@@ -2374,8 +2378,15 @@ async function loadNews(refresh) {
     NEWS.loading = false;
   }
 }
+function syncNewsCur() {
+  const b = $("#nCur");
+  if (!b) return;
+  b.classList.toggle("on", !!NEWS.onlyCur);
+  b.textContent = NEWS.onlyCur && S.name ? `相关：${S.name}` : "当前板块";
+}
 function openNews() {
   hidePeek();
+  syncNewsCur();
   $("#news").classList.add("open");
   $("#newsBtn").classList.add("on");
   renderNews();
@@ -3814,6 +3825,7 @@ setInterval(() => { if (watchOpen()) refreshWatchValues(); }, 10000);
   $("#nClose").onclick = closeNews;
   $("#nback").onclick = () => { closeNews(); setFocus(false); };
   $("#nRefresh").onclick = () => loadNews(true);
+  $("#nCur").onclick = () => { NEWS.onlyCur = !NEWS.onlyCur; syncNewsCur(); loadNews(); };
   $("#ntabs").addEventListener("click", e => {
     const b = e.target.closest("button[data-nc]");
     if (!b) return;

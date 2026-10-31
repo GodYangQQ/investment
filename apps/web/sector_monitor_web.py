@@ -2971,7 +2971,8 @@ class Handler(BaseHTTPRequestHandler):
                     from core.events.news_feed import kick_refresh
 
                     kick_refresh(True)
-                self._json(news_state(limit=limit, category=cat, q=kw))
+                code = (q.get("code", [""])[0] or "").strip()
+                self._json(news_state(limit=limit, category=cat, q=kw, code=code))
             except Exception as e:
                 self._json({"items": [], "counts": {}, "error": str(e)[:160]})
             return
