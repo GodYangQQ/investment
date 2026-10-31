@@ -2586,6 +2586,16 @@ function schedulePeekShow(card, x, y) {
 /* 鼠标停住 -> 卡片原位放大 2 倍（贴边自动朝内侧展开） */
 function zoomCard(card) {
   if (!card || !card.isConnected || !card.matches(":hover")) return;
+  // 右上角删除区不放大（否则一放大，叉叉就离光标远了/被盖住）
+  const del = card.querySelector(".wdel-x");
+  if (del && PEEK.xy) {
+    const d = del.getBoundingClientRect();
+    if (PEEK.xy.x >= d.left - 6 && PEEK.xy.x <= d.right + 6 &&
+        PEEK.xy.y >= d.top - 6 && PEEK.xy.y <= d.bottom + 6) {
+      if (card.matches(":hover")) schedulePeekShow(card);   // 稍后再试，离开删除区就会放大
+      return;
+    }
+  }
   const br = card.parentElement.getBoundingClientRect();
   const r = card.getBoundingClientRect();
   const mx = Math.max(16, r.width * 0.26), my = Math.max(16, r.height * 0.26);

@@ -161,16 +161,6 @@
  },
  {
   "market": "cn",
-  "code": "SZ301239",
-  "name": "普瑞眼科",
-  "kind": "stock",
-  "tf": "1d",
-  "group": "semi",
-  "w": null,
-  "h": null
- },
- {
-  "market": "cn",
   "code": "T881175",
   "name": "医疗服务",
   "kind": "industry",
