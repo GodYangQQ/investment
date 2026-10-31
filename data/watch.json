@@ -1,6 +1,26 @@
 [
  {
   "market": "us",
+  "code": "AVGO",
+  "name": "Broadcom",
+  "kind": "stock",
+  "tf": "1d",
+  "group": "semi",
+  "w": null,
+  "h": null
+ },
+ {
+  "market": "us",
+  "code": "MU",
+  "name": "Micron",
+  "kind": "stock",
+  "tf": "1d",
+  "group": "semi",
+  "w": null,
+  "h": null
+ },
+ {
+  "market": "us",
   "code": "IGV",
   "name": "北美科软股ETF",
   "kind": "industry",

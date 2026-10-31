@@ -512,6 +512,10 @@ body.focus.side-hidden .side-handle{left:0}
     <b>板块明细</b>
     <span class="muted" id="dSub"></span>
     <span class="sp"></span>
+    <div class="wtabs" id="dmtabs" title="切换 A股 / 美股">
+      <button data-dm="cn">A股</button>
+      <button data-dm="us">美股</button>
+    </div>
     <span class="dlegend" title="共振：和本板块同涨同跌（相关高） / 对手：超额收益反向（剔掉大盘后一个强一个弱）">
       <i class="g"></i>↑共振 <i class="r"></i>↓对手</span>
     <input id="dq" placeholder="过滤名称 / 代码" autocomplete="off">
@@ -2236,6 +2240,8 @@ function levelsFor(lines, price, tLast) {
   return {sup: below[0], res: above[0]};
 }
 
+const SPARK_DAYS = 180;   // 自选卡片迷你图 / hover 预览只取最近 180 根日线
+
 function watchType(it) {
   const c = String(it.code || "").toUpperCase();
   if (it.kind === "index") return "index";
@@ -2908,6 +2914,7 @@ function renderDetail() {
     sub.textContent = `${S.market === "cn" ? "A股" : "美股（美元）"} · ${rows.length} 个` +
       (S.source ? ` · ${S.source}` : "") + extra;
   }
+  syncDetailMarket();
   box.querySelectorAll(".drow.h .s").forEach(el => {
     el.onclick = () => {
       const k = el.dataset.k;
@@ -2974,6 +2981,21 @@ function closeDetail() {
   const el = $("#detail");
   if (el) el.classList.remove("open");
 }
+$("#dmtabs").addEventListener("click", e => {
+  const b = e.target.closest("button[data-dm]");
+  if (!b) return;
+  const mk = b.dataset.dm;
+  if (mk === S.market) return;
+  syncDetailMarket();
+  // 复用顶栏的市场切换逻辑（会重新拉列表 + 关联数据）
+  const tab = document.querySelector(`#mtabs button[data-market="${mk}"]`);
+  if (tab) tab.click();
+});
+function syncDetailMarket() {
+  document.querySelectorAll("#dmtabs button").forEach(b => {
+    b.classList.toggle("on", b.dataset.dm === S.market);
+  });
+}
 $("#detailBtn").onclick = openDetail;
 $("#dClose").onclick = closeDetail;
 $("#dq").addEventListener("input", e => { DT.q = e.target.value; renderDetail(); });
@@ -3030,8 +3052,10 @@ async function fillWatchCard(it, el, force) {
   sup.style.color = lv.sup == null ? "" : DOWN;
   res.style.color = lv.res == null ? "" : UP;
   tag.textContent = tfLabel(tf) + (lines.length ? ` · ${lines.length} 条线` : " · 未画线");
-  el._bars = bars; el._lines = lines; el._price = price;
-  drawSpark(el.querySelector(".wspark"), bars, lines, price, el.matches(":hover") ? 1.5 : 1);
+  // 卡片里的迷你图只看最近半年，历史太长会挤成一条线
+  const sparkBars = bars.length > SPARK_DAYS ? bars.slice(-SPARK_DAYS) : bars;
+  el._bars = sparkBars; el._lines = lines; el._price = price;
+  drawSpark(el.querySelector(".wspark"), sparkBars, lines, price, el.matches(":hover") ? 1.5 : 1);
 }
 
 /* ---------- 列表行迷你图：懒加载 + 并发限流 ---------- */
@@ -3068,7 +3092,8 @@ function ensureSpark(o, r) {
     try {
       const d = await api(`/api/bars?market=${S.market}&kind=${encodeURIComponent(kind)}` +
         `&code=${encodeURIComponent(r.code)}&name=${encodeURIComponent(r.name || "")}&tf=1d`);
-      const bars = (d.bars || []).map(x => ({ t: parseT(x.t), o: +x.o, h: +x.h, l: +x.l, c: +x.c, v: +x.v || 0 }));
+      let bars = (d.bars || []).map(x => ({ t: parseT(x.t), o: +x.o, h: +x.h, l: +x.l, c: +x.c, v: +x.v || 0 }));
+      if (bars.length > SPARK_DAYS) bars = bars.slice(-SPARK_DAYS);
       SPARK.set(key, { bars, at: Date.now(), pending: false });
       drawSpark(o.spark, bars, lines, price || (bars.length ? bars[bars.length - 1].c : 0));
     } catch (e) {
