@@ -463,6 +463,11 @@ body.focus main{grid-template-columns:304px 1fr}
       <button data-wt="stock">个股</button>
       <button data-wt="etf">ETF</button>
     </div>
+    <div class="wtabs" id="wmtabs" title="按市场筛选">
+      <button data-wm="all" class="on">全部市场</button>
+      <button data-wm="cn">A股</button>
+      <button data-wm="us">美股</button>
+    </div>
     <span class="sp"></span><button id="wclose">关闭</button></div>
   <div class="wlist" id="wlist"></div>
 </aside>
@@ -509,7 +514,7 @@ const S = {
   view: {l: -1, r: 1}, ylim: null, vmax: 1, userView: false,
   auto: true, hover: null, drag: null, pan: null,
   undo: [], redo: [], live: null, loading: false, lastBarFetch: 0,
-  ma: [], log: true, watchFilter: "all",
+  ma: [], log: true, watchFilter: "all", watchMarket: "all",
 };
 const $ = s => document.querySelector(s);
 
@@ -2410,7 +2415,11 @@ async function renderWatch() {
   const box = $("#wlist");
   const keepL = box.scrollLeft, keepT = box.scrollTop;
   box.innerHTML = "";
-  const items = WATCH.filter(it => S.watchFilter === "all" || watchType(it) === S.watchFilter);
+  const items = WATCH.filter(it => {
+    if (S.watchFilter !== "all" && watchType(it) !== S.watchFilter) return false;
+    const mk = it.market === "us" ? "us" : "cn";
+    return S.watchMarket === "all" || mk === S.watchMarket;
+  });
   const c2 = $("#wcount2");
   if (c2) c2.textContent = items.length + " 个";
   if (!items.length) {
@@ -3373,6 +3382,14 @@ setInterval(() => { if (watchOpen()) refreshWatchValues(); }, 10000);
     if (!b) return;
     S.watchFilter = b.dataset.wt;
     [...$("#wtabs").children].forEach(x => x.classList.toggle("on", x === b));
+    renderWatch();
+  });
+  $("#wmtabs").addEventListener("click", e => {
+    const b = e.target.closest("button[data-wm]");
+    if (!b) return;
+    S.watchMarket = b.dataset.wm;
+    [...$("#wmtabs").children].forEach(x => x.classList.toggle("on", x === b));
+    hidePeek();
     renderWatch();
   });
   syncFab();   // 初始化时按状态校正「自选」按钮显隐
