@@ -214,6 +214,23 @@ def _norm_ind(s) -> str:
     return re.sub(r"[ⅡⅢ]", "", str(s or "")).strip()
 
 
+def _lcs_len(a: str, b: str) -> int:
+    """最长公共子串长度（用于同花顺行业名 ↔ 申万行业名的模糊匹配）。"""
+    if not a or not b:
+        return 0
+    best = 0
+    prev = [0] * (len(b) + 1)
+    for ca in a:
+        cur = [0] * (len(b) + 1)
+        for j, cb in enumerate(b, 1):
+            if ca == cb:
+                cur[j] = prev[j - 1] + 1
+                if cur[j] > best:
+                    best = cur[j]
+        prev = cur
+    return best
+
+
 def board_scores(name: str = "", codes: list[str] | None = None, top: int = 10) -> list[dict]:
     df = load_scores()
     if df is None or df.empty:
@@ -233,6 +250,15 @@ def board_scores(name: str = "", codes: list[str] | None = None, top: int = 10) 
         ]
         if not cand and nm in _ALIAS:
             cand = [x for x in _ALIAS[nm] if x in industries]
+        if not cand:
+            # 同花顺行业名（饮料制造）和申万行业名（饮料乳品/白酒Ⅱ）对不上时，
+            # 用最长公共子串兜底，至少 2 个字相同才认
+            scored = sorted(
+                ((_lcs_len(nrm, _norm_ind(x)), x) for x in industries), reverse=True
+            )
+            if scored and scored[0][0] >= 2:
+                best = scored[0][0]
+                cand = [x for L, x in scored if L == best][:3]
         if cand:
             g = df[df["行业"].isin(cand)] if len(cand) > 1 else df[df["行业"] == cand[0]]
             return _records(g, top)

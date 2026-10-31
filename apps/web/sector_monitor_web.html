@@ -178,9 +178,11 @@ padding:6px 12px;border-radius:8px;font-size:17px;cursor:pointer}
 .wcard{position:relative;box-sizing:border-box;height:100%;
  border:1px solid var(--line);border-radius:10px;padding:8px 10px 7px;background:#111821;
  cursor:pointer;display:flex;flex-direction:column;
- transition:border-color .12s,background .12s,box-shadow .12s}
-/* hover：卡片本身大小不变（hover 命中区不变），另外弹出一个 3 倍的清晰预览 */
-.wcard:hover{border-color:#3c4a59;background:#141c26;box-shadow:0 0 0 1px rgba(74,144,217,.25) inset}
+ transition:border-color .12s,background .12s,box-shadow .12s,transform .2s cubic-bezier(.2,.8,.3,1);
+ transform-origin:center center;will-change:transform}
+/* hover：原位平滑放大 2 倍（老逻辑），贴边时朝内侧展开 */
+.wcard:hover{border-color:#3c4a59;background:#141c26;transform:scale(2);z-index:6;
+ box-shadow:0 18px 40px rgba(0,0,0,.62)}
 .wcard:active{background:#090d12;border-color:#4d9fff}
 #peek{position:fixed;z-index:70;pointer-events:none;
  opacity:0;visibility:hidden;transition:opacity .16s ease,visibility 0s linear .18s}
@@ -2617,12 +2619,17 @@ async function renderWatch() {
     el._it = it;
     el.addEventListener("mouseenter", e => {
       PEEK.xy = {x: e.clientX, y: e.clientY};
-      if (PEEK.pinned) return;      // 全屏预览已打开：底下卡片不再响应 hover
       PEEK.card = el;
-      schedulePeekShow(el);
+      // 放大原点朝空间大的一侧，贴边也不会被裁掉
+      const br = box.getBoundingClientRect(), r = el.getBoundingClientRect();
+      const mx = Math.max(16, r.width * 0.26), my = Math.max(16, r.height * 0.26);
+      let ox = "center", oy = "center";
+      if (r.left - br.left <= mx) ox = "left";
+      else if (br.right - r.right <= mx) ox = "right";
+      if (r.top - br.top <= my) oy = "top";
+      else if (br.bottom - r.bottom <= my) oy = "bottom";
+      el.style.transformOrigin = ox + " " + oy;
     });
-    // 只记录位置：触发瞬间如果在右上角删除区就不弹（其他情况都照常弹）
-    el.addEventListener("mousemove", e => { PEEK.xy = {x: e.clientX, y: e.clientY}; });
     el.addEventListener("mouseleave", () => { if (!PEEK.pinned) schedulePeekHide(); });
     // 按下就立刻压暗（不等 click 触发），松开 70ms 后恢复，手感更实
     el.addEventListener("mousedown", () => {
