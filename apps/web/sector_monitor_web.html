@@ -1563,8 +1563,13 @@ function updateTip(mx, my) {
   const idx = Math.max(0, Math.min(nBars() - 1, Math.round(px2x(mx))));
   const b = S.bars[idx];
   const prev = idx > 0 ? S.bars[idx - 1].c : b.o;
-  const pct = prev ? (b.c / prev - 1) * 100 : 0;
   const amp = b.l ? (b.h - b.l) / b.l * 100 : 0;
+  const isMin = S.tf === "1m";
+  // 分时：看的是“相对当日开盘”的涨跌（和上一分钟比没意义）
+  const dayOpen = isMin && S.bars[0] ? S.bars[0].o : 0;
+  const pctOpen = isMin && dayOpen ? (b.c / dayOpen - 1) * 100 : null;
+  const pctPrevClose = isMin && S.prevClose ? (b.c / S.prevClose - 1) * 100 : null;
+  const pct = isMin ? (pctOpen ?? 0) : (prev ? (b.c / prev - 1) * 100 : 0);
   // 鼠标所在的 Y 坐标换算成价格（只看主图区域）
   const inMain = my >= G.pad.t && my <= G.pad.t + G.mainH;
   const yPrice = inMain && S.ylim ? y2p(my) : null;
@@ -1574,7 +1579,13 @@ function updateTip(mx, my) {
       : "") +
     `<div><b>${esc(fmtFull(b.t, S.tf))}</b></div>` +
     `<div>开 ${fmtNum(b.o)}　高 ${fmtNum(b.h)}　低 ${fmtNum(b.l)}　收 <b>${fmtNum(b.c)}</b></div>` +
-    `<div>涨跌 <span style="color:${pctColor(pct)}">${fmtPct(pct)}</span>　振幅 ${fmtNum(amp, 2)}%</div>` +
+    (isMin
+      ? `<div>较开盘 <span style="color:${pctColor(pctOpen)}">${fmtPct(pctOpen)}</span>` +
+        (pctPrevClose != null
+          ? `　较昨收 <span style="color:${pctColor(pctPrevClose)}">${fmtPct(pctPrevClose)}</span>`
+          : "") +
+        `</div>`
+      : `<div>涨跌 <span style="color:${pctColor(pct)}">${fmtPct(pct)}</span>　振幅 ${fmtNum(amp, 2)}%</div>`) +
     `<div>成交量 ${fmtAmt(b.v)}</div>`;
   tip.style.display = "block";
   const tw = tip.offsetWidth, th = tip.offsetHeight;
