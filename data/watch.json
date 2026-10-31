@@ -1,6 +1,56 @@
 [
  {
   "market": "cn",
+  "code": "SH515880",
+  "name": "通信ETF国泰",
+  "kind": "stock",
+  "tf": "1d",
+  "group": "semi",
+  "w": null,
+  "h": null
+ },
+ {
+  "market": "cn",
+  "code": "SH561980",
+  "name": "半导体设备ETF招商",
+  "kind": "stock",
+  "tf": "1d",
+  "group": "semi",
+  "w": null,
+  "h": null
+ },
+ {
+  "market": "cn",
+  "code": "SZ000636",
+  "name": "风华高科",
+  "kind": "stock",
+  "tf": "1d",
+  "group": "semi",
+  "w": null,
+  "h": null
+ },
+ {
+  "market": "cn",
+  "code": "SZ002185",
+  "name": "华天科技",
+  "kind": "stock",
+  "tf": "1d",
+  "group": "industry",
+  "w": null,
+  "h": null
+ },
+ {
+  "market": "cn",
+  "code": "SZ002463",
+  "name": "沪电股份",
+  "kind": "stock",
+  "tf": "1d",
+  "group": "semi",
+  "w": null,
+  "h": null
+ },
+ {
+  "market": "cn",
   "code": "SH603186",
   "name": "华正新材",
   "kind": "stock",

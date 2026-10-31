@@ -2060,6 +2060,7 @@ def _qq_minute(symbol: str) -> pd.DataFrame | None:
 
 def _sina_cn_kline(symbol: str, scale: int, datalen: int = 1023) -> pd.DataFrame | None:
     """新浪分钟/日线（个股、指数通用）；scale: 1/5/15/30/60/240。"""
+    datalen = max(1, min(int(datalen or 1023), 1023))   # 新浪超过 1023 会返回 null
     url = (
         "https://quotes.sina.cn/cn/api/json_v2.php/CN_MarketDataService.getKLineData"
         f"?symbol={symbol}&scale={scale}&ma=no&datalen={datalen}"
@@ -2102,12 +2103,17 @@ def _ak_stock_bars(code: str) -> list[dict]:
             prefix = "sh"
         else:
             prefix = "sz"
-        df = ak.stock_zh_a_daily(
-            symbol=prefix + code,
-            start_date="20100101",
-            end_date=datetime.now().strftime("%Y%m%d"),
-            adjust="qfq",
-        )
+        # ETF 与股票用不同接口；ETF 走新浪全历史，股票走前复权
+        is_etf = code.startswith(("50", "51", "56", "58", "15", "16"))
+        if is_etf:
+            df = ak.fund_etf_hist_sina(symbol=prefix + code)
+        else:
+            df = ak.stock_zh_a_daily(
+                symbol=prefix + code,
+                start_date="20100101",
+                end_date=datetime.now().strftime("%Y%m%d"),
+                adjust="qfq",
+            )
         if df is None or df.empty:
             return []
         if "date" in df.columns:
