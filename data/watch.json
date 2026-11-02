@@ -1,6 +1,16 @@
 [
  {
   "market": "cn",
+  "code": "SZ399006",
+  "name": "创业板指",
+  "kind": "index",
+  "tf": "1d",
+  "group": "semi",
+  "w": null,
+  "h": null
+ },
+ {
+  "market": "cn",
   "code": "SZ159928",
   "name": "消费ETF汇添富",
   "kind": "stock",

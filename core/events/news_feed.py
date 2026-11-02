@@ -35,6 +35,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 DB_FILE = ROOT / "data" / "sector_monitor.db"
+CST = timezone(timedelta(hours=8))   # 北京时间：国内源的时间字符串都是本地时间
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -113,13 +114,24 @@ def _to_ts(v) -> float:
     s = str(v or "").strip()
     if not s:
         return time.time()
+    if re.fullmatch(r"\d{10,13}", s):          # 数字字符串：秒/毫秒时间戳
+        n = float(s)
+        return n / 1000.0 if n > 1e11 else n
     try:
         return parsedate_to_datetime(s).timestamp()
     except Exception:
         pass
+    # ISO：带 Z / 时区偏移的按原时区解析；不带时区的国内源一律按北京时间
+    try:
+        dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=CST)
+        return dt.timestamp()
+    except Exception:
+        pass
     for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M", "%Y-%m-%d"):
         try:
-            return datetime.strptime(s[: len(fmt) + 2].strip(), fmt).replace(tzinfo=timezone.utc).timestamp()
+            return datetime.strptime(s[: len(fmt) + 2].strip(), fmt).replace(tzinfo=CST).timestamp()
         except Exception:
             continue
     return time.time()
@@ -789,11 +801,12 @@ def fetch_noaa(limit: int = 15) -> list[dict]:
 
 
 _NMC = {"ts": 0.0, "items": []}
-_NMC_TYPES = ("台风", "暴雨", "暴雪", "寒潮", "大风", "沙尘暴", "干旱", "高温", "冰雹", "雷电", "道路结冰")
+_NMC_TYPES = ("台风", "热带风暴", "强热带风暴", "飓风", "干旱", "旱情", "厄尔尼诺", "拉尼娜", "全球")
 
 
 def fetch_nmc_alerts(limit: int = 12) -> list[dict]:
-    """中央气象台预警：只留高影响类型 + 红/橙色（蓝黄太多，会淹没新闻流）。"""
+    """中央气象台预警：只留台风/干旱/厄尔尼诺这类全球或大宗相关的，
+    普通市县暴雨、高温、寒潮预警不进来（否则一天几十条，全是噪音）。"""
     now = time.time()
     if _NMC["items"] and now - _NMC["ts"] < 600:
         return _NMC["items"][:limit]
@@ -818,7 +831,8 @@ def fetch_nmc_alerts(limit: int = 12) -> list[dict]:
     return out
 
 
-def _html_list(text: str, base: str, must: tuple[str, ...], source: str, limit: int) -> list[dict]:
+def _html_list(text: str, base: str, must: tuple[str, ...], source: str, limit: int,
+               keep: tuple[str, ...] = ()) -> list[dict]:
     out = []
     for m in re.finditer(r'<a[^>]+href="([^"]+)"[^>]*>(.*?)</a>', text, re.S | re.I):
         href, raw = m.group(1), m.group(2)
@@ -826,6 +840,8 @@ def _html_list(text: str, base: str, must: tuple[str, ...], source: str, limit: 
         if len(title) < 8 or len(title) > 120:
             continue
         if must and not any(k in href for k in must):
+            continue
+        if keep and not any(k in title for k in keep):
             continue
         url = href if href.startswith("http") else base + href.lstrip("/")
         out.append(_item(title, url, source, tier="official"))
@@ -844,10 +860,12 @@ def fetch_mee(limit: int = 10) -> list[dict]:
 
 
 def fetch_mem(limit: int = 10) -> list[dict]:
+    """应急管理部：只看台风/干旱/全球级别，地方防汛、地震等常规动态不进新闻流。"""
     try:
         r = _get("https://www.mem.gov.cn/xw/yjglbgzdt/")
         return _html_list(r.content.decode("utf-8", "ignore"), "https://www.mem.gov.cn/",
-                          ("/xw/", "/2026"), "应急管理部", limit)
+                          ("/xw/", "/2026"), "应急管理部", limit,
+                          keep=("台风", "干旱", "旱情", "厄尔尼诺", "拉尼娜", "全球"))
     except Exception:
         return []
 
@@ -940,6 +958,40 @@ def fetch_wallstreetcn(limit: int = 30) -> list[dict]:
     return out
 
 
+def _cls_sign(params: dict) -> str:
+    """财联社接口签名：参数按 key 排序 → sha1 → md5。"""
+    s = "&".join(f"{k}={v}" for k, v in sorted(params.items()))
+    return hashlib.md5(hashlib.sha1(s.encode()).hexdigest().encode()).hexdigest()
+
+
+def fetch_cls_telegraph(limit: int = 50) -> list[dict]:
+    """财联社电报（独家/快讯，很多政策消息的一手来源）。
+
+    接口一次只给最新 N 条（20 条约 40 分钟），靠常驻轮询累积。
+    """
+    params = {"app": "CailianpressWeb", "os": "web", "sv": "8.4.6",
+              "rn": str(max(20, min(int(limit), 100))), "category": ""}
+    params["sign"] = _cls_sign(params)
+    try:
+        d = _get("https://www.cls.cn/v1/roll/get_roll_list", params=params,
+                 headers={"Referer": "https://www.cls.cn/telegraph"}).json() or {}
+        rows = ((d.get("data") or {}).get("roll_data")) or []
+    except Exception:
+        return []
+    out = []
+    for it in rows[:limit]:
+        title = _clean(it.get("title") or it.get("content") or "")
+        if not title or it.get("is_ad"):
+            continue
+        cid = it.get("id")
+        url = (it.get("shareurl")
+               or (f"https://www.cls.cn/detail/{cid}" if cid else "https://www.cls.cn/telegraph"))
+        tier = "tier1" if str(it.get("level") or "") in ("A", "B") else "tier2"
+        out.append(_item(title, url, "财联社电报", tier=tier, lang="zh",
+                         ts=_to_ts(it.get("ctime"))))
+    return out
+
+
 def fetch_sina7x24(limit: int = 30) -> list[dict]:
     try:
         d = _get("https://zhibo.sina.com.cn/api/zhibo/feed",
@@ -974,33 +1026,6 @@ def fetch_ths_hot(limit: int = 30) -> list[dict]:
         reason = _clean(it.get("analyse_title") or it.get("analyse") or "")[:80]
         title = f"{name}（{code}）" + (f" · {reason}" if reason else "")
         out.append(_item(title, f"https://stockpage.10jqka.com.cn/{code}/", "同花顺热榜",
-                         tier="tier1", hot=True))
-    return out
-
-
-def fetch_em_hot(limit: int = 30) -> list[dict]:
-    # 东财人气榜是 POST 接口
-    try:
-        import requests
-
-        d = requests.post(
-            "https://emappdata.eastmoney.com/stockrank/getAllCurrentList",
-            headers={**HEADERS, "Content-Type": "application/json"},
-            json={"appId": "appId01", "globalId": "786e4c21-70dc-435a-93bb-38",
-                  "marketType": "", "pageNo": 1, "pageSize": max(20, limit)},
-            timeout=TIMEOUT,
-        ).json() or {}
-        rows = d.get("data") or []
-    except Exception:
-        return []
-    idx = {str(x.get("code")): x.get("name") for x in _stock_index()}
-    out = []
-    for it in rows[:limit]:
-        sc = str(it.get("sc") or "")
-        c6 = re.sub(r"\D", "", sc)[-6:]
-        name = idx.get(c6) or sc
-        out.append(_item(f"{name}（{c6}） · 东财人气榜第{it.get('rk')}名",
-                         f"https://guba.eastmoney.com/list,{c6}.html", "东财人气榜",
                          tier="tier1", hot=True))
     return out
 
@@ -1114,6 +1139,7 @@ def fetch_baidu_hot(limit: int = 30) -> list[dict]:
 SOURCES = [
     # 中文财经/公告（直连）
     ("同花顺快讯", lambda: fetch_ths_flash()),
+    ("财联社电报", lambda: fetch_cls_telegraph()),
     ("金十快讯", lambda: fetch_jin10()),
     ("巨潮公告", lambda: fetch_cninfo()),
     ("EIA", fetch_eia),
@@ -1144,7 +1170,6 @@ SOURCES = [
     ("USGS", lambda: fetch_usgs()),
     # 股票热榜（不过滤）
     ("同花顺热榜", fetch_ths_hot),
-    ("东财人气榜", fetch_em_hot),
     # 社会热榜（只保留和股票相关的）
     ("微博热搜", fetch_weibo_hot),
     ("知乎热榜", fetch_zhihu_hot),

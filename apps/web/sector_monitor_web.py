@@ -2822,6 +2822,65 @@ def save_watch_db(items: list) -> None:
         pass
 
 
+def _position_hold() -> dict:
+    """当前持仓（仓位管家 pool=hold）的代码，用于自选「持仓」筛选。"""
+    try:
+        from core.position import position_store as ps
+
+        ps.init_db()
+        items = [
+            {"code": str(i.get("code") or "").upper(), "name": i.get("name") or "",
+             "pool": i.get("pool") or ""}
+            for i in ps.list_instruments()
+            if str(i.get("pool") or "") == "hold"
+        ]
+        return {"ok": True, "items": items, "codes": [i["code"] for i in items if i["code"]]}
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "error": str(e)[:160], "items": [], "codes": []}
+
+
+def _add_to_position(d: dict) -> dict:
+    """自选卡片「+」：把标的加入仓位管家（data/position.db，默认持有池）。"""
+    code = str(d.get("code") or "").strip().upper()
+    if not code:
+        return {"ok": False, "error": "code required"}
+    kind = str(d.get("kind") or "stock")
+    if kind in ("industry", "concept"):
+        return {"ok": False, "error": "板块不支持加入持仓"}
+    market = "US" if str(d.get("market") or "").lower() == "us" else "A"
+    mk = "us" if market == "US" else "cn"
+    ptype = str(d.get("type") or "").lower()
+    if ptype not in ("index", "etf", "stock"):
+        ptype = kind if kind in ("index", "etf", "stock") else "stock"
+    from core.position import position_store as ps
+
+    ps.init_db()
+    existed = ps.get_instrument(code)
+    inst = ps.add_instrument(
+        code,
+        str(d.get("name") or code),
+        type=ptype,
+        market=market,
+        pool=str(d.get("pool") or "hold"),
+        direction_label="undecided",
+    )
+    n = 0
+    try:
+        bars = db_bars_get(mk, code, "1d")
+        if bars:
+            n = ps.put_bars(code, bars, "sector_monitor")
+    except Exception:
+        pass
+    return {
+        "ok": True,
+        "created": existed is None,
+        "bars": n,
+        "instrument": {"id": inst.get("id"), "code": inst.get("code"),
+                       "name": inst.get("name"), "type": inst.get("type"),
+                       "market": inst.get("market"), "pool": inst.get("pool")},
+    }
+
+
 def cache_get(key: str, ttl: float):
     try:
         with _DB_LOCK:
@@ -3200,6 +3259,9 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as e:
                 self._json({"error": str(e)[:120], "bars": []}, 500)
             return
+        if u.path == "/api/position/hold":
+            self._json(_position_hold())
+            return
         if u.path == "/api/lines":
             self._json({"lines": load_lines()})
             return
@@ -3326,6 +3388,15 @@ class Handler(BaseHTTPRequestHandler):
                 self._json({"ok": True, "n": len(clean), "news_added": sorted(added)})
             except Exception as e:
                 self._json({"ok": False, "error": str(e)[:120]}, 400)
+            return
+        if u.path == "/api/position/add":
+            try:
+                n = int(self.headers.get("Content-Length", "0"))
+                body = self.rfile.read(n) if n else b"{}"
+                d = json.loads(body.decode("utf-8") or "{}")
+                self._json(_add_to_position(d))
+            except Exception as e:
+                self._json({"ok": False, "error": str(e)[:160]}, 400)
             return
         if u.path != "/api/lines":
             self._send(b"not found", "text/plain", 404)

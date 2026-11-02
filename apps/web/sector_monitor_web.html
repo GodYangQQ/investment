@@ -205,9 +205,11 @@ padding:6px 12px;border-radius:8px;font-size:17px;cursor:pointer}
  background:var(--panel);border:1px solid var(--line);color:var(--dim);cursor:pointer}
 .wtabs button:hover{border-color:#3c5680;color:var(--txt)}
 .wtabs button.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.wtabs.wlayout{margin-left:10px}
+.wtabs.wlayout button{padding:4px 9px;font-size:13.5px;border-radius:6px}
 .wlist{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;padding:14px;
- display:grid;grid-template-columns:repeat(5,minmax(0,1fr));
- grid-auto-rows:max(160px,calc((100vh - 130px)/4));gap:12px;align-content:start;
+ display:grid;grid-template-columns:repeat(var(--wcols,5),minmax(0,1fr));
+ grid-auto-rows:max(130px,calc((100vh - 160px)/var(--wrows,6)));gap:12px;align-content:start;
  background:radial-gradient(1200px 520px at 18% -10%,#111a25,#0b0f14)}
 .wcard{position:relative;box-sizing:border-box;height:100%;
  border:1px solid var(--line);border-radius:10px;padding:8px 10px 7px;background:#111821;
@@ -310,6 +312,9 @@ padding:6px 12px;border-radius:8px;font-size:17px;cursor:pointer}
  border:1px solid;font-weight:600;letter-spacing:.2px}
 .wcard .mtag.cn{color:#ef6b6b;border-color:#6b2929;background:#2a1717}
 .wcard .mtag.us{color:#58a6ff;border-color:#24466b;background:#122132}
+/* 已持仓标记 */
+.wcard .hold-tag{flex:0 0 auto;font-size:11px;line-height:1.7;padding:0 5px;border-radius:4px;
+ color:#7fe0a0;border:1px solid #2c5b3a;background:#122117;font-weight:600;letter-spacing:.2px}
 .wcard .whold{border:1px solid #3c5680;background:#18212c;color:#9cc4ef;font-size:14px;
  padding:1px 7px;border-radius:6px;line-height:1.5;opacity:0;visibility:hidden;transition:opacity .12s}
 .wcard:hover .whold{opacity:1;visibility:visible}
@@ -416,6 +421,28 @@ padding:6px 12px;border-radius:8px;font-size:17px;cursor:pointer}
 .wcard:hover .wdel-x{opacity:1}
 .wcard:hover .wh .wpx{padding-right:22px}
 .wcard .wdel-x:hover{background:#3a1c1c;border-color:#6b2929;color:#ff8a8a}
+/* 自选卡片：顶部居中「加入持仓」 */
+.wcard .wpos-add{position:absolute;top:2px;left:50%;transform:translateX(-50%);z-index:3;
+ width:24px;height:24px;padding:0;border:1px solid transparent;border-radius:6px;
+ background:transparent;color:#7c8896;font-size:19px;line-height:1;display:flex;
+ align-items:center;justify-content:center;cursor:pointer;opacity:0;
+ transition:opacity .12s,background .12s,color .12s,border-color .12s}
+.wcard:hover .wpos-add{opacity:1;background:#111821;border-color:#2c3a49}
+.wcard .wpos-add:hover{background:#14251a;border-color:#2c5b3a;color:#7fe0a0}
+.wcard .wpos-add.done{background:#122117;border-color:#2c5b3a;color:#7fe0a0}
+#peek .wcard .wpos-add{display:none}
+/* 自选卡片：接近支撑/压力（5% 内） */
+.wcard.alarm{border-color:#8a5a1f;box-shadow:0 0 0 1px rgba(240,160,72,.28) inset}
+.wcard .wtag.alarm{color:#f0a048;font-weight:600}
+/* 自选卡片：突破（绿框）/ 跌破（红框） */
+.wcard.breakout{border-color:#2b8a55;background:#0f1a14;
+ box-shadow:0 0 0 1px rgba(90,220,150,.35) inset}
+.wcard .wtag.breakout{color:#5de09a;font-weight:600}
+.wcard.breakdown{border-color:#a03030;background:#1a0e0e;
+ box-shadow:0 0 0 1px rgba(240,90,90,.35) inset}
+.wcard .wtag.breakdown{color:#ff7b7b;font-weight:600}
+.wtabs button.hasalert{color:#f0a048;border-color:#6b4a1f}
+.wtabs button.hasalert.on{background:#8a5a1f;border-color:#8a5a1f;color:#fff}
 /* 预览层右上角的删除按钮（放大时也能删） */
 #peek .peek-del{position:absolute;top:8px;right:10px;z-index:3;width:30px;height:30px;padding:0;
  border:1px solid #5a2b2b;border-radius:8px;background:rgba(40,18,18,.85);color:#ff9a9a;font-size:19px;
@@ -573,11 +600,19 @@ body.focus.side-hidden .side-handle{left:0}
       <button data-wt="sector">板块</button>
       <button data-wt="stock">个股</button>
       <button data-wt="etf">ETF</button>
+      <button data-wt="hold">持仓</button>
+      <button data-wt="alert">预警</button>
     </div>
     <div class="wtabs" id="wmtabs" title="按市场筛选">
       <button data-wm="all" class="on">全部市场</button>
       <button data-wm="cn">A股</button>
       <button data-wm="us">美股</button>
+    </div>
+    <div class="wtabs wlayout" id="wlayout" title="卡片格局（列 × 行）">
+      <button data-wl="2x3">2×3</button>
+      <button data-wl="3x4">3×4</button>
+      <button data-wl="4x5">4×5</button>
+      <button data-wl="5x6">5×6</button>
     </div>
     <span class="sp"></span><button id="wclose">关闭</button></div>
   <div class="wlist" id="wlist"></div>
@@ -1386,6 +1421,7 @@ function saveLines(key, lines) {
         body: JSON.stringify({key: k, lines: arr}),
       });
       if (watchOpen()) renderWatch();
+      if (watchOpen()) scanAlerts();
     } catch (e) { setStatus("线条保存失败：" + e.message); }
   }, 220);
 }
@@ -1766,6 +1802,43 @@ function saveWatch() {
 }
 function isWatched(market, code) {
   return WATCH.some(w => w.market === market && w.code === code);
+}
+/* 自选卡片格局（列 × 行），记在 localStorage */
+function applyWatchLayout(name, save) {
+  const box = $("#wlist");
+  const m = String(name || "5x6").split("x").map(Number);
+  if (box && m[0] > 0 && m[1] > 0) {
+    box.style.setProperty("--wcols", m[0]);
+    box.style.setProperty("--wrows", m[1]);
+  }
+  document.querySelectorAll("#wlayout button").forEach(b => {
+    b.classList.toggle("on", b.dataset.wl === name);
+  });
+  if (save) { try { localStorage.setItem("sm_watch_layout", name); } catch (e) {} }
+}
+/* 自选卡片「+」：加入仓位管家（默认持有池），并把日线同步过去 */
+async function addToPosition(it, btn) {
+  if (btn && btn.dataset.busy === "1") return;
+  if (btn) { btn.dataset.busy = "1"; btn.textContent = "…"; }
+  try {
+    const r = await api("/api/position/add", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({market: it.market, code: it.code, name: it.name,
+                            kind: it.kind, type: watchType(it)}),
+    });
+    if (!r || !r.ok) throw new Error((r && r.error) || "加入失败");
+    if (btn) { btn.classList.add("done"); btn.textContent = "✓"; btn.title = "已在持仓"; }
+    HELD.add(String(it.code).toUpperCase());
+    updateHoldTab();
+    if (S.watchFilter === "hold") renderWatch();
+    setStatus(r.created ? `已加入持仓：${it.name}（仓位管家·持有池）`
+                        : `已在持仓：${it.name}（已刷新行情）`);
+  } catch (e) {
+    if (btn) btn.textContent = "+";
+    setStatus("加入持仓失败：" + e.message);
+  } finally {
+    if (btn) delete btn.dataset.busy;
+  }
 }
 function updateWatchUI() {
   $("#watchCount").textContent = String(WATCH.length);
@@ -2359,13 +2432,25 @@ function syncFab() {
 const NEWS = {items: [], cat: "", onlyCur: false, onlyWatch: false, cur: null, minLevel: 0,
   loading: false, pending: false, timer: 0, updated: 0};
 function newsOpen() { return $("#news").classList.contains("open"); }
+/* 新闻时间统一按北京时间展示（不受浏览器时区影响） */
+const BJ_FMT = new Intl.DateTimeFormat("zh-CN", {
+  timeZone: "Asia/Shanghai", month: "2-digit", day: "2-digit",
+  hour: "2-digit", minute: "2-digit", hour12: false, hourCycle: "h23",
+});
+function bjTime(ts) {
+  const d = new Date(Number(ts) * 1000);
+  if (!isFinite(d.getTime())) return "";
+  const p = {};
+  for (const x of BJ_FMT.formatToParts(d)) p[x.type] = x.value;
+  return `${p.month}-${p.day} ${p.hour}:${p.minute}`;
+}
 function renderNews() {
   const box = $("#nlist");
   const sub = $("#nSub");
   if (!box) return;
   const items = NEWS.items || [];
   const upd = NEWS.updated
-    ? " · 更新于 " + new Date(NEWS.updated * 1000).toLocaleTimeString("zh-CN", {hour12: false})
+    ? " · 更新于 " + bjTime(NEWS.updated).split(" ")[1]
     : "";
   const suffix = (NEWS.cat === "财报" || NEWS.onlyWatch ? " · 仅自选相关" : "") +
     (NEWS.pending ? " · 抓取中…" : "") + upd;
@@ -2374,10 +2459,8 @@ function renderNews() {
     box.innerHTML = `<div class="nempty">${NEWS.pending ? "正在抓取新闻…" : "暂无新闻，点右上「刷新」"}</div>`;
     return;
   }
-  const pad = n => String(n).padStart(2, "0");
   box.innerHTML = items.map(it => {
-    const t = new Date(it.ts * 1000);
-    const when = `${t.getMonth() + 1}-${pad(t.getDate())} ${pad(t.getHours())}:${pad(t.getMinutes())}`;
+    const when = bjTime(it.ts);
     const imp = it.importance >= 2.8 ? "★★" : (it.importance >= 2.2 ? "★" : "");
     return `<div class="nrow" data-url="${esc(it.url || "")}" title="${esc(it.source)}">` +
       `<span class="nt">${when}</span>` +
@@ -2476,6 +2559,7 @@ function openWatch() {
   $("#watch").classList.add("open");
   $("#watchBtn").classList.add("on");
   renderWatch();
+  scanAlerts();
   syncFab();
 }
 function closeWatch() {
@@ -2512,6 +2596,140 @@ function levelsFor(lines, price, tLast) {
 }
 
 const SPARK_DAYS = 365;   // 自选卡片迷你图 / hover 预览取最近一年日线
+
+/* ---------- 自选预警：价格距最近支撑/压力 ≤5% ---------- */
+const ALERT_PCT = 0.05;
+const WALERT = new Map();          // "market:code" -> {kind, side, level, dist, price}
+const HELD = new Set();            // 仓位管家里的持仓代码（hold/ready）
+let _alertSig = "";
+function heldOf(it) { return HELD.has(String(it.code || "").toUpperCase()); }
+function updateHoldTab() {
+  const b = document.querySelector('#wtabs button[data-wt="hold"]');
+  if (!b) return;
+  const n = HELD.size;
+  b.textContent = n ? `持仓 ${n}` : "持仓";
+}
+async function loadHeld() {
+  try {
+    const d = await api("/api/position/hold");
+    const next = new Set((d.codes || []).map(c => String(c).toUpperCase()).filter(Boolean));
+    const same = next.size === HELD.size && [...next].every(c => HELD.has(c));
+    if (!same) {
+      HELD.clear();
+      next.forEach(c => HELD.add(c));
+      if (S.watchFilter === "hold" && watchOpen()) renderWatch();
+    }
+    updateHoldTab();
+    return true;
+  } catch (e) { return false; }
+}
+function alertFor(lv, price) {
+  if (!price || !isFinite(price)) return null;
+  let best = null;
+  if (lv && lv.res != null) {
+    const d = (lv.res - price) / price;
+    if (d >= 0 && d <= ALERT_PCT) best = {side: "压力", level: lv.res, dist: d};
+  }
+  if (lv && lv.sup != null) {
+    const d = (price - lv.sup) / price;
+    if (d >= 0 && d <= ALERT_PCT && (!best || d < best.dist)) {
+      best = {side: "支撑", level: lv.sup, dist: d};
+    }
+  }
+  return best ? {...best, price} : null;
+}
+function setAlert(it, al) {
+  const k = it.market + ":" + it.code;
+  if (al) WALERT.set(k, al); else WALERT.delete(k);
+}
+/* 突破/跌破：3 日内从线的一侧走到另一侧，且最近 2 日维持在新侧 1% 之外。
+   返回 {kind:"breakout"|"breakdown", level, pct, day} */
+const BREAK_BUF = 0.01;
+const BREAK_DAYS = 3;
+function breakFor(lines, bars) {
+  const arr = (lines || []).filter(ln => ln && ln.type === "trend");
+  const n = bars ? bars.length : 0;
+  if (!arr.length || n < 4) return null;
+  let best = null;
+  for (const ln of arr) {
+    // 交叉日只能落在最近 3 根里，且之后至少还有 2 日维持
+    for (let k = Math.max(1, n - BREAK_DAYS); k <= n - 2; k++) {
+      const pv = trendValAt(ln, bars[k - 1].t), cv = trendValAt(ln, bars[k].t);
+      if (!isFinite(pv) || !isFinite(cv) || pv <= 0 || cv <= 0) continue;
+      const cPrev = bars[k - 1].c, cNow = bars[k].c;
+      let kind = null;
+      if (cPrev <= pv && cNow >= cv * (1 + BREAK_BUF)) kind = "breakout";
+      else if (cPrev >= pv && cNow <= cv * (1 - BREAK_BUF)) kind = "breakdown";
+      if (!kind) continue;
+      // 最近两日必须都在新侧、且超出 1% 缓冲（维持）
+      let held = true;
+      for (let i = n - 2; i < n; i++) {
+        const v = trendValAt(ln, bars[i].t);
+        if (!isFinite(v) || v <= 0) { held = false; break; }
+        const ok = kind === "breakout" ? bars[i].c >= v * (1 + BREAK_BUF)
+                                       : bars[i].c <= v * (1 - BREAK_BUF);
+        if (!ok) { held = false; break; }
+      }
+      if (!held) continue;
+      const vLast = trendValAt(ln, bars[n - 1].t);
+      const pct = isFinite(vLast) && vLast > 0
+        ? Math.abs(bars[n - 1].c - vLast) / vLast * 100 : 0;
+      // 多条线同时成立时，取最近发生的那次
+      if (!best || k > best.k || (k === best.k && pct > best.pct)) {
+        best = {kind, level: vLast, pct, day: String(bars[k].t).slice(0, 10), k};
+      }
+    }
+  }
+  return best;
+}
+/* 综合状态：突破/跌破优先，其次「接近支撑/压力 5%」 */
+function alertStateFor(lines, bars, price, tLast) {
+  const br = breakFor(lines, bars);
+  if (br) {
+    return {kind: br.kind, side: br.kind === "breakout" ? "突破" : "跌破",
+            level: br.level, dist: br.pct / 100, day: br.day, price};
+  }
+  const near = alertFor(levelsFor(lines, price, tLast), price);
+  return near ? {kind: "near", ...near} : null;
+}
+function alertSig() { return [...WALERT.keys()].sort().join(","); }
+function updateAlertTab() {
+  const b = document.querySelector('#wtabs button[data-wt="alert"]');
+  if (!b) return;
+  const n = WALERT.size;
+  b.textContent = n ? `预警 ${n}` : "预警";
+  b.classList.toggle("hasalert", n > 0);
+}
+async function evaluateAlert(it) {
+  const tf = it.tf || "1d";
+  const key = cacheKey(it.market, it.code, tf);
+  const hit = BCACHE.get(key);
+  let bars = (hit && hit.bars && hit.bars.length &&
+              Date.now() - (hit.at || 0) < 120000) ? hit.bars : null;
+  if (!bars) {
+    try {
+      const d = await api(barsUrl(it.market, it.kind || "industry", it.code, it.name, tf, 0, 120));
+      bars = mapBars(d.bars);
+      if (bars.length) cachePut(key, {...(hit || {}), bars, at: Date.now()});
+    } catch (e) { bars = null; }
+  }
+  if (!bars || !bars.length) { setAlert(it, null); return; }
+  const last = bars[bars.length - 1];
+  const lines = S.allLines[`${it.market.toUpperCase()}:${it.code}|${tf}`] || [];
+  setAlert(it, alertStateFor(lines, bars, last.c, last.t));
+}
+/* 扫描全部自选（不限当前分组），自动维护「预警」分组 */
+async function scanAlerts() {
+  const q = WATCH.slice();
+  const worker = async () => { while (q.length) { await evaluateAlert(q.shift()); } };
+  await Promise.all([worker(), worker(), worker()]);
+  updateAlertTab();
+  const sig = alertSig();
+  if (sig !== _alertSig) {
+    _alertSig = sig;
+    if (S.watchFilter === "alert" && watchOpen()) renderWatch();
+  }
+}
 
 /* ---------- 自选卡片风格标签（红利/白马/科技/消费/周期…） ---------- */
 const STYLE_ORDER = ["科技", "红利", "消费", "医药", "周期", "金融", "新能源", "军工", "地产", "农业", "传媒", "其他"];
@@ -2615,6 +2833,18 @@ function hidePeek() {
 /* 鼠标离开卡片时给 220ms 缓冲：足够移到预览的操作条上 */
 const PEEK_STILL_MS = 500;   // 鼠标停住满 0.5s 才放大
 const PEEK_MOVE_PX = 10;     // 超过 10px 视为“在移动”，重新计时
+/* 光标是否落在卡片右上角的 × / 顶部 + 上（这两处不触发放大） */
+function overCardBtn(card, pad) {
+  if (!PEEK.xy) return false;
+  for (const sel of [".wdel-x", ".wpos-add"]) {
+    const b = card.querySelector(sel);
+    if (!b) continue;
+    const d = b.getBoundingClientRect();
+    if (PEEK.xy.x >= d.left - pad && PEEK.xy.x <= d.right + pad &&
+        PEEK.xy.y >= d.top - pad && PEEK.xy.y <= d.bottom + pad) return true;
+  }
+  return false;
+}
 function schedulePeekShow(card, x, y) {
   clearTimeout(PEEK.showTimer);
   clearTimeout(PEEK.hideTimer);
@@ -2624,15 +2854,10 @@ function schedulePeekShow(card, x, y) {
 /* 鼠标停住 -> 卡片原位放大 2 倍（贴边自动朝内侧展开） */
 function zoomCard(card) {
   if (!card || !card.isConnected || !card.matches(":hover")) return;
-  // 右上角删除区不放大（否则一放大，叉叉就离光标远了/被盖住）
-  const del = card.querySelector(".wdel-x");
-  if (del && PEEK.xy) {
-    const d = del.getBoundingClientRect();
-    if (PEEK.xy.x >= d.left - 6 && PEEK.xy.x <= d.right + 6 &&
-        PEEK.xy.y >= d.top - 6 && PEEK.xy.y <= d.bottom + 6) {
-      if (card.matches(":hover")) schedulePeekShow(card);   // 稍后再试，离开删除区就会放大
-      return;
-    }
+  // 右上角删除区 / 顶部加号不放大（否则一放大，按钮就离光标远了/被盖住）
+  if (overCardBtn(card, 6)) {
+    if (card.matches(":hover")) schedulePeekShow(card);   // 稍后再试，离开按钮区就会放大
+    return;
   }
   const br = card.parentElement.getBoundingClientRect();
   const r = card.getBoundingClientRect();
@@ -2785,15 +3010,10 @@ function showPeekSmall(card) {
   if (!p || !card || !card.isConnected) return;
   const r = card.getBoundingClientRect();
   if (!r.width || !r.height) return;
-  // 右上角删除区不触发放大
-  const del = card.querySelector(".wdel-x");
-  if (del && PEEK.xy) {
-    const d = del.getBoundingClientRect();
-    if (PEEK.xy.x >= d.left - 4 && PEEK.xy.x <= d.right + 4 &&
-        PEEK.xy.y >= d.top - 4 && PEEK.xy.y <= d.bottom + 4) {
-      if (card.matches(":hover")) schedulePeekShow(card);   // 在删除区：不弹，但离开后还会弹
-      return;
-    }
+  // 右上角删除区 / 顶部加号不触发放大
+  if (overCardBtn(card, 4)) {
+    if (card.matches(":hover")) schedulePeekShow(card);   // 在按钮区：不弹，但离开后还会弹
+    return;
   }
   if (!card._bars) {   // 数据还没到，稍后再弹（最多等 3 次，避免个别标的永远不弹）
     PEEK.retry = (PEEK.retry || 0) + 1;
@@ -2914,10 +3134,24 @@ async function renderWatch() {
   const keepL = box.scrollLeft, keepT = box.scrollTop;
   box.innerHTML = "";
   const items = WATCH.filter(it => {
-    if (S.watchFilter !== "all" && watchType(it) !== S.watchFilter) return false;
     const mk = it.market === "us" ? "us" : "cn";
-    return S.watchMarket === "all" || mk === S.watchMarket;
+    if (S.watchMarket !== "all" && mk !== S.watchMarket) return false;
+    if (S.watchFilter === "alert") return WALERT.has(it.market + ":" + it.code);
+    if (S.watchFilter === "hold") return heldOf(it);
+    if (S.watchFilter !== "all" && watchType(it) !== S.watchFilter) return false;
+    return true;
   }).slice().sort((a, b) => {
+    // 预警组：突破/跌破优先，其次离支撑/压力越近越靠前
+    if (S.watchFilter === "alert") {
+      const ea = WALERT.get(a.market + ":" + a.code) || {};
+      const eb = WALERT.get(b.market + ":" + b.code) || {};
+      const ra = (ea.kind && ea.kind !== "near") ? 0 : 1;
+      const rb = (eb.kind && eb.kind !== "near") ? 0 : 1;
+      if (ra !== rb) return ra - rb;
+      const da = ea.dist, db = eb.dist;
+      const d0 = (da == null ? 9 : da) - (db == null ? 9 : db);
+      if (Math.abs(d0) > 1e-9) return d0;
+    }
     // 同风格排在一起，其次按市场、代码，保证刷新后顺序稳定
     const d = styleRank(a) - styleRank(b);
     if (d) return d;
@@ -2929,12 +3163,18 @@ async function renderWatch() {
   if (c2) c2.textContent = items.length + " 个";
   ensureIndustries(items).then(changed => { if (changed) renderWatch(); });
   if (!items.length) {
-    box.innerHTML = '<div class="wempty">该分类下还没有自选。</div>';
+    box.innerHTML = S.watchFilter === "alert"
+      ? '<div class="wempty">当前没有接近支撑 / 压力位（5% 内）或突破 / 跌破的标的。</div>'
+      : (S.watchFilter === "hold"
+        ? '<div class="wempty">当前自选里没有持仓标的。</div>'
+        : '<div class="wempty">该分类下还没有自选。</div>');
     return;
   }
   const nodes = new Map();
   for (const it of items) {
     const canScore = it.market === "cn" && watchType(it) === "sector";
+    const canPos = watchType(it) !== "sector";      // 板块不可交易，不加入持仓
+    const held = heldOf(it);
     const el = document.createElement("div");
     el.className = "wcard";
     el.dataset.key = it.market + ":" + it.code;
@@ -2956,9 +3196,11 @@ async function renderWatch() {
     });
     el.innerHTML =
       `<button class="wdel-x" title="移出自选">×</button>` +
+      (canPos ? `<button class="wpos-add${held ? " done" : ""}" title="${held ? "已在持仓" : "加入持仓（仓位管家）"}">${held ? "✓" : "+"}</button>` : "") +
       `<div class="wh"><span class="mtag ${it.market === "us" ? "us" : "cn"}">` +
       `${it.market === "us" ? "美股" : "A股"}</span>` +
       `<b>${esc(it.name)}</b><span class="muted">${esc(it.code)}</span>` +
+      (held ? `<span class="hold-tag" title="仓位管家 · 持有">持仓</span>` : "") +
       `<span class="wpx" data-px>—</span></div>` +
       `<div class="wstyle">${styleTags(it).map(t => `<span class="stag ${esc(t)}">${esc(t)}</span>`).join("")}</div>` +
       `<canvas class="wspark"></canvas>` +
@@ -2973,6 +3215,7 @@ async function renderWatch() {
       if (Date.now() - (box._suppress || 0) < 320) return;   // 刚拖拽滚动过，别误触
       if (e.target.closest(".wscore")) { openScoreRanking(it); return; }
       if (e.target.closest(".whold")) { openHoldings(it); return; }
+      if (e.target.closest(".wpos-add")) { addToPosition(it, e.target.closest(".wpos-add")); return; }
       if (e.target.closest(".wdel,.wdel-x")) { hidePeek(); toggleWatch(it); return; }
       if (e.target.closest(".wres")) return;
       // 点击反馈：按下瞬间压暗一下，随后挂「等待判定」高亮
@@ -2994,7 +3237,7 @@ async function renderWatch() {
     });
     el.addEventListener("dblclick", e => {
       if (PEEK.pinned) return;
-      if (e.target.closest(".wdel,.wzoom,.wscore,.whold,.wres")) return;
+      if (e.target.closest(".wdel,.wzoom,.wscore,.whold,.wpos-add,.wres")) return;
       clearTimeout(PEEK.clickTimer);          // 双击 = 看线，取消单击的全屏
       $("#peek").classList.remove("pending");
       hidePeek();
@@ -3520,7 +3763,18 @@ async function fillWatchCard(it, el, force) {
   res.textContent = lv.res == null ? "—" : fmtNum(lv.res, 2);
   sup.style.color = lv.sup == null ? "" : DOWN;
   res.style.color = lv.res == null ? "" : UP;
-  tag.textContent = tfLabel(tf) + (lines.length ? ` · ${lines.length} 条线` : " · 未画线");
+  const al = alertStateFor(lines, bars, price, last.t);
+  setAlert(it, al);
+  el.classList.toggle("alarm", !!al && al.kind === "near");
+  el.classList.toggle("breakout", !!al && al.kind === "breakout");
+  el.classList.toggle("breakdown", !!al && al.kind === "breakdown");
+  tag.classList.remove("alarm", "breakout", "breakdown");
+  if (al) tag.classList.add(al.kind === "near" ? "alarm" : al.kind);
+  const alTxt = al ? (al.kind === "near"
+    ? ` · 预警 ${al.side} ${fmtNum(al.level, 2)}（${(al.dist * 100).toFixed(1)}%）`
+    : ` · ${al.side} ${fmtNum(al.level, 2)}（${(al.dist * 100).toFixed(1)}%）`) : "";
+  tag.textContent = tfLabel(tf) + (lines.length ? ` · ${lines.length} 条线` : " · 未画线") + alTxt;
+  updateAlertTab();
   // 卡片里的迷你图只看最近半年，历史太长会挤成一条线
   const sparkBars = bars.length > SPARK_DAYS ? bars.slice(-SPARK_DAYS) : bars;
   el._bars = sparkBars; el._lines = lines; el._price = price;
@@ -3924,12 +4178,18 @@ setInterval(() => {
 
 // 自选全屏面板开着时，每张卡片最多 60s 刷新一次
 setInterval(() => { if (watchOpen()) refreshWatchValues(); }, 10000);
+// 「预警」分组自动更新：45s 全量扫一次（含未显示在其他分组里的标的）
+setInterval(() => { if (watchOpen()) scanAlerts(); }, 45000);
+// 持仓筛选自动同步（仓位管家那边改了池子也能反映过来）
+setInterval(() => { if (watchOpen()) loadHeld(); }, 60000);
 
 /* ===================== 启动 ===================== */
 (async function init() {
   await loadWatch();
   updateWatchUI();
   updateWatchBtn();
+  loadHeld();
+  try { applyWatchLayout(localStorage.getItem("sm_watch_layout") || "5x6"); } catch (e) {}
   function setSideHidden(on) {
     const hid = !!on;
     document.body.classList.toggle("side-hidden", hid);
@@ -4001,6 +4261,8 @@ setInterval(() => { if (watchOpen()) refreshWatchValues(); }, 10000);
     S.watchFilter = b.dataset.wt;
     [...$("#wtabs").children].forEach(x => x.classList.toggle("on", x === b));
     renderWatch();
+    if (S.watchFilter === "alert") scanAlerts();
+    if (S.watchFilter === "hold") loadHeld();
   });
   $("#wmtabs").addEventListener("click", e => {
     const b = e.target.closest("button[data-wm]");
@@ -4009,6 +4271,13 @@ setInterval(() => { if (watchOpen()) refreshWatchValues(); }, 10000);
     [...$("#wmtabs").children].forEach(x => x.classList.toggle("on", x === b));
     hidePeek();
     renderWatch();
+  });
+  $("#wlayout").addEventListener("click", e => {
+    const b = e.target.closest("button[data-wl]");
+    if (!b) return;
+    applyWatchLayout(b.dataset.wl, true);
+    hidePeek();
+    if (watchOpen()) renderWatch();
   });
   syncFab();   // 初始化时按状态校正「自选」按钮显隐
   $("#bFocus").onclick = () => setFocus(!document.body.classList.contains("focus"));
