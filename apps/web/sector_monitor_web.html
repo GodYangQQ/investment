@@ -177,6 +177,11 @@ background:#18212c;box-shadow:-4px 0 14px rgba(0,0,0,.35)}
 .nrow .nti .cat.市场{color:#7fd6c6;border-color:#1f5a52;background:#10201f}
 .nrow .nti .cat.灾害{color:#ffb37a;border-color:#5c4029;background:#221a12}
 .nrow .nti .cat.财报{color:#c8a6ff;border-color:#43356b;background:#191430}
+.nrow .nti .cat.数据{color:#7fd6c6;border-color:#1f5a52;background:#10201f}
+.nrow .nti .cat.FOMC{color:#ffd479;border-color:#5f4f22;background:#221d10}
+.cal-day{margin:14px 2px 6px;font-size:13px;color:#7d8b9a;letter-spacing:.5px;
+ border-bottom:1px solid #1d2833;padding-bottom:4px}
+.cal-day:first-child{margin-top:2px}
 .nrow .ncopy{border:1px solid #2f3b47;background:#141d27;color:#8fa6bd;font-size:12px;
  border-radius:5px;padding:1px 6px;cursor:pointer;margin-left:8px;white-space:nowrap}
 .nrow .ncopy:hover{background:#20304a;color:#fff;border-color:#4d9fff}
@@ -629,6 +634,7 @@ body.focus.side-hidden .side-handle{left:0}
       <button data-nc="财报">财报</button>
       <button data-nc="产业">产业</button>
       <button data-nc="市场">市场</button>
+      <button data-nc="日历">日历</button>
       <button data-nc="热榜">热榜</button>
     </div>
     <button id="nCur" title="只看与当前板块相关的新闻">当前板块</button>
@@ -2429,7 +2435,7 @@ function syncFab() {
 }
 /* ---------- 事件 / 新闻 ---------- */
 const NEWS = {items: [], cat: "", onlyCur: false, onlyWatch: false, cur: null, minLevel: 0,
-  loading: false, pending: false, timer: 0, updated: 0};
+  loading: false, pending: false, timer: 0, updated: 0, calendar: [], calMeta: {}};
 function newsOpen() { return $("#news").classList.contains("open"); }
 /* 新闻时间统一按北京时间展示（不受浏览器时区影响） */
 const BJ_FMT = new Intl.DateTimeFormat("zh-CN", {
@@ -2444,6 +2450,7 @@ function bjTime(ts) {
   return `${p.month}-${p.day} ${p.hour}:${p.minute}`;
 }
 function renderNews() {
+  if (NEWS.cat === "日历") { renderCalendar(); return; }
   const box = $("#nlist");
   const sub = $("#nSub");
   if (!box) return;
@@ -2494,10 +2501,75 @@ function renderNews() {
     };
   });
 }
+function renderCalendar() {
+  const box = $("#nlist");
+  const sub = $("#nSub");
+  if (!box) return;
+  const items = NEWS.calendar || [];
+  const meta = NEWS.calMeta || {};
+  const upd = meta.updated ? " · 更新于 " + bjTime(meta.updated).split(" ")[1] : "";
+  const pnd = meta.pending ? " · 构建中…" : (meta.refreshing ? " · 后台更新中…" : "");
+  if (sub) sub.textContent = `${items.length} 个事件 · 未来 ${meta.days || 30} 天 · 北京时间${pnd}${upd}`;
+  if (!items.length) {
+    box.innerHTML = `<div class="nempty">${meta.pending ? "首次构建美国日历，约 30 秒，完成后自动刷新…" : "未来 30 天暂无事件"}</div>`;
+    return;
+  }
+  const wk = ["日", "一", "二", "三", "四", "五", "六"];
+  let html = "", lastDay = "";
+  for (const e of items) {
+    const when = bjTime(e.ts);
+    const day = when.slice(0, 5);
+    if (day !== lastDay) {
+      lastDay = day;
+      const dt = new Date(Number(e.ts) * 1000);
+      html += `<div class="cal-day">${day} 周${wk[dt.getDay()]}</div>`;
+    }
+    const tag = e.kind === "fomc" ? "FOMC" : (e.kind === "earnings" ? "财报" : "数据");
+    const src = e.kind === "fomc" ? "美联储" : "Nasdaq";
+    let detail = e.detail || "";
+    if (!detail && e.kind === "econ") {
+      const bits = [];
+      if (e.consensus) bits.push("预期 " + e.consensus);
+      if (e.previous) bits.push("前值 " + e.previous);
+      if (e.actual) bits.push("实际 " + e.actual);
+      detail = bits.join(" · ");
+    }
+    html += `<div class="nrow" data-url="${esc(e.url || "")}" title="${esc(src)}">` +
+      `<span class="nt">${when.slice(6)}</span>` +
+      `<span class="ns">${esc(src)}</span>` +
+      `<span class="nti"><span class="cat ${tag}">${tag}</span>${esc(e.title)}` +
+      (detail ? `<span class="imp">${esc(detail)}</span>` : "") +
+      (e.url ? `<button class="ncopy" title="复制链接">复制</button>` : "") +
+      `</span></div>`;
+  }
+  box.innerHTML = html;
+  box.querySelectorAll(".nrow").forEach(el => {
+    el.onclick = () => { const u = el.dataset.url; if (u) window.open(u, "_blank", "noopener,noreferrer"); };
+    const cp = el.querySelector(".ncopy");
+    if (cp) cp.onclick = async ev2 => {
+      ev2.stopPropagation();
+      const u = el.dataset.url;
+      if (!u) return;
+      try { await navigator.clipboard.writeText(u); } catch (e) {}
+      cp.textContent = "已复制"; setTimeout(() => { cp.textContent = "复制"; }, 1200);
+    };
+  });
+}
+
 async function loadNews(refresh) {
   if (NEWS.loading) return;
   NEWS.loading = true;
   try {
+    if (NEWS.cat === "日历") {
+      const d = await api(`/api/us_calendar?days=30` + (refresh ? "&refresh=1" : ""));
+      NEWS.calendar = d.events || [];
+      NEWS.calMeta = d;
+      renderCalendar();
+      if (d.pending || d.refreshing) {
+        setTimeout(() => { if (newsOpen() && NEWS.cat === "日历") loadNews(); }, 5000);
+      }
+      return;
+    }
     // 从自选卡片预览点「全部」时，NEWS.cur 指向那张卡片，而不是当前主图选中项
     const cur = NEWS.cur || (S.code ? {market: S.market, code: S.code, kind: S.akind, name: S.name} : null);
     const useCur = NEWS.onlyCur && cur && cur.code;

@@ -3096,6 +3096,19 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as e:
                 self._json({"items": [], "counts": {}, "error": str(e)[:160]})
             return
+        if u.path == "/api/us_calendar":
+            try:
+                days = int(q.get("days", ["30"])[0] or 30)
+            except Exception:
+                days = 30
+            refresh = (q.get("refresh", ["0"])[0] or "") == "1"
+            try:
+                from core.events.us_calendar import calendar_view
+
+                self._json(calendar_view(days=days, refresh=refresh))
+            except Exception as e:  # noqa: BLE001
+                self._json({"events": [], "pending": False, "error": str(e)[:160]})
+            return
         if u.path == "/api/us_earnings":
             tk = (q.get("code", [""])[0] or "").strip().upper()
             try:
@@ -3657,6 +3670,13 @@ def main():
         start_poller(300)
     except Exception as e:
         print(f"[news] 轮询启动失败: {e}", flush=True)
+    # 美国财经日历：启动即后台构建，前端打开「日历」不用等
+    try:
+        from core.events.us_calendar import calendar_view as _cal_view
+
+        _cal_view(30)
+    except Exception as e:
+        print(f"[calendar] 预热失败: {e}", flush=True)
     # 共振/对手预计算：每 8 分钟算一次，前端打开明细零等待
     threading.Thread(target=_relations_warm, daemon=True, name="relations-warm").start()
     if not args.no_warm and not OFFLINE:
