@@ -140,8 +140,8 @@ python apps/web/sector_monitor_web.py --offline       # 只读本地库
   多源去重后按重要度打星，点条目开原文；抽屉里有「自选」按钮，一键只看与自选个股/板块
   相关的新闻（后端 SQL 直接过滤，包含保留一年的财报/公告）；后台 5 分钟抓一轮，抽屉开着时 60 秒刷新。
   数据源：同花顺快讯/热榜、金十、东财快讯/人气榜、巨潮公告、SEC EDGAR（自选美股 8-K/10-Q/10-K）、
-  CNBC、MarketWatch、BBC、Guardian、NYT、Al Jazeera、华尔街见闻、新浪财经、央视新闻、澎湃新闻、
-  中央气象台、生态环境部、应急管理部、GDACS、NASA EONET、NOAA、UN News、Carbon Brief、WHO/CDC/FAO、USGS、
+  CNBC、MarketWatch、BBC、Guardian、NYT、Al Jazeera、华尔街见闻、新浪财经、央视新闻、央视财经、澎湃新闻、
+  UN News、WHO/CDC/FAO、
   微博/知乎/B站/抖音/头条/百度热搜。
   **社会热榜与综合媒体只保留和股票市场相关的条目**（关键词 + 自选个股/板块 + 美股 ticker 门控），
   无关内容默认不落库；股票热榜（同花顺/东财）单独归入「热榜」分类。

@@ -926,6 +926,22 @@ def fetch_cctv(limit: int = 40) -> list[dict]:
     return out
 
 
+def fetch_cctv_finance(limit: int = 30) -> list[dict]:
+    """央视财经（CCTV-2 经济资讯），比综合央视新闻更贴近市场。"""
+    try:
+        txt = _get("https://news.cctv.com/2019/07/gaiban/cmsdatainterface/page/economy_zixun_1.jsonp"
+                   "?callback=economy_zixun").content.decode("utf-8", "ignore")
+        m = re.search(r"economy_zixun\((.*)\)\s*;?\s*$", txt, re.S)
+        rows = (((json.loads(m.group(1)) if m else {}).get("data") or {}).get("list")) or []
+    except Exception:
+        return []
+    out = []
+    for it in rows[:limit]:
+        out.append(_item(it.get("title") or "", it.get("url") or "", "央视财经",
+                         ts=_to_ts(it.get("focus_date") or "")))
+    return out
+
+
 def fetch_thepaper(limit: int = 20) -> list[dict]:
     try:
         d = (_get("https://cache.thepaper.cn/contentapi/wwwIndex/rightSidebar").json() or {}).get("data") or {}
@@ -1148,6 +1164,7 @@ SOURCES = [
     ("新浪财经", fetch_sina7x24),
     ("澎湃新闻", fetch_thepaper),
     ("央视新闻", fetch_cctv),
+    ("央视财经", fetch_cctv_finance),
     # 国际财经/官方（需代理时自动走代理）
     ("CNBC", lambda: fetch_rss("https://www.cnbc.com/id/100003114/device/rss/rss.html", "CNBC", lang="en", limit=25)),
     ("MarketWatch", lambda: fetch_rss("https://feeds.marketwatch.com/marketwatch/topstories/", "MarketWatch", lang="en", limit=20)),
@@ -1155,19 +1172,11 @@ SOURCES = [
     ("Guardian", fetch_guardian),
     ("NYT", fetch_nyt),
     ("Al Jazeera", fetch_aljazeera),
-    # 气候 / 环境 / 灾害
-    ("GDACS", fetch_gdacs),
-    ("NASA EONET", fetch_eonet),
-    ("NOAA", fetch_noaa),
+    # 国际综合（仍保留股票相关性门控）
     ("UN News", fetch_un_news),
-    ("Carbon Brief", fetch_carbon_brief),
-    ("中央气象台", fetch_nmc_alerts),
-    ("生态环境部", fetch_mee),
-    ("应急管理部", fetch_mem),
     ("WHO", lambda: fetch_rss("https://www.who.int/rss-feeds/news-english.xml", "WHO", tier="official", lang="en", limit=15)),
     ("CDC", lambda: fetch_rss("https://tools.cdc.gov/api/v2/resources/media/132608.rss", "CDC", tier="official", lang="en", limit=15)),
     ("FAO", lambda: fetch_rss("https://www.fao.org/feeds/fao-newsroom-rss", "FAO", tier="official", lang="en", limit=15)),
-    ("USGS", lambda: fetch_usgs()),
     # 股票热榜（不过滤）
     ("同花顺热榜", fetch_ths_hot),
     # 社会热榜（只保留和股票相关的）
