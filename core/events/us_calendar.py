@@ -26,6 +26,7 @@ UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
 HEADERS = {"User-Agent": UA, "Accept": "application/json, text/plain, */*"}
 TIMEOUT = 8
 CACHE_TTL = 3600
+CAL_VERSION = 2
 
 ET = ZoneInfo("America/New_York")
 BJ = ZoneInfo("Asia/Shanghai")
@@ -128,6 +129,41 @@ def _fomc_events(days: int = 400) -> list[dict]:
                     "importance": 3,
                     "url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
                     "detail": "美东 14:00 声明，14:30 新闻发布会",
+                })
+    return out
+
+
+# ---------------- 美国选举 ----------------
+def _election_events(days: int) -> list[dict]:
+    start = date.today()
+    end = start + timedelta(days=days)
+    out = []
+    for y in range(start.year, end.year + 2):
+        if y % 2:
+            continue
+        nov1 = date(y, 11, 1)
+        first_mon = nov1 + timedelta(days=(7 - nov1.weekday()) % 7)
+        election = first_mon + timedelta(days=1)   # 11 月第一个星期一后的星期二
+        if not (start <= election <= end):
+            continue
+        presidential = (y % 4 == 0)
+        out.append({
+            "date": election.isoformat(),
+            "time": "",
+            "ts": _et_ts(election.isoformat(), "20:00"),
+            "kind": "election",
+            "title": "美国总统大选" if presidential else "美国中期选举",
+            "detail": "投票日（北京时间次日中午前后陆续出结果）",
+            "importance": 3,
+            "url": "https://www.usa.gov/election-day",
+        })
+        if presidential:
+            inaug = date(y + 1, 1, 20)
+            if start <= inaug <= end:
+                out.append({
+                    "date": inaug.isoformat(), "time": "", "ts": _et_ts(inaug.isoformat(), "12:00"),
+                    "kind": "election", "title": "美国总统就职典礼", "importance": 3,
+                    "url": "https://www.usa.gov/inauguration",
                 })
     return out
 
@@ -247,9 +283,11 @@ def us_calendar(days: int = 45, force: bool = False) -> dict:
             pass
 
     events = _fomc_events(max(days, 365))
+    events += _election_events(max(days, 1500))
     events += _fetch_days(days, set(watch))
     events.sort(key=lambda x: (x.get("ts") or 0, x.get("kind") or ""))
     result = {
+        "version": CAL_VERSION,
         "events": events,
         "days": days,
         "watch": watch,
@@ -288,7 +326,8 @@ def cached_calendar(days: int = 30, allow_stale: bool = True) -> dict | None:
             cached_sig = d.get("watch")
             if isinstance(cached_sig, list):
                 cached_sig = ",".join(cached_sig)
-            if int(d.get("days") or 0) >= days and cached_sig == sig:
+            if (d.get("version") == CAL_VERSION and int(d.get("days") or 0) >= days
+                    and cached_sig == sig):
                 if allow_stale or now - CACHE_FILE.stat().st_mtime < CACHE_TTL:
                     _CACHE.update(ts=CACHE_FILE.stat().st_mtime, days=int(d["days"]),
                                   watch=sig, data=d)

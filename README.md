@@ -145,8 +145,9 @@ python apps/web/sector_monitor_web.py --offline       # 只读本地库
   美国大型银行 SEC 8-K（高盛/摩根大通/摩根士丹利/美银/花旗/贝莱德/黑石）、
   UN News、WHO/CDC/FAO、微博/知乎/B站/抖音/头条/百度热搜。
   「机构」tab 单独聚合央行、监管机构与大型金融机构的声明/公告。
-  「日历」tab 展示未来 30 天的 FOMC、非农/CPI/PCE/GDP 等美国数据（含预期/前值）
-  以及自选美股财报日期（盘前/盘后 + EPS 预期），时间统一换算成北京时间。
+  「日历」tab 可在美国/中国之间切换：美国含 FOMC、非农/CPI/PCE/GDP、美国大选/中期选举、
+  自选美股财报日期（盘前/盘后 + EPS 预期）；中国含两会、进博会、广交会、LPR 报价
+  以及 CPI/PPI/GDP/PMI/社融等数据，时间统一换算成北京时间。
   **社会热榜与综合媒体只保留和股票市场相关的条目**（关键词 + 自选个股/板块 + 美股 ticker 门控），
   无关内容默认不落库；股票热榜（同花顺/东财）单独归入「热榜」分类。
   **抓取全在后端常驻线程**（5 分钟一轮，前端只读 SQLite）；普通新闻保留 7 天；
@@ -198,7 +199,8 @@ python apps/web/sector_monitor_web.py --offline       # 只读本地库
 | `/api/sector_relations` | 板块共振 / 对手榜（近 N 日收益相关） |
 | `/api/news` | 事件/新闻流（多源抓取、分类、重要度，落 SQLite） |
 | `/api/us_earnings?code=AMD` | 美股个股财报（SEC XBRL：近 8 季营收/净利润/EPS/同比） |
-| `/api/us_calendar?days=30` | 美国财经日历（FOMC / 非农 / CPI / PCE / GDP / 自选美股财报日期） |
+| `/api/us_calendar?days=30` | 美国财经日历（FOMC / 非农 / CPI / PCE / GDP / 选举 / 自选美股财报日期） |
+| `/api/cn_calendar?days=30` | 中国财经/政策日历（两会 / 进博会 / 广交会 / LPR / CPI / PMI / 社融等） |
 | `/api/etf_holdings` | ETF 前 N 大持仓（美股 SPDR/SSGA、A股基金持仓） |
 | `/api/watch` | 自选列表读写 |
 | `/api/lines` | 画线读写 |

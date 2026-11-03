@@ -184,6 +184,10 @@ background:#18212c;box-shadow:-4px 0 14px rgba(0,0,0,.35)}
 .cal-day{margin:14px 2px 6px;font-size:13px;color:#7d8b9a;letter-spacing:.5px;
  border-bottom:1px solid #1d2833;padding-bottom:4px}
 .cal-day:first-child{margin-top:2px}
+.cal-switch{display:flex;gap:8px;margin:4px 2px 10px}
+.cal-switch button{padding:4px 14px;border-radius:7px;background:#141d27;border:1px solid #2f3b47;
+ color:#8fa6bd;font-size:13.5px;cursor:pointer}
+.cal-switch button.on{background:#20304a;border-color:#3c5680;color:#fff;font-weight:600}
 .nrow .ncopy{border:1px solid #2f3b47;background:#141d27;color:#8fa6bd;font-size:12px;
  border-radius:5px;padding:1px 6px;cursor:pointer;margin-left:8px;white-space:nowrap}
 .nrow .ncopy:hover{background:#20304a;color:#fff;border-color:#4d9fff}
@@ -2440,7 +2444,8 @@ function syncFab() {
 }
 /* ---------- 事件 / 新闻 ---------- */
 const NEWS = {items: [], cat: "", onlyCur: false, onlyWatch: false, cur: null, minLevel: 0,
-  loading: false, pending: false, timer: 0, updated: 0, calendar: [], calMeta: {}};
+  loading: false, pending: false, timer: 0, updated: 0, calendar: [], calMeta: {},
+  calRegion: "us"};
 function newsOpen() { return $("#news").classList.contains("open"); }
 /* 新闻时间统一按北京时间展示（不受浏览器时区影响） */
 const BJ_FMT = new Intl.DateTimeFormat("zh-CN", {
@@ -2488,6 +2493,7 @@ function renderNews() {
       if (u) window.open(u, "_blank", "noopener,noreferrer");
       else setStatus("该条没有可用链接");
     };
+    if (el.closest(".cal-switch")) return;
     const cp = el.querySelector(".ncopy");
     if (cp) cp.onclick = async ev2 => {
       ev2.stopPropagation();
@@ -2513,14 +2519,22 @@ function renderCalendar() {
   const items = NEWS.calendar || [];
   const meta = NEWS.calMeta || {};
   const upd = meta.updated ? " · 更新于 " + bjTime(meta.updated).split(" ")[1] : "";
+  const region = meta.region || NEWS.calRegion || "us";
   const pnd = meta.pending ? " · 构建中…" : (meta.refreshing ? " · 后台更新中…" : "");
-  if (sub) sub.textContent = `${items.length} 个事件 · 未来 ${meta.days || 30} 天 · 北京时间${pnd}${upd}`;
+  const rlabel = region === "cn" ? "中国" : "美国（含 FOMC / 选举）";
+  if (sub) sub.textContent = `${items.length} 个事件 · ${rlabel} · 未来 ${meta.days || 30} 天 · 北京时间${pnd}${upd}`;
+  const sw = `<div class="cal-switch">` +
+    `<button data-cal="us" class="${region === "us" ? "on" : ""}">美国</button>` +
+    `<button data-cal="cn" class="${region === "cn" ? "on" : ""}">中国</button></div>`;
   if (!items.length) {
-    box.innerHTML = `<div class="nempty">${meta.pending ? "首次构建美国日历，约 30 秒，完成后自动刷新…" : "未来 30 天暂无事件"}</div>`;
+    box.innerHTML = sw + `<div class="nempty">${meta.pending ? "首次构建日历，约 30 秒，完成后自动刷新…" : "未来 30 天暂无事件"}</div>`;
+    box.querySelectorAll(".cal-switch button").forEach(b => {
+      b.onclick = ev2 => { ev2.stopPropagation(); NEWS.calRegion = b.dataset.cal; loadNews(); };
+    });
     return;
   }
   const wk = ["日", "一", "二", "三", "四", "五", "六"];
-  let html = "", lastDay = "";
+  let html = sw, lastDay = "";
   for (const e of items) {
     const when = bjTime(e.ts);
     const day = when.slice(0, 5);
@@ -2539,17 +2553,22 @@ function renderCalendar() {
       if (e.actual) bits.push("实际 " + e.actual);
       detail = bits.join(" · ");
     }
-    html += `<div class="nrow" data-url="${esc(e.url || "")}" title="${esc(src)}">` +
+    const src2 = e.kind === "policy" ? "政策" : src;
+    html += `<div class="nrow" data-url="${esc(e.url || "")}" title="${esc(src2)}">` +
       `<span class="nt">${when.slice(6)}</span>` +
-      `<span class="ns">${esc(src)}</span>` +
-      `<span class="nti"><span class="cat ${tag}">${tag}</span>${esc(e.title)}` +
+      `<span class="ns">${esc(src2)}</span>` +
+      `<span class="nti"><span class="cat ${e.kind === "policy" ? "机构" : tag}">${e.kind === "policy" ? "政策" : tag}</span>${esc(e.title)}` +
       (detail ? `<span class="imp">${esc(detail)}</span>` : "") +
       (e.url ? `<button class="ncopy" title="复制链接">复制</button>` : "") +
       `</span></div>`;
   }
   box.innerHTML = html;
+  box.querySelectorAll(".cal-switch button").forEach(b => {
+    b.onclick = ev2 => { ev2.stopPropagation(); NEWS.calRegion = b.dataset.cal; loadNews(); };
+  });
   box.querySelectorAll(".nrow").forEach(el => {
     el.onclick = () => { const u = el.dataset.url; if (u) window.open(u, "_blank", "noopener,noreferrer"); };
+    if (el.closest(".cal-switch")) return;
     const cp = el.querySelector(".ncopy");
     if (cp) cp.onclick = async ev2 => {
       ev2.stopPropagation();
@@ -2566,7 +2585,8 @@ async function loadNews(refresh) {
   NEWS.loading = true;
   try {
     if (NEWS.cat === "日历") {
-      const d = await api(`/api/us_calendar?days=30` + (refresh ? "&refresh=1" : ""));
+      const region = NEWS.calRegion || "us";
+      const d = await api(`/api/${region === "cn" ? "cn" : "us"}_calendar?days=30` + (refresh ? "&refresh=1" : ""));
       NEWS.calendar = d.events || [];
       NEWS.calMeta = d;
       renderCalendar();
