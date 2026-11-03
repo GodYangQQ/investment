@@ -150,13 +150,14 @@ flex-direction:column;gap:10px;color:var(--muted);font-size:18px;text-align:cent
 .msg.show{display:flex}
 
 /* 自选抽屉 + 放大模式 */
-.fab{position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:22;border-radius:9px 0 0 9px;
+.fab{position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:60;border-radius:9px 0 0 9px;
 border-right:0;padding:12px 7px;writing-mode:vertical-rl;letter-spacing:3px;font-size:17px;
 background:#18212c;box-shadow:-4px 0 14px rgba(0,0,0,.35)}
 .fab b{writing-mode:horizontal-tb;display:block;margin-top:6px;font-size:15px;color:#ffd54f}
 .fab.on{background:#20304a;border-color:#3c5680}
-/* 第二个悬浮按钮（新闻）排在自选上方 */
-.fab.fab2{top:calc(50% - 132px)}
+/* 三个悬浮按钮：新闻 / 自选 / 看盘，始终可见 */
+.fab.fab2{top:calc(50% - 66px)}
+.fab.fab3{top:calc(50% - 132px)}
 /* 新闻列表 */
 .nlist{flex:1;min-height:0;overflow-y:auto;padding:10px 16px 24px;
  scrollbar-width:none;-ms-overflow-style:none}
@@ -179,6 +180,7 @@ background:#18212c;box-shadow:-4px 0 14px rgba(0,0,0,.35)}
 .nrow .nti .cat.财报{color:#c8a6ff;border-color:#43356b;background:#191430}
 .nrow .nti .cat.数据{color:#7fd6c6;border-color:#1f5a52;background:#10201f}
 .nrow .nti .cat.FOMC{color:#ffd479;border-color:#5f4f22;background:#221d10}
+.nrow .nti .cat.机构{color:#9ad0ff;border-color:#2b4f73;background:#101c28}
 .cal-day{margin:14px 2px 6px;font-size:13px;color:#7d8b9a;letter-spacing:.5px;
  border-bottom:1px solid #1d2833;padding-bottom:4px}
 .cal-day:first-child{margin-top:2px}
@@ -595,8 +597,9 @@ body.focus.side-hidden .side-handle{left:0}
   </section>
 </main>
 
-<button id="newsBtn" class="fab fab2" title="世界事件 / 财经快讯">新闻<b id="newsBadge"></b></button>
-<button id="watchBtn" class="fab" title="我的自选">自选<b id="watchCount">0</b></button>
+<button id="newsBtn" class="fab fab3" title="世界事件 / 财经快讯">新闻<b id="newsBadge"></b></button>
+<button id="watchBtn" class="fab fab2" title="我的自选">自选<b id="watchCount">0</b></button>
+<button id="chartBtn" class="fab" title="回到看盘">看盘</button>
 <aside id="watch" class="drawer">
   <div class="dh"><button id="wback" class="wback" title="回到看盘（Esc）">← 返回看盘</button>
     <b>我的自选</b><span class="muted" id="wcount2">0 个</span>
@@ -635,6 +638,7 @@ body.focus.side-hidden .side-handle{left:0}
       <button data-nc="产业">产业</button>
       <button data-nc="市场">市场</button>
       <button data-nc="日历">日历</button>
+      <button data-nc="机构">机构</button>
       <button data-nc="热榜">热榜</button>
     </div>
     <button id="nCur" title="只看与当前板块相关的新闻">当前板块</button>
@@ -2427,11 +2431,12 @@ async function loadBars(opts = {}) {
 /* ===================== 自选抽屉 · 支撑压力 · 放大 ===================== */
 const watchOpen = () => $("#watch").classList.contains("open");
 
-/* 统一控制右下角“自选”悬浮按钮：仅当自选抽屉打开时隐藏（放大模式也保留） */
+/* 三个悬浮按钮始终可见：新闻 / 自选 / 看盘，按当前抽屉高亮 */
 function syncFab() {
-  const btn = $("#watchBtn");
-  if (!btn) return;
-  btn.style.display = watchOpen() ? "none" : "";
+  const w = $("#watchBtn"), n = $("#newsBtn"), c = $("#chartBtn");
+  if (w) { w.style.display = ""; w.classList.toggle("on", watchOpen()); }
+  if (n) n.classList.toggle("on", newsOpen());
+  if (c) c.classList.toggle("on", !watchOpen() && !newsOpen());
 }
 /* ---------- 事件 / 新闻 ---------- */
 const NEWS = {items: [], cat: "", onlyCur: false, onlyWatch: false, cur: null, minLevel: 0,
@@ -2611,6 +2616,7 @@ function syncNewsCur() {
   b.textContent = NEWS.onlyCur && S.name ? `相关：${S.name}` : "当前板块";
 }
 function openNews() {
+  if (watchOpen()) closeWatch();
   hidePeek();
   syncNewsCur();
   $("#news").classList.add("open");
@@ -2619,14 +2625,17 @@ function openNews() {
   loadNews();
   clearInterval(NEWS.timer);
   NEWS.timer = setInterval(() => { if (newsOpen()) loadNews(); }, 60000);
+  syncFab();
 }
 function closeNews() {
   $("#news").classList.remove("open");
   $("#newsBtn").classList.remove("on");
   clearInterval(NEWS.timer);
+  syncFab();
 }
 
 function openWatch() {
+  if (newsOpen()) closeNews();
   $("#watch").classList.add("open");
   $("#watchBtn").classList.add("on");
   renderWatch();
@@ -4279,8 +4288,17 @@ setInterval(() => { if (watchOpen()) loadHeld(); }, 60000);
   $("#sideBtn").onclick = () => setSideHidden(!document.body.classList.contains("side-hidden"));
   if (localStorage.getItem("sm_side_hidden") === "1") setSideHidden(true);
 
-  $("#watchBtn").onclick = () => (watchOpen() ? closeWatch() : openWatch());
-  $("#newsBtn").onclick = () => (newsOpen() ? closeNews() : openNews());
+  $("#chartBtn").onclick = () => { closeWatch(); closeNews(); setFocus(false); syncFab(); };
+  $("#watchBtn").onclick = () => {
+    if (watchOpen()) { closeWatch(); return; }
+    closeNews();
+    openWatch();
+  };
+  $("#newsBtn").onclick = () => {
+    if (newsOpen()) { closeNews(); return; }
+    closeWatch();
+    openNews();
+  };
   $("#newsTopBtn").onclick = () => (newsOpen() ? closeNews() : openNews());
   $("#nClose").onclick = closeNews;
   $("#nback").onclick = () => { closeNews(); setFocus(false); };

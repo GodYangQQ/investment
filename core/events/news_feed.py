@@ -193,11 +193,12 @@ def _get(url: str, use_proxy: bool = False, **kw):
     import requests
 
     hdr = kw.pop("headers", None) or {}
+    timeout = kw.pop("timeout", TIMEOUT)
     if use_proxy:
         p = _proxy()
         if p:
             kw.setdefault("proxies", p)
-    return requests.get(url, headers={**HEADERS, **hdr}, timeout=TIMEOUT, **kw)
+    return requests.get(url, headers={**HEADERS, **hdr}, timeout=timeout, **kw)
 
 
 # 便于测试替换
@@ -237,6 +238,8 @@ def fetch_em_kuaixun(limit: int = 60) -> list[dict]:
 def _parse_rss(xml_text: str, source: str, tier: str, lang: str, limit: int = 40) -> list[dict]:
     out = []
     try:
+        if isinstance(xml_text, str):
+            xml_text = xml_text.lstrip("\ufeff \t\r\n")
         root = ET.fromstring(xml_text.encode("utf-8", "ignore") if isinstance(xml_text, str) else xml_text)
     except Exception:
         return []
@@ -260,13 +263,16 @@ def _parse_rss(xml_text: str, source: str, tier: str, lang: str, limit: int = 40
 
 def fetch_rss(url: str, source: str, tier: str = "tier1", lang: str = "zh", limit: int = 40,
               use_proxy: bool = False) -> list[dict]:
-    try:
-        r = _get(url, use_proxy=use_proxy)
-        if r.status_code != 200:
-            return []
-        return _parse_rss(r.text, source, tier, lang, limit)
-    except Exception:
-        return []
+    for _ in range(2):
+        try:
+            r = _get(url, use_proxy=use_proxy)
+            if r.status_code != 200:
+                return []
+            text = r.content.decode("utf-8-sig", "ignore") if r.content.startswith(b"\xef\xbb\xbf") else r.text
+            return _parse_rss(text, source, tier, lang, limit)
+        except Exception:
+            time.sleep(0.6)
+    return []
 
 
 def fetch_usgs(min_mag: float = 4.5) -> list[dict]:
@@ -844,7 +850,18 @@ def _html_list(text: str, base: str, must: tuple[str, ...], source: str, limit: 
         if keep and not any(k in title for k in keep):
             continue
         url = href if href.startswith("http") else base + href.lstrip("/")
-        out.append(_item(title, url, source, tier="official"))
+        ts = None
+        dm = re.search(r"(20\d{2})(\d{2})(\d{2})", href)
+        if not dm:
+            dm = re.search(r"/(20\d{2})/(\d{2})(\d{2})/", href)
+        if dm:
+            try:
+                y, m, d = int(dm.group(1)), int(dm.group(2)), int(dm.group(3))
+                if 1 <= m <= 12 and 1 <= d <= 31:
+                    ts = _to_ts(f"{y:04d}-{m:02d}-{d:02d}")
+            except Exception:
+                ts = None
+        out.append(_item(title, url, source, tier="official", ts=ts))
         if len(out) >= limit:
             break
     return out
@@ -868,6 +885,138 @@ def fetch_mem(limit: int = 10) -> list[dict]:
                           keep=("台风", "干旱", "旱情", "厄尔尼诺", "拉尼娜", "全球"))
     except Exception:
         return []
+
+
+def _mark_inst(rows: list[dict]) -> list[dict]:
+    for x in rows:
+        x["_inst"] = True
+    return rows
+
+
+_FED = {"ts": 0.0, "items": []}
+
+
+def fetch_fed(limit: int = 15) -> list[dict]:
+    now = time.time()
+    if _FED["items"] and now - _FED["ts"] < 600:
+        return _FED["items"][:limit]
+    items = _mark_inst(fetch_rss("https://www.federalreserve.gov/feeds/press_all.xml",
+                                 "美联储", tier="official", limit=limit, lang="en"))
+    if items:
+        _FED["ts"], _FED["items"] = now, items
+    return items
+
+
+def fetch_ecb(limit: int = 12) -> list[dict]:
+    return _mark_inst(fetch_rss("https://www.ecb.europa.eu/rss/press.html",
+                                "欧洲央行", tier="official", limit=limit, lang="en", use_proxy=True))
+
+
+def fetch_boj(limit: int = 12) -> list[dict]:
+    return _mark_inst(fetch_rss("https://www.boj.or.jp/en/rss/whatsnew.xml",
+                                "日本央行", tier="official", limit=limit, lang="en", use_proxy=True))
+
+
+def fetch_boe(limit: int = 12) -> list[dict]:
+    return _mark_inst(fetch_rss("https://www.bankofengland.co.uk/rss/news",
+                                "英国央行", tier="official", limit=limit, lang="en"))
+
+
+def fetch_pboc(limit: int = 10) -> list[dict]:
+    try:
+        t = _get("http://www.pbc.gov.cn/goutongjiaoliu/113456/113469/index.html").content.decode("utf-8", "ignore")
+        return _mark_inst(_html_list(t, "http://www.pbc.gov.cn", ("/goutongjiaoliu/",), "中国人民银行", limit))
+    except Exception:
+        return []
+
+
+def fetch_safe(limit: int = 8) -> list[dict]:
+    try:
+        t = _get("https://www.safe.gov.cn/safe/whxw/index.html").content.decode("utf-8", "ignore")
+        return _mark_inst(_html_list(t, "https://www.safe.gov.cn", ("/safe/2026/",), "国家外汇局", limit))
+    except Exception:
+        return []
+
+
+_FSA = {"ts": 0.0, "items": []}
+
+
+def fetch_jp_fsa(limit: int = 8) -> list[dict]:
+    now = time.time()
+    if _FSA["items"] and now - _FSA["ts"] < 1800:
+        return _FSA["items"][:limit]
+    try:
+        t = _get("https://www.fsa.go.jp/en/news/index.html", timeout=40).content.decode("utf-8", "ignore")
+        items = _mark_inst(_html_list(t, "https://www.fsa.go.jp", ("/en/news/2026/",), "日本金融厅", limit))
+        if items:
+            _FSA["ts"], _FSA["items"] = now, items
+        return items
+    except Exception:
+        return []
+
+
+# 美国大型金融机构：用 SEC 8-K（官方一手，含新闻稿/重大声明）
+BANK_CIKS = [
+    ("GS", "高盛", "0000886982"),
+    ("JPM", "摩根大通", "0000019617"),
+    ("MS", "摩根士丹利", "0000895421"),
+    ("BAC", "美国银行", "0000070858"),
+    ("C", "花旗", "0000831001"),
+    ("BLK", "贝莱德", "0001364742"),
+    ("BX", "黑石", "0001393818"),
+]
+
+
+_BANK = {"ts": 0.0, "items": []}
+
+
+def _bank_one(ticker: str, name: str, cik: str, cutoff: str) -> list[dict]:
+    out = []
+    try:
+        d = _get(f"https://data.sec.gov/submissions/CIK{cik}.json",
+                 headers=SEC_HEADERS).json() or {}
+        rec = ((d.get("filings") or {}).get("recent") or {})
+        forms = rec.get("form") or []
+        dates = rec.get("filingDate") or []
+        docs = rec.get("primaryDocument") or []
+        accs = rec.get("accessionNumber") or []
+        n = 0
+        for i, form in enumerate(forms):
+            if form != "8-K":
+                continue
+            fdate = dates[i] if i < len(dates) else ""
+            if fdate and fdate < cutoff:
+                break
+            url = (f"https://www.sec.gov/Archives/edgar/data/{int(cik)}/"
+                   f"{str(accs[i]).replace('-', '')}/{docs[i]}")
+            out.append(_item(f"{ticker} · {name} 8-K 重大声明 {fdate}", url,
+                             f"SEC·{name}", tier="official", lang="en", ts=_to_ts(fdate)))
+            n += 1
+            if n >= 2:
+                break
+    except Exception:
+        pass
+    return out
+
+
+def fetch_bank_8k(limit: int = 12) -> list[dict]:
+    now = time.time()
+    if _BANK["items"] and now - _BANK["ts"] < 1800:
+        return _BANK["items"][:limit]
+    cutoff = (datetime.now() - timedelta(days=14)).strftime("%Y-%m-%d")
+    out: list[dict] = []
+    with ThreadPoolExecutor(max_workers=7) as ex:
+        futs = [ex.submit(_bank_one, t, n, c, cutoff) for t, n, c in BANK_CIKS]
+        for f in as_completed(futs):
+            try:
+                out += f.result() or []
+            except Exception:
+                continue
+    out.sort(key=lambda x: x.get("ts") or 0, reverse=True)
+    out = _mark_inst(out[:limit])
+    if out:
+        _BANK["ts"], _BANK["items"] = now, out
+    return out
 
 
 def fetch_bbc(limit: int = 20) -> list[dict]:
@@ -1165,6 +1314,15 @@ SOURCES = [
     ("澎湃新闻", fetch_thepaper),
     ("央视新闻", fetch_cctv),
     ("央视财经", fetch_cctv_finance),
+    # 央行 / 监管 / 大型金融机构
+    ("美联储", fetch_fed),
+    ("欧洲央行", fetch_ecb),
+    ("日本央行", fetch_boj),
+    ("英国央行", fetch_boe),
+    ("中国人民银行", fetch_pboc),
+    ("国家外汇局", fetch_safe),
+    ("日本金融厅", fetch_jp_fsa),
+    ("美国大型银行", fetch_bank_8k),
     # 国际财经/官方（需代理时自动走代理）
     ("CNBC", lambda: fetch_rss("https://www.cnbc.com/id/100003114/device/rss/rss.html", "CNBC", lang="en", limit=25)),
     ("MarketWatch", lambda: fetch_rss("https://feeds.marketwatch.com/marketwatch/topstories/", "MarketWatch", lang="en", limit=20)),
@@ -1680,6 +1838,8 @@ def _collect() -> None:
         it["category"] = _categorize(it["title"])
         if it.get("_hot"):
             it["category"] = "热榜"
+        if it.get("_inst"):
+            it["category"] = "机构"
         it["importance"] = _score(it)
         it["ts"] = float(it.get("ts") or now)
         it["sectors"] = _match_sectors(it["title"], index) if index else []

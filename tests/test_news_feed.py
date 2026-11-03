@@ -38,3 +38,9 @@ def test_market_relevance_gate():
     assert nf._market_relevant("半导体板块大涨", ctx)          # 主题 + 语境
     assert not nf._market_relevant("人工智能医生诊断更准确", ctx)  # 只有主题，不算股票
     assert not nf._market_relevant("黑神话悟空游戏评测", ctx)
+
+
+def test_html_list_parses_date_from_href():
+    html = '<a href="/safe/2026/1030/28040.html">国家外汇管理局公布2026年9月国际收支数据</a>'
+    rows = nf._html_list(html, "https://www.safe.gov.cn", ("/safe/2026/",), "国家外汇局", 5)
+    assert rows and time.strftime("%Y-%m-%d", time.localtime(rows[0]["ts"])) == "2026-10-30"
