@@ -22,16 +22,20 @@ ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = ROOT / "data"
 CACHE_FILE = DATA_DIR / "cn_calendar_cache.json"
 CACHE_TTL = 3600
-CAL_VERSION = 1
+CAL_VERSION = 2
 BJ = ZoneInfo("Asia/Shanghai")
 
-KEY_EVENTS = (
-    "CPI", "PPI", "GDP", "PMI", "Trade Balance", "Retail Sales",
-    "Industrial Production", "Loan Growth", "New Loans", "FX Reserves",
-    "Unemployment", "House Prices", "FDI", "Current Account", "Exports",
-    "Imports", "Fixed Asset", "M2", "Social Financing",
-)
-HIGH_IMPACT = ("GDP", "CPI", "PPI", "PMI", "Trade Balance", "Loan Growth", "New Loans")
+# Nasdaq 的中国数据很杂：只保留能确认口径的，并换成官方常见发布时间（北京时间）
+NAME_MAP = {
+    "CPI": ("CPI", "09:30"),
+    "PPI": ("PPI", "09:30"),
+    "Trade Balance (USD)": ("贸易帐（美元）", "11:00"),
+    "FX Reserves (USD)": ("外汇储备（美元）", "16:00"),
+    "RatingDog Services PMI": ("RatingDog 服务业 PMI", "09:45"),
+    "RatingDog Manufacturing PMI": ("RatingDog 制造业 PMI", "09:45"),
+}
+# 以下要么是重复口径，要么单位不可靠，直接不要
+DROP = {"Exports", "Imports", "Trade Balance", "China Loan Prime Rate 5Y"}
 
 _CACHE: dict = {"ts": 0.0, "days": 0, "data": None}
 
@@ -50,26 +54,37 @@ def _econ_day(d: str) -> list[dict]:
                 .get("data") or {}).get("rows") or []
     except Exception:
         return []
-    out = []
+    out: dict[tuple, dict] = {}
     for x in rows:
         if x.get("country") != "China":
             continue
-        name = str(x.get("eventName") or "").strip()
-        if not name or not any(k.lower() in name.lower() for k in KEY_EVENTS):
+        raw = str(x.get("eventName") or "").strip()
+        if raw in DROP or raw not in NAME_MAP:
             continue
+        name, hhmm = NAME_MAP[raw]
         tm = str(x.get("gmt") or "").strip()
-        if not re.fullmatch(r"\d{1,2}:\d{2}", tm):
-            tm = ""
-        hi = any(k.lower() in name.lower() for k in HIGH_IMPACT)
-        out.append({
-            "date": d, "time": tm, "ts": _et_ts(d, tm), "kind": "econ",
-            "title": name, "importance": 3 if hi else 2,
-            "consensus": str(x.get("consensus") or "").replace("&nbsp;", "").strip(),
-            "previous": str(x.get("previous") or "").replace("&nbsp;", "").strip(),
-            "actual": str(x.get("actual") or "").replace("&nbsp;", "").strip(),
+        # Nasdaq 的日期是美东日期：先换算成北京日期，再套官方发布时间
+        try:
+            bj_date = datetime.fromtimestamp(_et_ts(d, tm), BJ).date() if re.fullmatch(r"\d{1,2}:\d{2}", tm) else date.fromisoformat(d)
+        except Exception:
+            bj_date = date.fromisoformat(d)
+        key = (bj_date.isoformat(), name)
+        cons = str(x.get("consensus") or "").replace("&nbsp;", "").strip()
+        prev = str(x.get("previous") or "").replace("&nbsp;", "").strip()
+        if key in out:
+            # 同一事件的多行（同比/环比）合并前值，避免看起来像重复
+            if prev and prev not in out[key]["previous"]:
+                out[key]["previous"] = (out[key]["previous"] + " / " + prev).strip(" /")
+            if cons and not out[key]["consensus"]:
+                out[key]["consensus"] = cons
+            continue
+        out[key] = {
+            "date": bj_date.isoformat(), "time": hhmm, "ts": _bj_ts(bj_date, hhmm),
+            "kind": "econ", "title": name, "importance": 3 if name in ("CPI", "PPI", "贸易帐（美元）") else 2,
+            "consensus": cons, "previous": prev, "actual": "",
             "url": "https://www.nasdaq.com/market-activity/economic-calendar",
-        })
-    return out
+        }
+    return list(out.values())
 
 
 def _fixed_events(days: int) -> list[dict]:
