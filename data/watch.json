@@ -1,5 +1,105 @@
 [
  {
+  "market": "us",
+  "code": "NVDA",
+  "name": "Nvidia",
+  "kind": "stock",
+  "tf": "1d",
+  "group": "semi",
+  "w": null,
+  "h": null
+ },
+ {
+  "market": "us",
+  "code": "AAPL",
+  "name": "Apple",
+  "kind": "stock",
+  "tf": "1d",
+  "group": "semi",
+  "w": null,
+  "h": null
+ },
+ {
+  "market": "us",
+  "code": "GOOGL",
+  "name": "google",
+  "kind": "stock",
+  "tf": "1d",
+  "group": "semi",
+  "w": null,
+  "h": null
+ },
+ {
+  "market": "us",
+  "code": "META",
+  "name": "metaplatforms",
+  "kind": "stock",
+  "tf": "1d",
+  "group": "semi",
+  "w": null,
+  "h": null
+ },
+ {
+  "market": "us",
+  "code": "SMCI",
+  "name": "超微电脑",
+  "kind": "stock",
+  "tf": "1d",
+  "group": "semi",
+  "w": null,
+  "h": null
+ },
+ {
+  "market": "us",
+  "code": "AAOI",
+  "name": "应用光电",
+  "kind": "stock",
+  "tf": "1d",
+  "group": "semi",
+  "w": null,
+  "h": null
+ },
+ {
+  "market": "us",
+  "code": "COHR",
+  "name": "coherent corp",
+  "kind": "stock",
+  "tf": "1d",
+  "group": "semi",
+  "w": null,
+  "h": null
+ },
+ {
+  "market": "us",
+  "code": "LITE",
+  "name": "lumentum",
+  "kind": "stock",
+  "tf": "1d",
+  "group": "semi",
+  "w": null,
+  "h": null
+ },
+ {
+  "market": "us",
+  "code": "WDC",
+  "name": "西部数据",
+  "kind": "stock",
+  "tf": "1d",
+  "group": "semi",
+  "w": null,
+  "h": null
+ },
+ {
+  "market": "us",
+  "code": "SNDK",
+  "name": "闪迪",
+  "kind": "stock",
+  "tf": "1d",
+  "group": "semi",
+  "w": null,
+  "h": null
+ },
+ {
   "market": "cn",
   "code": "SZ399006",
   "name": "创业板指",
