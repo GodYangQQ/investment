@@ -833,7 +833,14 @@ function fmtFull(ms, tf) {
 /* ===================== API ===================== */
 async function api(path, opt) {
   const r = await fetch(path, opt);
-  if (!r.ok) throw new Error("HTTP " + r.status);
+  if (!r.ok) {
+    let msg = "HTTP " + r.status;
+    try {
+      const d = await r.clone().json();
+      if (d && (d.error || d.note)) msg = String(d.error || d.note);
+    } catch (e) {}
+    throw new Error(msg);
+  }
   return r.json();
 }
 const lineKey = () => S.market.toUpperCase() + ":" + S.code + "|" + S.tf;
@@ -1999,7 +2006,7 @@ function renderList() {
   });
   rows = rows.slice();
   // 默认视图：按涨幅降序全排序，取前 15 + 中 15 + 后 15（共 45）
-  const topMode = !q && !maMode && (sort === "amount" || sort === "pct");
+  const topMode = !window.__TOKEN_MODE__ && !q && !maMode && (sort === "amount" || sort === "pct");
   let total = rows.length;
   if (topMode) {
     const sorted = rows.slice().sort((a, b) => (b.pct || 0) - (a.pct || 0));
@@ -2015,6 +2022,8 @@ function renderList() {
   } else if (maMode) {
     rows.sort((a, b) => maMode === "up" ? (b.slope || 0) - (a.slope || 0)
                                         : (a.slope || 0) - (b.slope || 0));
+  } else if (window.__TOKEN_MODE__) {
+    // 指数模式保持服务端顺序：指数 → 做多 → 做空 → 中国指数
   } else if (sort === "pct") rows.sort((a, b) => (b.pct || 0) - (a.pct || 0));
   else if (sort === "vr") rows.sort((a, b) => (b.vr || 0) - (a.vr || 0));
   else if (sort === "main") rows.sort((a, b) => (b.main || 0) - (a.main || 0));
@@ -4443,6 +4452,14 @@ setInterval(() => { if (watchOpen()) loadHeld(); }, 60000);
     }
   }
 
+  if (window.__TOKEN_MODE__) {
+    S.market = "us"; S.kind = "industry"; S.akind = "industry"; S.group = "broad";
+    const tokenCodes = window.__TOKEN_INDEX_CODES__ || [];
+    if (!tokenCodes.includes(S.code)) {
+      S.code = ""; S.name = ""; S.bars = []; restored = "";
+    }
+  }
+
   renderTfTabs();
   resize();
   await loadSectors();
@@ -4456,7 +4473,7 @@ setInterval(() => { if (watchOpen()) loadHeld(); }, 60000);
   }
   updateButtons();
   // 首屏后预热一次新闻，打开抽屉时直接有内容
-  setTimeout(() => { if (!NEWS.items.length) loadNews(); }, 2500);
+  setTimeout(() => { if (!window.__TOKEN_MODE__ && !NEWS.items.length) loadNews(); }, 2500);
 })();
 </script>
 </body>

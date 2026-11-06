@@ -21,7 +21,9 @@ ROOT = Path(__file__).resolve().parents[2]
 CACHE_FILE = ROOT / "data" / "company_scores.json"
 CACHE_TTL = 6 * 3600
 _LOCK = threading.Lock()
+_BUILD_LOCK = threading.Lock()
 _MEM = {"df": None, "ts": 0.0}
+_REFRESH = {"running": False}
 
 
 def _code6(s) -> str:
@@ -134,16 +136,35 @@ def build_scores() -> pd.DataFrame:
     return pd.concat(rows, ignore_index=True) if rows else pd.DataFrame()
 
 
-def load_scores(force: bool = False) -> pd.DataFrame:
+def load_scores(force: bool = False, allow_stale: bool = False) -> pd.DataFrame:
     with _LOCK:
         now = time.time()
         if not force and _MEM["df"] is not None and now - _MEM["ts"] < CACHE_TTL:
             return _MEM["df"]
-        if not force:
+        try:
+            with open(CACHE_FILE, encoding="utf-8") as f:
+                d = json.load(f)
+            if d.get("rows"):
+                df = pd.DataFrame(d["rows"])
+                if allow_stale:
+                    return df
+                if not force and now - float(d.get("ts", 0)) < CACHE_TTL:
+                    _MEM["df"] = df
+                    _MEM["ts"] = now
+                    return df
+        except Exception:
+            pass
+
+    # 构建可能耗时几十秒，不要持有读锁，否则会卡住所有评分请求
+    with _BUILD_LOCK:
+        with _LOCK:
+            now = time.time()
+            if not force and _MEM["df"] is not None and now - _MEM["ts"] < CACHE_TTL:
+                return _MEM["df"]
             try:
                 with open(CACHE_FILE, encoding="utf-8") as f:
                     d = json.load(f)
-                if now - float(d.get("ts", 0)) < CACHE_TTL and d.get("rows"):
+                if not force and d.get("rows") and now - float(d.get("ts", 0)) < CACHE_TTL:
                     df = pd.DataFrame(d["rows"])
                     _MEM["df"] = df
                     _MEM["ts"] = now
@@ -165,8 +186,9 @@ def load_scores(force: bool = False) -> pd.DataFrame:
                 json.dump(payload, f, ensure_ascii=False)
         except Exception:
             pass
-        _MEM["df"] = df
-        _MEM["ts"] = now
+        with _LOCK:
+            _MEM["df"] = df
+            _MEM["ts"] = time.time()
         return df
 
 
@@ -232,7 +254,7 @@ def _lcs_len(a: str, b: str) -> int:
 
 
 def board_scores(name: str = "", codes: list[str] | None = None, top: int = 10) -> list[dict]:
-    df = load_scores()
+    df = load_scores(allow_stale=True)
     if df is None or df.empty:
         return []
     codes = [str(c).strip().zfill(6) for c in (codes or []) if str(c).strip()]
@@ -265,17 +287,40 @@ def board_scores(name: str = "", codes: list[str] | None = None, top: int = 10) 
     return []
 
 
+def _kick_refresh() -> None:
+    with _LOCK:
+        if _REFRESH["running"]:
+            return
+        _REFRESH["running"] = True
+
+    def work() -> None:
+        try:
+            load_scores(force=True)
+        except Exception:
+            pass
+        finally:
+            with _LOCK:
+                _REFRESH["running"] = False
+
+    threading.Thread(target=work, daemon=True, name="score-refresh").start()
+
+
 def scores_ready() -> bool:
+    """有可用缓存就立即返回，同时在后台刷新过期数据；完全没有缓存才返回 False。"""
     now = time.time()
     if _MEM["df"] is not None and now - _MEM["ts"] < CACHE_TTL:
         return True
     try:
         with open(CACHE_FILE, encoding="utf-8") as f:
             d = json.load(f)
-        if d.get("rows") and now - float(d.get("ts", 0)) < CACHE_TTL:
-            _MEM["df"] = pd.DataFrame(d["rows"])
-            _MEM["ts"] = now
+        if d.get("rows"):
+            if now - float(d.get("ts", 0)) >= CACHE_TTL:
+                _kick_refresh()
+            else:
+                _MEM["df"] = pd.DataFrame(d["rows"])
+                _MEM["ts"] = now
             return True
     except Exception:
         pass
+    _kick_refresh()
     return False

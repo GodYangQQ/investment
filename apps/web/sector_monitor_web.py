@@ -44,6 +44,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FuturesTimeoutError
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
@@ -56,11 +57,204 @@ WATCH_FILE = os.path.join(DATA_DIR, "watch.json")
 UI_FILE = os.path.join(RUN_DIR, "sector_monitor_web.html")
 GAME_PORT = 8123
 OFFLINE = os.environ.get("SECTOR_OFFLINE", "").strip().lower() in ("1", "true", "yes")
+TOKEN_MODE = False
 GAME_HTML = """<!DOCTYPE html>
 <html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>回测游戏</title>
 <style>html,body{margin:0;height:100%;background:#0e1116;overflow:hidden}iframe{width:100%;height:100%;border:0}</style>
 </head><body><iframe src="http://__HOST__:8123/"></iframe></body></html>"""
+
+
+sys.path.insert(0, ROOT_DIR)
+from core.datasets.token_prices import (
+    CN_INDICES as CN_INDEX_DEFS,
+    TOKENS as TOKEN_DEFS,
+    fetch_prices as fetch_token_prices,
+)
+
+TOKEN_INDEX_CFG: dict[str, dict] = {}
+for _t in TOKEN_DEFS:
+    TOKEN_INDEX_CFG[_t["symbol"]] = {
+        "name": f"{_t['symbol']} {_t['name']}",
+        "market": "us",
+        "kind": "stock",
+        "ticker": _t["symbol"],
+        "yf": _t["symbol"],
+        "live_symbol": _t["symbol"],
+    }
+for _code, _name in CN_INDEX_DEFS:
+    TOKEN_INDEX_CFG[_code] = {
+        "name": _name,
+        "market": "cn",
+        "kind": "index",
+        "ticker": _code,
+        "yf": {
+            "SH000001": "000001.SS", "SZ399001": "399001.SZ",
+            "SZ399006": "399006.SZ", "SH000300": "000300.SS",
+            "SH000905": "000905.SS", "SH000688": "000688.SS",
+            "SH000016": "000016.SS",
+        }.get(_code, _code),
+        "live_symbol": _code[2:],
+    }
+
+TOKEN_STYLE = """<style>
+#mtabs,#ktabs,.qbox,#sort,#helpBtn,#detailBtn,#newsTopBtn,#gameBtn,
+#bWatch,#bNews,#bFin,#newsBtn,#watchBtn,#idx,#news,#watch,#detail,
+.shint{display:none!important}
+#list .sparkwrap,#list .meta,#list .vbar,#list .star{display:none!important}
+#list .row{padding:5px 8px!important;grid-template-columns:1fr auto!important;gap:2px 8px!important}
+#list .row .nm{font-size:15px!important}
+#list .row .p,#list .row .amt{font-size:14px!important}
+</style>"""
+TOKEN_BOOT = (
+    "<script>window.__TOKEN_MODE__=true;window.__TOKEN_INDEX_CODES__="
+    + json.dumps(list(TOKEN_INDEX_CFG), ensure_ascii=False)
+    + ";setTimeout(function(){var h=document.querySelector('h1');if(h)h.textContent='指数画线';document.title='指数画线';},0);</script>"
+)
+
+
+TOKEN_MIN_DAYS = {"1m": 5, "5m": 30, "15m": 60, "30m": 60, "60m": 120}
+TOKEN_MIN_PERIOD = {"1m": "5d", "5m": "1mo", "15m": "60d", "30m": "60d", "60m": "6mo"}
+_TOKEN_MIN_CACHE: dict[str, tuple[float, list]] = {}
+
+
+def _token_yf_minute(ticker: str, tf: str) -> list[dict]:
+    key = f"{ticker}:{tf}"
+    hit = _TOKEN_MIN_CACHE.get(key)
+    now = time.time()
+    if hit and now - hit[0] < 30:
+        return hit[1]
+    try:
+        import yfinance as yf
+    except Exception:
+        return []
+    try:
+        df = yf.download(
+            ticker,
+            period=TOKEN_MIN_PERIOD.get(tf, "1mo"),
+            interval=tf,
+            progress=False,
+            auto_adjust=False,
+            threads=False,
+        )
+    except Exception:
+        return []
+    if df is None or df.empty:
+        return []
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = [c[0] for c in df.columns]
+    df = df.rename(columns=lambda c: str(c).lower())
+    days = TOKEN_MIN_DAYS.get(tf)
+    if days and len(df.index):
+        cutoff = df.index.max() - pd.Timedelta(days=days)
+        df = df[df.index >= cutoff]
+    rows = []
+    for ts, row in df.iterrows():
+        try:
+            t = ts.tz_localize(None) if getattr(ts, "tz", None) is not None else ts
+            rows.append({
+                "t": pd.Timestamp(t).strftime("%Y-%m-%d %H:%M:%S"),
+                "o": float(row["open"]), "h": float(row["high"]),
+                "l": float(row["low"]), "c": float(row["close"]),
+                "v": float(row.get("volume", 0) or 0),
+            })
+        except Exception:
+            continue
+    _TOKEN_MIN_CACHE[key] = (now, rows)
+    return rows
+
+
+def _token_append_current(bars: list[dict], tf: str, market: str, price: float) -> None:
+    try:
+        minutes = int(tf[:-1])
+    except Exception:
+        return
+    tz = ZoneInfo("America/New_York") if market == "us" else ZoneInfo("Asia/Shanghai")
+    now = datetime.now(tz).replace(second=0, microsecond=0)
+    if minutes > 1:
+        now = now.replace(minute=(now.minute // minutes) * minutes)
+    t = now.strftime("%Y-%m-%d %H:%M:%S")
+    if bars and bars[-1].get("t") == t:
+        b = bars[-1]
+        b["c"] = price
+        b["h"] = max(float(b.get("h") or price), price)
+        b["l"] = min(float(b.get("l") or price), price)
+    else:
+        bars.append({"t": t, "o": price, "h": price, "l": price, "c": price, "v": 0})
+
+
+def token_sectors_payload() -> dict:
+    prices = fetch_token_prices()
+    items = prices.get("items") or []
+    by_sym = {x.get("symbol"): x for x in items}
+    rows = []
+    for code, cfg in TOKEN_INDEX_CFG.items():
+        live = by_sym.get(cfg["live_symbol"]) or {}
+        rows.append({
+            "code": code,
+            "name": cfg["name"],
+            "price": live.get("price") or 0,
+            "pct": live.get("change") or 0,
+            "amount": live.get("volume") or 0,
+            "vr": 0,
+            "main": 0,
+            "group": "broad",
+            "kind": "index",
+            "market": "us",
+        })
+    return {
+        "market": "us",
+        "kind": "industry",
+        "rows": rows,
+        "indices": [],
+        "groups": [{"id": "broad", "name": "24/7 指数"}],
+        "source": "24/7 代币",
+        "time": prices.get("updated") or datetime.now().strftime("%H:%M:%S"),
+    }
+
+
+def token_bars_payload(code: str, tf: str, name: str) -> dict:
+    cfg = TOKEN_INDEX_CFG.get(code)
+    if not cfg:
+        return {"bars": [], "error": "未知指数"}
+    if tf in TOKEN_MIN_DAYS:
+        minute = _token_yf_minute(cfg.get("yf") or cfg["ticker"], tf)
+        if minute:
+            if cfg["market"] == "us":
+                prices = fetch_token_prices()
+                live = next(
+                    (x for x in prices.get("items") or [] if x.get("symbol") == cfg["live_symbol"]),
+                    None,
+                )
+                if live and live.get("price"):
+                    _token_append_current(minute, tf, cfg["market"], float(live["price"]))
+            return {"bars": minute, "src": "yfinance分钟", "count": len(minute)}
+    payload = bars_payload(
+        cfg["market"], cfg["ticker"], tf, name or cfg["name"], cfg["kind"], retry=True
+    )
+    bars = list(payload.get("bars") or [])
+    live = None
+    if cfg["market"] == "us" and tf == "1d":
+        prices = fetch_token_prices()
+        live = next(
+            (x for x in prices.get("items") or [] if x.get("symbol") == cfg["live_symbol"]),
+            None,
+        )
+        if live and live.get("price"):
+            p = float(live["price"])
+            today = datetime.now().strftime("%Y-%m-%d")
+            if bars and bars[-1].get("t") == today:
+                bars[-1]["c"] = p
+                bars[-1]["h"] = max(float(bars[-1].get("h") or p), p)
+                bars[-1]["l"] = min(float(bars[-1].get("l") or p), p)
+            else:
+                bars.append({"t": today, "o": p, "h": p, "l": p, "c": p, "v": 0})
+    payload = dict(payload)
+    payload["bars"] = bars
+    payload["count"] = len(bars)
+    if live:
+        payload["live"] = {"price": live.get("price"), "change": live.get("change")}
+    return payload
 
 
 def _ensure_game_server(port: int = GAME_PORT) -> None:
@@ -87,6 +281,7 @@ def _ensure_game_server(port: int = GAME_PORT) -> None:
 
 
 sys.path.insert(0, ROOT_DIR)
+
 
 try:
     import requests
@@ -227,7 +422,7 @@ _DB_LOCK = threading.RLock()
 _POOL = ThreadPoolExecutor(max_workers=4, thread_name_prefix="smw")
 _FG_POOL = ThreadPoolExecutor(max_workers=8, thread_name_prefix="smw-fg")
 _HOLD_POOL = ThreadPoolExecutor(max_workers=2, thread_name_prefix="hold")
-_INFLIGHT: dict[str, float] = {}   # key -> 开始时间，防止卡死任务永久占用
+_INFLIGHT: dict[str, float] = {}  # key -> 开始时间，防止卡死任务永久占用
 _INFLIGHT_LOCK = threading.Lock()
 _BARS_LOCKS: dict[str, threading.Lock] = {}
 _BARS_LOCKS_GUARD = threading.Lock()
@@ -400,7 +595,7 @@ def _submit_once(key: str, fn, pool=None):
     now = time.time()
     with _INFLIGHT_LOCK:
         started = _INFLIGHT.get(key)
-        if started and now - started < 120:      # 卡住超过 2 分钟允许重试
+        if started and now - started < 120:  # 卡住超过 2 分钟允许重试
             return None
         _INFLIGHT[key] = now
 
@@ -658,9 +853,7 @@ def fetch_cn_sectors_qq(kind: str = "concept") -> list[dict]:
     rows, seen = [], set()
     for off in range(0, 2000, 200):
         try:
-            r = requests.get(
-                _QQ_RANK.format(bt=bt, off=off), headers=_QQ_HEADERS, timeout=15
-            )
+            r = requests.get(_QQ_RANK.format(bt=bt, off=off), headers=_QQ_HEADERS, timeout=15)
             data = (r.json() or {}).get("data") or {}
         except Exception:
             break
@@ -1938,7 +2131,9 @@ def us_bars(code: str, tf: str, tail: int | None = None) -> tuple[list[dict], st
             nd = _nasdaq_daily(code)
             if nd is not None and not nd.empty:
                 nd = _adjust_splits(nd)
-                if not _has_bad_jumps(nd):
+                # Nasdaq 日线经常晚一天；只要新浪更新，就优先保留最新数据。
+                newer = nd.index[-1] > df.index[-1]
+                if not _has_bad_jumps(nd) and newer:
                     df, src = nd, "Nasdaq日线"
         df = _resample_tf(df, tf)
         if tail:
@@ -2063,7 +2258,7 @@ def _qq_minute(symbol: str) -> pd.DataFrame | None:
 
 def _sina_cn_kline(symbol: str, scale: int, datalen: int = 1023) -> pd.DataFrame | None:
     """新浪分钟/日线（个股、指数通用）；scale: 1/5/15/30/60/240。"""
-    datalen = max(1, min(int(datalen or 1023), 1023))   # 新浪超过 1023 会返回 null
+    datalen = max(1, min(int(datalen or 1023), 1023))  # 新浪超过 1023 会返回 null
     url = (
         "https://quotes.sina.cn/cn/api/json_v2.php/CN_MarketDataService.getKLineData"
         f"?symbol={symbol}&scale={scale}&ma=no&datalen={datalen}"
@@ -2091,6 +2286,36 @@ def _sina_cn_kline(symbol: str, scale: int, datalen: int = 1023) -> pd.DataFrame
         .set_index("date")
         .sort_index()[["open", "high", "low", "close", "volume"]]
     )
+
+
+def _adjust_etf_splits(df):
+    """ETF 份额折算/拆分：按「当日开盘 / 前收」把历史价格缩放到当前口径。
+
+    A股 ETF 没有杠杆，单日 40% 以上的跳空基本只可能是份额折算。
+    从最新一根往前处理，多次拆分可以正确连乘。
+    """
+    if df is None or len(df) < 2:
+        return df
+    df = df.copy()
+    price_cols = [c for c in ("open", "high", "low", "close") if c in df.columns]
+    if not price_cols or "close" not in df.columns or "open" not in df.columns:
+        return df
+    for i in range(len(df) - 1, 0, -1):
+        try:
+            prev = float(df["close"].iloc[i - 1])
+            op = float(df["open"].iloc[i])
+        except (TypeError, ValueError):
+            continue
+        if prev <= 0 or op <= 0:
+            continue
+        ratio = op / prev
+        if 0.67 < ratio < 1.5:
+            continue
+        for c in price_cols:
+            df.iloc[:i, df.columns.get_loc(c)] *= ratio
+        if "volume" in df.columns:
+            df.iloc[:i, df.columns.get_loc("volume")] /= ratio
+    return df
 
 
 def _ak_stock_bars(code: str) -> list[dict]:
@@ -2231,7 +2456,17 @@ def cn_stock_bars(code: str, tf: str, tail: int | None = None) -> tuple[list[dic
         df = _sina_cn_kline(sym, 240, tail or MAX_BARS)
         src = "新浪日线"
     is_etf = re.sub(r"^(SH|SZ|BJ)", "", str(code).upper()).startswith(
-        ("15", "16", "50", "51", "52", "56", "58"))
+        ("15", "16", "50", "51", "52", "56", "58")
+    )
+    if is_etf:
+        # 腾讯 ETF 的 qfq 历史较短，且份额折算常不修正：优先用新浪全历史 + 本地拆分校正
+        sdf = _sina_cn_kline(sym, 240, tail or MAX_BARS)
+        if sdf is not None and not sdf.empty and (df is None or df.empty or len(sdf) >= len(df)):
+            df = _adjust_etf_splits(sdf)
+            src = "新浪日线(拆分校正)"
+        elif df is not None and not df.empty:
+            df = _adjust_etf_splits(df)
+            src += "(拆分校正)"
     # ETF 的新浪数据就是全历史，不必再等 akshare（它的请求没有超时，容易卡住线程池）
     if df is None or df.empty or (len(df) < 1000 and not is_etf):
         ak_rows = _ak_stock_bars(code)
@@ -2702,8 +2937,9 @@ def bars_payload(
     pending = False
     if not bars:  # 首次访问：最多等 2.5s，超时就后台继续抓
         # 首次访问走独立池：后台预取卡住时，用户点开仍能立刻抓
-        fut = _submit_once("fg:" + bkey, lambda: _bars_fetch(market, code, tf, name, kind, retry),
-                           pool=_FG_POOL)
+        fut = _submit_once(
+            "fg:" + bkey, lambda: _bars_fetch(market, code, tf, name, kind, retry), pool=_FG_POOL
+        )
         if fut is not None:
             try:
                 fut.result(timeout=2.5)
@@ -2829,8 +3065,11 @@ def _position_hold() -> dict:
 
         ps.init_db()
         items = [
-            {"code": str(i.get("code") or "").upper(), "name": i.get("name") or "",
-             "pool": i.get("pool") or ""}
+            {
+                "code": str(i.get("code") or "").upper(),
+                "name": i.get("name") or "",
+                "pool": i.get("pool") or "",
+            }
             for i in ps.list_instruments()
             if str(i.get("pool") or "") == "hold"
         ]
@@ -2845,13 +3084,15 @@ def _add_to_position(d: dict) -> dict:
     if not code:
         return {"ok": False, "error": "code required"}
     kind = str(d.get("kind") or "stock")
-    if kind in ("industry", "concept"):
+    is_us = str(d.get("market") or "").lower() == "us"
+    # A股行业/概念板块不可交易；美股 kind=industry 实际是行业 ETF，可以加入持仓。
+    if not is_us and kind in ("industry", "concept"):
         return {"ok": False, "error": "板块不支持加入持仓"}
-    market = "US" if str(d.get("market") or "").lower() == "us" else "A"
-    mk = "us" if market == "US" else "cn"
+    market = "US" if is_us else "A"
+    mk = "us" if is_us else "cn"
     ptype = str(d.get("type") or "").lower()
     if ptype not in ("index", "etf", "stock"):
-        ptype = kind if kind in ("index", "etf", "stock") else "stock"
+        ptype = kind if kind in ("index", "etf", "stock") else ("etf" if is_us else "stock")
     from core.position import position_store as ps
 
     ps.init_db()
@@ -2875,9 +3116,14 @@ def _add_to_position(d: dict) -> dict:
         "ok": True,
         "created": existed is None,
         "bars": n,
-        "instrument": {"id": inst.get("id"), "code": inst.get("code"),
-                       "name": inst.get("name"), "type": inst.get("type"),
-                       "market": inst.get("market"), "pool": inst.get("pool")},
+        "instrument": {
+            "id": inst.get("id"),
+            "code": inst.get("code"),
+            "name": inst.get("name"),
+            "type": inst.get("type"),
+            "market": inst.get("market"),
+            "pool": inst.get("pool"),
+        },
     }
 
 
@@ -2924,7 +3170,7 @@ def _cn_sector_of_stock(code: str) -> dict | None:
         try:
             from core.scoring.sector_relation import _ths_industry_names
 
-            names = _ths_industry_names()     # {T881xxx: 名称}
+            names = _ths_industry_names()  # {T881xxx: 名称}
         except Exception:
             names = {}
         norm = lambda s: str(s or "").replace("Ⅱ", "").replace("Ⅲ", "").strip()
@@ -2944,13 +3190,16 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, *args):
         pass
 
-    def _send(self, body: bytes, ctype: str, code: int = 200, encoding: str | None = None):
+    def _send(self, body: bytes, ctype: str, code: int = 200, encoding: str | None = None,
+              cors: bool = False):
         try:
             self.send_response(code)
             self.send_header("Content-Type", ctype)
             self.send_header("Content-Length", str(len(body)))
             self.send_header("Cache-Control", "no-store")
             self.send_header("Vary", "Accept-Encoding")
+            if cors:
+                self.send_header("Access-Control-Allow-Origin", "*")
             if encoding:
                 self.send_header("Content-Encoding", encoding)
             self.end_headers()
@@ -2961,13 +3210,13 @@ class Handler(BaseHTTPRequestHandler):
     def _accepts_gzip(self) -> bool:
         return "gzip" in (self.headers.get("Accept-Encoding") or "").lower()
 
-    def _json(self, obj, code: int = 200):
+    def _json(self, obj, code: int = 200, cors: bool = False):
         raw = json.dumps(obj, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
         enc = None
         if len(raw) > 900 and self._accepts_gzip():
             raw = gzip.compress(raw, 5)
             enc = "gzip"
-        self._send(raw, "application/json; charset=utf-8", code, enc)
+        self._send(raw, "application/json; charset=utf-8", code, enc, cors=cors)
 
     def handle_one_request(self):
         try:
@@ -2978,6 +3227,12 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         u = urlparse(self.path)
         q = parse_qs(u.query)
+        if u.path == "/api/token_prices":
+            try:
+                self._json(fetch_token_prices(), cors=True)
+            except Exception as e:
+                self._json({"ok": False, "items": [], "error": str(e)[:120]}, 500, cors=True)
+            return
         if u.path == "/game":
             _ensure_game_server()
             host = (self.headers.get("Host") or "127.0.0.1").split(":")[0]
@@ -2991,6 +3246,10 @@ class Handler(BaseHTTPRequestHandler):
             except FileNotFoundError:
                 self._send(b"UI file missing", "text/plain; charset=utf-8", 500)
                 return
+            if TOKEN_MODE:
+                text = html.decode("utf-8")
+                text = text.replace("<body>", "<body>" + TOKEN_STYLE + TOKEN_BOOT, 1)
+                html = text.encode("utf-8")
             enc = None
             if self._accepts_gzip():
                 html = gzip.compress(html, 6)
@@ -2998,6 +3257,9 @@ class Handler(BaseHTTPRequestHandler):
             self._send(html, "text/html; charset=utf-8", 200, enc)
             return
         if u.path == "/api/sectors":
+            if TOKEN_MODE:
+                self._json(token_sectors_payload())
+                return
             market = (q.get("market", ["cn"])[0] or "cn").strip()
             kind = (q.get("kind", ["industry"])[0] or "industry").strip()
             if kind not in SECTOR_FS:
@@ -3091,8 +3353,17 @@ class Handler(BaseHTTPRequestHandler):
                     min_level = 0
                 stock = (q.get("stock", [""])[0] or "").strip()
                 watch = (q.get("watch", ["0"])[0] or "") == "1"
-                self._json(news_state(limit=limit, category=cat, q=kw, code=code,
-                                      stock=stock, min_level=min_level, watch=watch))
+                self._json(
+                    news_state(
+                        limit=limit,
+                        category=cat,
+                        q=kw,
+                        code=code,
+                        stock=stock,
+                        min_level=min_level,
+                        watch=watch,
+                    )
+                )
             except Exception as e:
                 self._json({"items": [], "counts": {}, "error": str(e)[:160]})
             return
@@ -3200,8 +3471,10 @@ class Handler(BaseHTTPRequestHandler):
                             "weight": top["weight"],
                         }
                 else:
-                    names = {str(w.get("code")): str(w.get("name") or w.get("code"))
-                             for w in load_watch_db()}
+                    names = {
+                        str(w.get("code")): str(w.get("name") or w.get("code"))
+                        for w in load_watch_db()
+                    }
                     for h in holders:
                         h["name"] = names.get(h["code"], h["code"])
                     sector = _cn_sector_of_stock(code)
@@ -3246,10 +3519,12 @@ class Handler(BaseHTTPRequestHandler):
                 except FuturesTimeoutError:
                     self._json({"items": [], "pending": True, "note": "持仓数据抓取中，稍后再试"})
                     return
-                self._json({
-                    "items": items,
-                    "note": "" if items else "暂无持仓数据（数据源暂不可用）",
-                })
+                self._json(
+                    {
+                        "items": items,
+                        "note": "" if items else "暂无持仓数据（数据源暂不可用）",
+                    }
+                )
             except Exception as e:
                 self._json({"items": [], "error": str(e)[:120]})
             return
@@ -3275,8 +3550,10 @@ class Handler(BaseHTTPRequestHandler):
                 self._json({"error": "code required"}, 400)
                 return
             try:
-                payload = bars_payload(market, code, tf, name, kind, retry)
-                if tail > 0:                      # 卡片迷你图只要最近 N 根，别传整段历史
+                payload = token_bars_payload(code, tf, name) if TOKEN_MODE else bars_payload(
+                    market, code, tf, name, kind, retry
+                )
+                if tail > 0:  # 卡片迷你图只要最近 N 根，别传整段历史
                     payload = dict(payload)
                     payload["bars"] = payload["bars"][-tail:]
                     payload["count"] = len(payload["bars"])
@@ -3410,6 +3687,7 @@ class Handler(BaseHTTPRequestHandler):
                             print(f"[news] 新增自选补抓 {sorted(added)} → {n} 条", flush=True)
                         except Exception as e:  # noqa: BLE001
                             print(f"[news] 新增自选补抓失败: {e}", flush=True)
+
                     threading.Thread(target=_warm_news, daemon=True, name="watch-news").start()
                 self._json({"ok": True, "n": len(clean), "news_added": sorted(added)})
             except Exception as e:
@@ -3551,7 +3829,10 @@ def _relations_warm() -> None:
 
                 t0 = time.time()
                 d = sector_relations(market, "industry", top=2)
-                print(f"[rel] {market} 预计算 {d.get('count')} 个 · {time.time() - t0:.1f}s", flush=True)
+                print(
+                    f"[rel] {market} 预计算 {d.get('count')} 个 · {time.time() - t0:.1f}s",
+                    flush=True,
+                )
             except Exception as e:  # noqa: BLE001
                 print(f"[rel] {market} 预计算失败: {e}", flush=True)
         time.sleep(480)
@@ -3603,9 +3884,10 @@ def _warmup() -> None:
             _BARS_ARGS[bkey] = (it.get("name", ""), it.get("kind") or "industry")
             _spawn_once(
                 bkey,
-                lambda m=mkt, c=code, n=it.get("name", ""), k=it.get("kind") or "industry": _bars_fetch(
-                    m, c, "1d", n, k
-                ),
+                lambda m=mkt,
+                c=code,
+                n=it.get("name", ""),
+                k=it.get("kind") or "industry": _bars_fetch(m, c, "1d", n, k),
             )
     except Exception:
         pass
@@ -3667,42 +3949,48 @@ def main():
     ap.add_argument("--port", type=int, default=8771)
     ap.add_argument("--no-warm", action="store_true", help="关闭启动预热 / 后台刷新")
     ap.add_argument("--offline", action="store_true", help="只读本地库，不访问外部数据源")
+    ap.add_argument("--token-mode", action="store_true", help="24/7 指数画线模式（独立端口）")
     args = ap.parse_args()
-    global OFFLINE
+    global OFFLINE, TOKEN_MODE
     if args.offline:
         OFFLINE = True
+    TOKEN_MODE = bool(args.token_mode)
     os.makedirs(DATA_DIR, exist_ok=True)
     db()
     db_prune()
-    _ensure_game_server()
-    threading.Thread(target=_score_warmup, daemon=True, name="score-warmup").start()
-    # 新闻常驻抓取：每 5 分钟一轮，前端只读库
-    try:
-        from core.events.news_feed import start_poller
+    if not TOKEN_MODE:
+        _ensure_game_server()
+        threading.Thread(target=_score_warmup, daemon=True, name="score-warmup").start()
+        # 新闻常驻抓取：每 5 分钟一轮，前端只读库
+        try:
+            from core.events.news_feed import start_poller
 
-        start_poller(300)
-    except Exception as e:
-        print(f"[news] 轮询启动失败: {e}", flush=True)
-    # 美国财经日历：启动即后台构建，前端打开「日历」不用等
-    try:
-        from core.events.us_calendar import calendar_view as _cal_view
-        from core.events.cn_calendar import calendar_view as _cn_cal_view
+            start_poller(300)
+        except Exception as e:
+            print(f"[news] 轮询启动失败: {e}", flush=True)
+        # 美国财经日历：启动即后台构建，前端打开「日历」不用等
+        try:
+            from core.events.us_calendar import calendar_view as _cal_view
+            from core.events.cn_calendar import calendar_view as _cn_cal_view
 
-        _cal_view(30)
-        _cn_cal_view(30)
-    except Exception as e:
-        print(f"[calendar] 预热失败: {e}", flush=True)
-    # 共振/对手预计算：每 8 分钟算一次，前端打开明细零等待
-    threading.Thread(target=_relations_warm, daemon=True, name="relations-warm").start()
-    if not args.no_warm and not OFFLINE:
-        _warmup_lists(True)
-    if not args.no_warm:
-        threading.Thread(target=_warmup, daemon=True, name="warmup").start()
-        if not OFFLINE:
-            threading.Thread(target=_warmup_lists, args=(False,), daemon=True, name="warmup-concept").start()
-        threading.Thread(target=_background_ticker, daemon=True, name="ticker").start()
+            _cal_view(30)
+            _cn_cal_view(30)
+        except Exception as e:
+            print(f"[calendar] 预热失败: {e}", flush=True)
+        # 共振/对手预计算：每 8 分钟算一次，前端打开明细零等待
+        threading.Thread(target=_relations_warm, daemon=True, name="relations-warm").start()
+        if not args.no_warm and not OFFLINE:
+            _warmup_lists(True)
+        if not args.no_warm:
+            threading.Thread(target=_warmup, daemon=True, name="warmup").start()
+            if not OFFLINE:
+                threading.Thread(
+                    target=_warmup_lists, args=(False,), daemon=True, name="warmup-concept"
+                ).start()
+            threading.Thread(target=_background_ticker, daemon=True, name="ticker").start()
     srv = _Server((args.host, args.port), Handler)
-    print(f"板块划线看盘已启动: http://{args.host}:{args.port}   (Ctrl+C 退出)")
+    title = "24/7 指数画线" if TOKEN_MODE else "板块划线看盘"
+    print(f"{title}已启动: http://{args.host}:{args.port}   (Ctrl+C 退出)")
     print(f"数据库: {DB_FILE}")
     try:
         srv.serve_forever()

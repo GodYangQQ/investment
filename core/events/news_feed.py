@@ -3,12 +3,14 @@
 设计原则（和看盘一致）：
     · 只取权威/一手来源，不做全量资讯流
     · 多源同一事件会被去重（标题指纹 + 相似度）
-    · 每条带分类（宏观/地缘/产业/灾害/市场/其他）与重要度
+    · 每条带分类（政治/宏观/地缘/产业/市场/其他）与重要度
     · 结果缓存进 SQLite（表 news），前端直接读本地，不每次联网
+    · 气候/环境/气象类新闻默认全部过滤（来源 + 标题双层）
 
 数据源（按当前网络可达性挑选，能连则采、失败静默跳过）：
-    东财快讯 JSON、新浪财经 RSS、人民网国际 RSS、WSJ World RSS、CNBC RSS、
-    WHO/CDC/FAO 官方 RSS、USGS 显著地震；GDELT / Google News 可选（常被墙）
+    东财快讯 JSON、新浪财经、财联社、同花顺、金十、华尔街见闻、澎湃、央视、
+    CNBC、MarketWatch、BBC、Guardian、NYT、Al Jazeera、NPR 政治、NYT 政治、
+    WHO/CDC/FAO 官方 RSS；GDELT / Google News 可选（常被墙）
 
 用法：
     from core.events.news_feed import fetch_news
@@ -59,6 +61,11 @@ CATEGORY_RULES = [
     ("地缘", ["war", "conflict", "sanction", "missile", "airstrike", "military", "invasion", "ceasefire",
               "nato", "opec", "red sea", "tariff", "trade war", "战争", "冲突", "制裁", "导弹", "关税",
               "军演", "停火", "袭击", "红海"]),
+    ("政治", ["election", "presidential", "president", "white house", "congress", "senate",
+              "house speaker", "republican", "democrat", "trump", "biden", "harris",
+              "government shutdown", "impeachment", "大选", "选举", "总统", "白宫", "国会",
+              "参议院", "众议院", "共和党", "民主党", "特朗普", "拜登", "哈里斯",
+              "政府停摆", "弹劾"]),
     ("宏观", ["fed", "fomc", "rate cut", "rate hike", "inflation", "cpi", "ppi", "gdp", "jobless",
               "payroll", "treasury", "central bank", "ecb", "boj", "pboc", "stimulus", "recession",
               "美联储", "降息", "加息", "通胀", "货币政策", "央行", "降准", "财政", "国债", "经济数据",
@@ -490,7 +497,7 @@ def refresh_watch_stocks(days: int = KEEP_DAYS_FIN) -> int:
             pass
     if not items:
         return 0
-    items = _dedupe(items)
+    items = [it for it in _dedupe(items) if not _is_climate(it.get("title"))]
     now = time.time()
     sector_index = _sector_index()
     for it in items:
@@ -675,6 +682,33 @@ MARKET_KW = [
     "股价", "股东", "市值", "市盈率", "估值",
 ]
 
+# 政治/选举：即使不直接出现“股票/市场”，也属于会显著影响风险偏好的事件
+POLITICS_KW = [
+    "大选", "选举", "总统", "白宫", "国会", "参议院", "众议院", "共和党", "民主党",
+    "特朗普", "拜登", "哈里斯", "政府停摆", "弹劾", "就职",
+    "election", "presidential", "president", "white house", "congress", "senate",
+    "house speaker", "republican", "democrat", "trump", "biden", "harris",
+    "government shutdown", "impeachment", "inauguration",
+]
+
+# 气候/环境/气象：用户明确不需要，来源和标题两层过滤
+CLIMATE_TERMS = [
+    "气候", "碳排放", "碳中和", "碳达峰", "碳交易", "温室", "全球变暖", "极端天气",
+    "气象", "台风", "飓风", "热带风暴", "暴雨", "洪水", "干旱", "山火", "野火",
+    "热浪", "高温", "寒潮", "降雪", "冰雹", "雾霾", "空气质量", "污染", "环保",
+    "生态", "生物多样性", "海平面", "冰川", "厄尔尼诺", "拉尼娜",
+    "climate", "carbon", "emission", "greenhouse", "global warming", "weather",
+    "hurricane", "typhoon", "cyclone", "flood", "drought", "wildfire", "heatwave",
+    "cold wave", "pollution", "environment", "biodiversity", "sea level", "glacier",
+    "el nino", "la nina", "ipcc", "noaa",
+]
+
+
+def _is_climate(title: str | None) -> bool:
+    t = str(title or "").lower()
+    return any(k.lower() in t for k in CLIMATE_TERMS)
+
+
 # 行业主题词：单独出现（如「人工智能医生」）不算股票新闻，需要叠加市场语境
 THEME_KW = ["芯片", "半导体", "光刻", "算力", "人工智能", "AI", "新能源", "光伏", "储能",
             "锂电", "电动车", "汽车", "医药", "集采", "创新药", "军工", "银行", "券商", "保险",
@@ -725,6 +759,8 @@ def _market_relevant(title: str, ctx: dict) -> bool:
     if not t:
         return False
     tl = t.lower()
+    if any(k in tl for k in POLITICS_KW):
+        return True
     if any(k in t for k in MARKET_KW):
         return True
     if any(k in t for k in THEME_KW) and any(k in t for k in CONTEXT_KW):
@@ -1330,6 +1366,10 @@ SOURCES = [
     ("Guardian", fetch_guardian),
     ("NYT", fetch_nyt),
     ("Al Jazeera", fetch_aljazeera),
+    # 美国政治 / 选举（直接影响风险偏好）
+    ("NPR政治", lambda: fetch_rss("https://feeds.npr.org/1014/rss.xml", "NPR政治", lang="en", limit=20, use_proxy=True)),
+    ("NYT政治", lambda: fetch_rss("https://rss.nytimes.com/services/xml/rss/nyt/Politics.xml", "NYT政治", lang="en", limit=20, use_proxy=True)),
+    ("BBC美国", lambda: [dict(x, _gate=True) for x in fetch_rss("https://feeds.bbci.co.uk/news/world/us_canada/rss.xml", "BBC美国", lang="en", limit=20, use_proxy=True)]),
     # 国际综合（仍保留股票相关性门控）
     ("UN News", fetch_un_news),
     ("WHO", lambda: fetch_rss("https://www.who.int/rss-feeds/news-english.xml", "WHO", tier="official", lang="en", limit=15)),
@@ -1580,7 +1620,9 @@ def _level(it: dict) -> int:
         (["封锁海峡", "航道封锁", "strait closed", "苏伊士", "红海"], 3),
         (["出口管制", "制裁名单", "sanction", "entity list", "关税"], 2),
         (["红色预警", "red alert", "最高级别"], 2),
-        (["台风", "飓风", "hurricane", "typhoon", "洪水", "地震", "海啸"], 1),
+        (["大选", "总统选举", "presidential election", "election day", "就职", "inauguration"], 3),
+        (["总统", "白宫", "国会", "参议院", "众议院", "congress", "senate", "white house", "president"], 2),
+        (["政府停摆", "government shutdown", "弹劾", "impeachment"], 2),
     ]
     for kws, floor in gates:
         if any(k in t for k in kws):
@@ -1623,9 +1665,32 @@ def _dedupe(items: list[dict]) -> list[dict]:
     return out
 
 
+_CLIMATE_PURGED = {"done": False}
+
+
+def _purge_climate_once() -> None:
+    """清掉历史气候/环境/气象新闻；之后新条目在采集阶段直接过滤。"""
+    if _CLIMATE_PURGED["done"]:
+        return
+    try:
+        with _LOCK:
+            conn = _conn()
+            for term in CLIMATE_TERMS:
+                conn.execute("DELETE FROM news WHERE lower(title) LIKE ?", (f"%{term.lower()}%",))
+            conn.execute("DELETE FROM news_stock WHERE news_id NOT IN (SELECT id FROM news)")
+            conn.execute("DELETE FROM news_sector WHERE news_id NOT IN (SELECT id FROM news)")
+            conn.commit()
+            conn.close()
+        _CLIMATE_PURGED["done"] = True
+    except Exception:
+        pass
+
+
 def _save(items: list[dict]) -> None:
     if not items:
+        _purge_climate_once()
         return
+    _purge_climate_once()
     try:
         with _LOCK:
             conn = _conn()
@@ -1826,7 +1891,7 @@ def _collect() -> None:
     except Exception:
         pass
 
-    items = _dedupe(collected)
+    items = [it for it in _dedupe(collected) if not _is_climate(it.get("title"))]
     now = time.time()
     index = _sector_index()
     stock_idx = _stock_index()
